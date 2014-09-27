@@ -1,0 +1,19 @@
+#!/usr/bin/env ruby
+require 'rubygems'
+require 'gli'
+require_relative '../lib/aws_auditor'
+
+include GLI::App
+
+program_desc 'AWS Auditor'
+version AwsAuditor::VERSION
+
+wrap_help_text :verbatim
+
+program_long_desc """
+DOCUMENTATION
+"""
+
+commands_from File.expand_path(File.dirname(__FILE__) + '/../lib/aws_auditor/commands')
+
+exit run(ARGV)
