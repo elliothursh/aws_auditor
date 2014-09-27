@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.email         = ["elliothursh@gmail.com"]
   spec.summary       = %q{AWS configuration as code}
   spec.description   = %q{Helps with AWS configuration}
-  spec.homepage      = ""
+  spec.homepage      = "https://github.com/elliothursh/aws_auditor"
   spec.license       = "MIT"
 
   spec.files         = `git ls-files -z`.split("\x0")
@@ -18,8 +18,8 @@ Gem::Specification.new do |spec|
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ["lib"]
 
-  spec.add_dependency 'aws-sdk'
-  spec.add_dependency 'hashie'
+  spec.add_dependency 'aws-sdk', '~>1'
+  spec.add_dependency 'hashie', '~> 3.3'
   spec.add_dependency 'gli', '~> 2.10'
 
   spec.add_development_dependency "bundler", "~> 1.7"

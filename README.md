@@ -1,6 +1,6 @@
 # AwsAuditor
 
-TODO: Write a gem description
+Audits your AWS accounts to find discrepancies between the number of running instances and purchased reserved instances.
 
 ## Installation
 
@@ -20,8 +20,26 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+Create a `.aws.yml` file in the root directory, with the following structure.
 
+```yaml
+---
+account1:
+  access_key_id: 'ACCESS_KEY_ID'
+  secret_access_key: 'SECRET_ACCESS_KEY
+account2:
+  access_key_id: 'ACCESS_KEY_ID'
+  secret_access_key: 'SECRET_ACCESS_KEY
+```
+
+To find discrepancies between number of running instances and purchased instances, run:
+
+    $ aws_auditor audit account1
+
+To list instances for all stacks in your account, run:
+
+    $ aws_auditor stack-audit account1
+    
 ## Contributing
 
 1. Fork it ( https://github.com/[my-github-username]/aws_auditor/fork )
