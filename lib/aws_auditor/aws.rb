@@ -7,10 +7,10 @@ module AwsAuditor
     include Hashie::Extensions::IndifferentAccess
   end
 
-	class AWSSDK
-		FILE_NAMES = %w[.aws.yml]
+  class AWSSDK
+    FILE_NAMES = %w[.aws.yml]
 
-		def self.configuration(environment)
+    def self.configuration(environment)
       @environment = environment
       load_config
       AWS.config({
@@ -18,7 +18,7 @@ module AwsAuditor
         :secret_access_key => @config[:secret_access_key],
         :region => @config[:region]
       })
-		end
+    end
 
     def self.load_config
       return @config if @config
@@ -28,8 +28,8 @@ module AwsAuditor
       @config
     end
 
-		def self.config_path
-			if filepath = FILE_NAMES.detect {|filename| File.exists?(filename)}
+    def self.config_path
+      if filepath = FILE_NAMES.detect {|filename| File.exists?(filename)}
         File.join(Dir.pwd, filepath)
       else
         old_dir = Dir.pwd
@@ -42,5 +42,5 @@ module AwsAuditor
         end
       end
     end
-	end
+  end
 end
