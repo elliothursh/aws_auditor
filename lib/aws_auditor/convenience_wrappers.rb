@@ -17,5 +17,12 @@ module AwsAuditor
 		end
 	end
 
+	module OpsWorksWrapper
+		attr_accessor :opsworks
+
+		def opsworks
+			@opsworks ||= AWS::OpsWorks.new.client
+		end
+	end
 	
 end
