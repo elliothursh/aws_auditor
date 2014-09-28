@@ -27,8 +27,7 @@ Create a `.aws.yml` file in the root directory with the following structure.
 ---
 account1:
   access_key_id: 'ACCESS_KEY_ID'
-  secret_access_key: 'SECRET_ACCESS_KEY
- 
+  secret_access_key: 'SECRET_ACCESS_KEY'
 account2:
   access_key_id: 'ACCESS_KEY_ID'
   secret_access_key: 'SECRET_ACCESS_KEY
@@ -42,7 +41,6 @@ You can export audit information to a Google Spreadsheet, but you must first cre
 login:
   email: 'GOOGLE_EMAIL_ADDRESS'
   password: 'GOOGLE_EMAIL_PASSWORD'
- 
 file:
   title: 'TITLE_OF_FILE'
 ```
