@@ -1,36 +1,60 @@
+require 'highline/import'
+
 module AwsAuditor
   module Scripts
     class Audit
       extend AWSWrapper
-      extend EC2Wrapper
 
-      def self.execute(environment)
+      def self.execute(environment, options=nil)
         aws(environment)
-        compare.each do |key,value|
-          puts "#{key}: #{value}"
+        if options[:ec2]
+          puts "=============== EC2 ==============="
+          audit_ec2
+        elsif options[:rds]
+          puts "=============== RDS ==============="
+          audit_rds
+        elsif options[:cache]
+          puts "============== CACHE =============="
+          audit_cache
+        else
+          puts "=============== EC2 ==============="
+          audit_ec2
+          puts "=============== RDS ==============="
+          audit_rds
+          puts "============== CACHE =============="
+          audit_cache
+        end
+
+      end
+
+      def self.audit_rds
+        RDSInstance.compare.each do |key, value|
+          colorize(key,value)
         end
       end
 
-      def self.create_instance_hash(instance_type)
-        instance_hash = Hash.new()
-        instance_type.each do |instance|
-          next if instance.nil?
-          instance_hash[instance.to_s] = instance_hash.has_key?(instance.to_s) ? instance_hash[instance.to_s] + instance.count : instance.count
+      def self.audit_ec2
+        EC2Instance.compare.each do |key,value|
+          colorize(key,value)
         end
-        instance_hash
       end
 
-      def self.compare
-        differences = Hash.new()
-        instances = create_instance_hash(Instance.get_instances)
-        ris = create_instance_hash(Instance.get_reserved_instances)
-        instances.keys.concat(ris.keys).uniq.each do |key|
-          instance_count = instances.has_key?(key) ? instances[key] : 0
-          ris_count = ris.has_key?(key) ? ris[key] : 0
-          differences[key] = ris_count - instance_count
+      def self.audit_cache
+        CacheInstance.compare.each do |key,value|
+          colorize(key,value)
         end
-        differences
       end
+
+      def self.colorize(key,value)
+        if value < 0
+          say "<%= color('#{key}: #{value}', :yellow) %>"
+        elsif value == 0
+          say "<%= color('#{key}: #{value}', :green) %>"
+        elsif value > 0 
+          say "<%= color('#{key}: #{value}', :red) %>"
+        end
+      end
+
     end
   end
 end

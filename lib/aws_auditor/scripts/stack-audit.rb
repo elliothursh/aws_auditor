@@ -2,7 +2,6 @@ module AwsAuditor
   module Scripts
     class StackAudit
       extend AWSWrapper
-      extend EC2Wrapper
       extend OpsWorksWrapper
 
       def self.execute(environment)

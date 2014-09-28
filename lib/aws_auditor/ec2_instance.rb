@@ -1,13 +1,16 @@
+require_relative './instance_helper'
+
 module AwsAuditor
-  class Instance
+  class EC2Instance
+    extend InstanceHelper
     extend EC2Wrapper
 
     attr_accessor :id, :platform, :availability_zone, :instance_type, :count
-    def initialize(aws_instance, count=1)
-      @id = aws_instance.id
-      @platform = platform_helper(aws_instance)
-      @availability_zone = aws_instance.availability_zone
-      @instance_type = aws_instance.instance_type
+    def initialize(ec2_instance, count=1)
+      @id = ec2_instance.id
+      @platform = platform_helper(ec2_instance)
+      @availability_zone = ec2_instance.availability_zone
+      @instance_type = ec2_instance.instance_type
       @count = count
     end
 
@@ -15,12 +18,12 @@ module AwsAuditor
       "#{@platform} #{@availability_zone} #{@instance_type}"
     end
 
-    def platform_helper(aws_instance)
-      if aws_instance.class.to_s == 'AWS::EC2::Instance'
-        if aws_instance.vpc? 
+    def platform_helper(ec2_instance)
+      if ec2_instance.class.to_s == 'AWS::EC2::Instance'
+        if ec2_instance.vpc? 
           return 'VPC'
-        elsif aws_instance.platform
-          if aws_instance.platform.downcase.include? 'windows' 
+        elsif ec2_instance.platform
+          if ec2_instance.platform.downcase.include? 'windows' 
             return 'Windows'
           else
             return 'Linux'
@@ -28,10 +31,10 @@ module AwsAuditor
         else
           return 'Linux'
         end
-      elsif aws_instance.class.to_s == 'AWS::EC2::ReservedInstances'
-        if aws_instance.product_description.downcase.include? 'vpc' 
+      elsif ec2_instance.class.to_s == 'AWS::EC2::ReservedInstances'
+        if ec2_instance.product_description.downcase.include? 'vpc' 
           return 'VPC'
-        elsif aws_instance.product_description.downcase.include? 'windows'
+        elsif ec2_instance.product_description.downcase.include? 'windows'
           return 'Windows'
         else
           return 'Linux'
@@ -43,7 +46,7 @@ module AwsAuditor
       instances = ec2.instances
       instances.map do |instance|
         next unless instance.status.to_s == 'running'
-        Instance.new(instance)
+        new(instance)
       end if instances
     end
 
@@ -51,12 +54,9 @@ module AwsAuditor
       reserved_instances = ec2.reserved_instances
       reserved_instances.map do |ri|
         next unless ri.state == 'active'
-        Instance.new(ri, ri.instance_count)
+        new(ri, ri.instance_count)
       end if reserved_instances
     end
 
-    def self.instance_hash
-      Hash[get_instances.map {|instance| [instance.id, instance]}]
-    end
   end
 end
