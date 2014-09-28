@@ -1,3 +1,5 @@
+require 'highline/import'
+
 module AwsAuditor
   class Stack
     extend OpsWorksWrapper
@@ -14,7 +16,13 @@ module AwsAuditor
       instances = self.class.opsworks.describe_instances({stack_id: id})[:instances]
       instances.map do |instance|
         next unless instance[:status].to_s == 'online'
-        all_instances[instance[:ec2_instance_id]].to_s
+        self.class.all_instances[instance[:ec2_instance_id]]
+      end
+    end
+
+    def print_instances
+      EC2Instance.instance_count_hash(self.instances).each do |key,value|
+        say "<%= color('#{key}: #{value}', :white) %>"
       end
     end
 
@@ -22,14 +30,19 @@ module AwsAuditor
       puts "----------------------------------"
       puts "#{@name}"
       puts "----------------------------------"
-      instances.each do |instance|
-        puts instance.to_s
-      end
+      print_instances
       puts "\n"
     end
+    
+    def self.all
+      stacks = opsworks.describe_stacks
+      stacks.data[:stacks].map do |stack|
+        new(stack)
+      end.sort! { |a,b| a.name.downcase <=> b.name.downcase } if stacks
+    end
 
-    def all_instances
-      @all_instances ||= Instance.instance_hash
+    def self.all_instances
+      @all_instances ||= EC2Instance.instance_hash
     end
 
   end

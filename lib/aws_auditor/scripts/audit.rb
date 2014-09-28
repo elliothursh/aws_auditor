@@ -8,40 +8,69 @@ module AwsAuditor
       def self.execute(environment, options=nil)
         aws(environment)
         if options[:ec2]
-          puts "=============== EC2 ==============="
-          audit_ec2
+          audit_ec2(options)
         elsif options[:rds]
-          puts "=============== RDS ==============="
-          audit_rds
+          audit_rds(options)
         elsif options[:cache]
           puts "============== CACHE =============="
-          audit_cache
+          audit_cache(options)
         else
-          puts "=============== EC2 ==============="
-          audit_ec2
-          puts "=============== RDS ==============="
-          audit_rds
+          audit_ec2(options)
+          audit_rds(options)
           puts "============== CACHE =============="
-          audit_cache
+          audit_cache(options)
         end
 
       end
 
-      def self.audit_rds
-        RDSInstance.compare.each do |key, value|
-          colorize(key,value)
+      def self.audit_rds(options)
+        puts "=============== RDS ==============="
+        if options[:instances]
+          RDSInstance.instance_count_hash(RDSInstance.get_instances).each do |key,value|
+            say "<%= color('#{key}: #{value}', :white) %>"
+          end
+        elsif options[:reserved]
+          RDSInstance.instance_count_hash(RDSInstance.get_reserved_instances).each do |key,value|
+            say "<%= color('#{key}: #{value}', :white) %>"
+          end
+        else
+          RDSInstance.compare.each do |key, value|
+            colorize(key,value)
+          end
         end
       end
 
-      def self.audit_ec2
-        EC2Instance.compare.each do |key,value|
-          colorize(key,value)
+      def self.audit_ec2(options)
+        puts "=============== EC2 ==============="
+        if options[:instances]
+          EC2Instance.instance_count_hash(EC2Instance.get_instances).each do |key,value|
+            say "<%= color('#{key}: #{value}', :white) %>"
+          end
+        elsif options[:reserved]
+          EC2Instance.instance_count_hash(EC2Instance.get_reserved_instances).each do |key,value|
+            say "<%= color('#{key}: #{value}', :white) %>"
+          end
+        else
+          EC2Instance.compare.each do |key,value|
+            colorize(key,value)
+          end
         end
       end
 
-      def self.audit_cache
-        CacheInstance.compare.each do |key,value|
-          colorize(key,value)
+      def self.audit_cache(options)
+        puts "============== CACHE =============="
+        if options[:instances]
+          CacheInstance.instance_count_hash(CacheInstance.get_instances).each do |key,value|
+            say "<%= color('#{key}: #{value}', :white) %>"
+          end
+        elsif options[:reserved]
+          CacheInstance.instance_count_hash(CacheInstance.get_reserved_instances).each do |key,value|
+            say "<%= color('#{key}: #{value}', :white) %>"
+          end
+        else
+          CacheInstance.compare.each do |key,value|
+            colorize(key,value)
+          end
         end
       end
 

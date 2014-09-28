@@ -8,7 +8,7 @@ module AwsAuditor
     attr_accessor :id, :name, :instance_type, :engine, :count
     def initialize(cache_instance)
       @id = cache_instance[:cache_cluster_id] || cache_instance[:reserved_cache_node_id]
-      @name = cache_instance[:db_name]
+      @name = cache_instance[:cache_cluster_id] || cache_instance[:reserved_cache_node_id]
       @instance_type = cache_instance[:cache_node_type]
       @engine = cache_instance[:engine] || cache_instance[:product_description]
       @count = cache_instance[:cache_node_count] || 1

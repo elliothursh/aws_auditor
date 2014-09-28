@@ -8,7 +8,7 @@ module AwsAuditor
     attr_accessor :id, :name, :multi_az, :instance_type, :engine, :count
     def initialize(rds_instance)
       @id = rds_instance[:db_instance_identifier] || rds_instance[:reserved_db_instances_offering_id]
-      @name = rds_instance[:db_name]
+      @name = rds_instance[:db_instance_identifier] || rds_instance[:db_name]
       @multi_az = rds_instance[:multi_az]
       @instance_type = rds_instance[:db_instance_class]
       @engine = rds_instance[:engine] || rds_instance[:product_description]
