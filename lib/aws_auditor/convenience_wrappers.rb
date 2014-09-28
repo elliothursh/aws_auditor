@@ -1,4 +1,5 @@
 require_relative './aws'
+require_relative './google'
 
 module AwsAuditor
   module AWSWrapper
@@ -38,6 +39,14 @@ module AwsAuditor
 
     def cache
       @cache ||= AWS::ElastiCache.new.client
+    end
+  end
+
+  module GoogleWrapper
+    attr_accessor :google
+
+    def google
+      @google ||= AwsAuditor::Google.configuration
     end
   end
   

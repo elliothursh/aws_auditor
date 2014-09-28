@@ -12,12 +12,10 @@ module AwsAuditor
         elsif options[:rds]
           audit_rds(options)
         elsif options[:cache]
-          puts "============== CACHE =============="
           audit_cache(options)
         else
           audit_ec2(options)
           audit_rds(options)
-          puts "============== CACHE =============="
           audit_cache(options)
         end
 

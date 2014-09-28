@@ -18,27 +18,46 @@ Or install it yourself as:
 
     $ gem install aws_auditor
 
-## Usage
+## How-to
 
-Create a `.aws.yml` file in the root directory, with the following structure.
+### AWS Setup
+Create a `.aws.yml` file in the root directory with the following structure.
 
 ```yaml
 ---
 account1:
   access_key_id: 'ACCESS_KEY_ID'
   secret_access_key: 'SECRET_ACCESS_KEY
+ 
 account2:
   access_key_id: 'ACCESS_KEY_ID'
   secret_access_key: 'SECRET_ACCESS_KEY
 ```
 
+### Google Setup (optional)
+You can export audit information to a Google Spreadsheet, but you must first create a `.google.yml` in the root directory with the following structure.
+
+```yaml
+---
+login:
+  email: 'GOOGLE_EMAIL_ADDRESS'
+  password: 'GOOGLE_EMAIL_PASSWORD'
+ 
+file:
+  title: 'TITLE_OF_FILE'
+```
+ 
 To find discrepancies between number of running instances and purchased instances, run:
 
     $ aws_auditor audit account1
 
 To list instances for all stacks in your account, run:
 
-    $ aws_auditor stack-audit account1
+    $ aws_auditor inspect account1
+
+To export audit information to a Google Spreadsheet, make sure you added a `.google.yml` and run:
+
+    $ aws_auditor export account1
     
 ## Contributing
 
