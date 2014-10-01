@@ -42,14 +42,15 @@ login:
   email: 'GOOGLE_EMAIL_ADDRESS'
   password: 'GOOGLE_EMAIL_PASSWORD'
 file:
-  title: 'TITLE_OF_FILE'
+  path: 'DESIRED_PATH_TO_FILE' #optional, creates in root directory otherwise
+  name: 'NAME_OF_FILE'
 ```
  
 To find discrepancies between number of running instances and purchased instances, run:
 
     $ aws_auditor audit account1
 
-To list instances for all stacks in your account, run:
+To list running instances for all stacks in your account, run:
 
     $ aws_auditor inspect account1
 

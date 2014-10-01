@@ -12,7 +12,7 @@ module AwsAuditor
     end
 
     def self.file
-      load_config[:file][:title]
+      load_config[:file]
     end
 
     def self.load_config

@@ -8,7 +8,7 @@ module AwsAuditor
 
 			def self.execute(environment, options = nil)
 				aws(environment)
-				file = GoogleSheet.new(Google.file, environment)
+				file = GoogleSheet.new(Google.file[:name], Google.file[:path], environment)
 				file.write_header(get_all_keys)
 				write_opsworks_stacks(file)
 				write_rds(file)
