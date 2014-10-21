@@ -30,7 +30,7 @@ module AwsAuditor
 			def self.write_rds(file)
 				file.write_row({name: "RDS"})
 				rds_instances.each do |db|
-					value_hash = Hash({:name => db.name, :"#{db.to_s}" => '1'})
+					value_hash = Hash({:name => db.name, :"#{db.to_s}" => "#{db.count}"})
 					file.write_row(value_hash)
 				end
 			end
@@ -38,7 +38,7 @@ module AwsAuditor
 			def self.write_cache(file)
 				file.write_row({name: "CACHE"})
 				cache_instances.each do |cache|
-					value_hash = Hash({:name => cache.name, :"#{cache.to_s}" => '1'})
+					value_hash = Hash({:name => cache.name, :"#{cache.to_s}" => "#{cache.count}"})
 				 	file.write_row(value_hash)
 				end
 			end

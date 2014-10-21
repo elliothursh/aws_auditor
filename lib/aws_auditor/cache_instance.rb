@@ -11,7 +11,7 @@ module AwsAuditor
       @name = cache_instance[:cache_cluster_id] || cache_instance[:reserved_cache_node_id]
       @instance_type = cache_instance[:cache_node_type]
       @engine = cache_instance[:engine] || cache_instance[:product_description]
-      @count = cache_instance[:cache_node_count] || 1
+      @count = cache_instance[:num_cache_nodes] || cache_instance[:cache_node_count]
     end
 
     def to_s
