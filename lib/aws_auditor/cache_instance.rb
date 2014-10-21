@@ -27,7 +27,7 @@ module AwsAuditor
     end
 
     def self.get_reserved_instances
-      instances = cache.describe_reserved_cache_nodes[:reserved_db_instances]
+      instances = cache.describe_reserved_cache_nodes[:reserved_cache_nodes]
       instances.map do |instance|
         next unless instance[:state].to_s == 'active'
         new(instance)

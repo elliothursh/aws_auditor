@@ -1,5 +1,5 @@
 arg :aws_account
-desc 'Reviews Reserved Instances'
+desc 'Audits Reserved Instance Counts'
 command 'audit' do |c|
 	c.switch [:e, :ec2], :desc => "Only audit EC2 instances"
 	c.switch [:d, :rds], :desc => "Only audit RDS instances"

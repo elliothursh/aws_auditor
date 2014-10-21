@@ -1,5 +1,5 @@
 arg :aws_account
-desc 'Reviews Reserved Instances'
+desc 'Export an Audit to Google SpreadSheets'
 command 'export' do |c|
   c.action do |global_options, options, args|
     require_relative '../scripts/export'
