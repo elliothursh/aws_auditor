@@ -13,6 +13,7 @@
 *.a
 mkmf.log
 
+.DS_Store
 .aws.yml
 .google.yml
 *.gem

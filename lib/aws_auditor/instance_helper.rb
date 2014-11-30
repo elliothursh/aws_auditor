@@ -1,5 +1,6 @@
 module AwsAuditor
 	module InstanceHelper
+
 		def instance_hash
       Hash[get_instances.map { |instance| instance.nil? ? next : [instance.id, instance]}.compact]
     end

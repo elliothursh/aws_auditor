@@ -5,20 +5,27 @@ module AwsAuditor
 		class Export
 			extend GoogleWrapper
 			extend AWSWrapper
+			class <<self
+	      attr_accessor :options
+	    end
 
 			def self.execute(environment, options = nil)
 				aws(environment)
 				file = GoogleSheet.new(Google.file[:name], Google.file[:path], environment)
 				file.write_header(get_all_keys)
+				puts "Exporting Opsworks Stacks"
 				write_opsworks_stacks(file)
+				puts "Exporting RDS instances"
 				write_rds(file)
+				puts "Exporting Elasticache instances"
 				write_cache(file)
+				puts "Totaling everything up"
 				write_totals(file)
 				`open #{file.sheet.human_url}`
 			end
 
 			def self.write_opsworks_stacks(file)
-				file.write_row({name: "EC2"})
+				file.write_row({name: "OPSWORKS"})
 				opsworks_stacks.each do |stack|
 					next if stack.instances.empty?
 					value_hash = EC2Instance.instance_count_hash(stack.instances)
@@ -82,7 +89,7 @@ module AwsAuditor
 			end
 
 			def self.opsworks_stacks
-				@opsworks_stacks ||= Stack.all
+				@opsworks_stacks ||= EC2Instance.bucketize
 			end
 
 			def self.rds_instances

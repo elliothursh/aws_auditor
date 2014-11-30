@@ -21,7 +21,7 @@ module AwsAuditor
 		end
 
 		def self.first_or_create(title)
-			spreadsheet = google.root_collection.files("title" => title, "title-exact" => true)[0]
+			spreadsheet = google.root_collection.files("title" => title, "title-exact" => true).first
 			spreadsheet ? spreadsheet : google.create_spreadsheet(title)
 		end
 
@@ -29,14 +29,14 @@ module AwsAuditor
 		def self.create_sheet(title, path)
 			folder = go_to_collection(path) if path
 			if folder 
-				spreadsheet = folder.files("title" => title, "title-exact" => true)[0]
+				spreadsheet = folder.files("title" => title, "title-exact" => true).first
 				if spreadsheet 
 					return spreadsheet
 				else
 					file = first_or_create(title)
 					folder.add(file)
 					google.root_collection.remove(file)
-					return folder.files("title" => title, "title-exact" => true)[0]
+					return folder.files("title" => title, "title-exact" => true).first
 				end
 			else
 				first_or_create(title)
@@ -53,7 +53,7 @@ module AwsAuditor
 		def self.go_to_collection(directory)
 			if directory
 				path = directory.split('/')
-				go_to_subcollection(google.collection_by_title(path[0]),path[1..-1])
+				go_to_subcollection(google.collection_by_title(path.first),path[1..-1])
 			end
 		end
 
@@ -63,7 +63,7 @@ module AwsAuditor
 			if subs.empty?
 				return base
 			else
-				base = base.subcollection_by_title(subs[0])
+				base = base.subcollection_by_title(subs.first)
 				go_to_subcollection(base,subs[1..-1])
 			end
 		end

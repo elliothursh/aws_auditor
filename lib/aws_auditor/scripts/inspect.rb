@@ -6,43 +6,39 @@ module AwsAuditor
 
       def self.execute(environment, options=nil)
         aws(environment)
-        if options[:ec2]
-          inspect_stacks
-        elsif options[:rds]
-          inspect_dbs
-        elsif options[:cache]
-          inspect_caches
-        else
-          puts "You must use a switch. See `aws-auditor inspect --help` for more info."
+        no_selection = options.values.uniq == [false]
+        output("EC2Instance") if options[:ec2] || no_selection
+        output("RDSInstance") if options[:rds] || no_selection 
+        output("CacheInstance") if options[:cache] || no_selection
+      end
+
+      def self.output(class_type)
+        klass = AwsAuditor.const_get(class_type)
+        print "Gathering info, please wait..."; print "\r"
+        instances = class_type == "EC2Instance" ? klass.bucketize : klass.instance_hash
+        say "<%= color('#{header(class_type)}', :white) %>"
+        instances.each do |key, value|
+          pretty_print(key, klass.instance_count_hash(Array(value)))
         end
       end
 
-      def self.inspect_stacks
-        Stack.all.each do |stack|
-          stack.pretty_print
-        end
+      def self.header(type, length = 50)
+        type.upcase!.slice! "INSTANCE"
+        half_length = (length - type.length)/2.0 - 1
+        [
+          "*" * length,
+          "*" * half_length.floor + " #{type} " + "*" * half_length.ceil,
+          "*" * length
+        ].join("\n")
       end
 
-      def self.inspect_dbs
-        RDSInstance.get_instances.each do |db|
-          puts "========================"
-          puts "#{db.name}"
-          puts "========================"
-          puts db.to_s
-          puts "\n"
-        end
+      def self.pretty_print(title, body)
+        puts "======================================="
+        puts "#{title}"
+        puts "======================================="
+        body.each{ |key, value| say "<%= color('#{key}: #{value}', :white) %>" }
+        puts "\n"
       end
-
-      def self.inspect_caches
-        CacheInstance.get_instances.each do |cache|
-          puts "========================"
-          puts "#{cache.name}"
-          puts "========================"
-          puts cache.to_s
-          puts "\n"
-        end
-      end
-
     end
   end
 end

@@ -5,70 +5,34 @@ module AwsAuditor
     class Audit
       extend AWSWrapper
 
+      class <<self
+        attr_accessor :options
+      end
+
       def self.execute(environment, options=nil)
         aws(environment)
-        if options[:ec2]
-          audit_ec2(options)
-        elsif options[:rds]
-          audit_rds(options)
-        elsif options[:cache]
-          audit_cache(options)
-        else
-          audit_ec2(options)
-          audit_rds(options)
-          audit_cache(options)
-        end
-
+        @options = options
+        no_selection = options.values.uniq == [false]
+        output("EC2Instance") if options[:ec2] || no_selection
+        output("RDSInstance") if options[:rds] || no_selection 
+        output("CacheInstance") if options[:cache] || no_selection
       end
 
-      def self.audit_rds(options)
-        puts "=============== RDS ==============="
+      def self.output(class_type)
+        klass = AwsAuditor.const_get(class_type)
+        print "Gathering info, please wait..."; print "\r"
         if options[:instances]
-          RDSInstance.instance_count_hash(RDSInstance.get_instances).each do |key,value|
-            say "<%= color('#{key}: #{value}', :white) %>"
-          end
+          instances = klass.instance_count_hash(klass.get_instances)
+          puts header(class_type)
+          instances.each{ |key,value| say "<%= color('#{key}: #{value}', :white) %>" }
         elsif options[:reserved]
-          RDSInstance.instance_count_hash(RDSInstance.get_reserved_instances).each do |key,value|
-            say "<%= color('#{key}: #{value}', :white) %>"
-          end
+          reserved = klass.instance_count_hash(klass.get_reserved_instances)
+          puts header(class_type)
+          reserved.each{ |key,value| say "<%= color('#{key}: #{value}', :white) %>" }
         else
-          RDSInstance.compare.each do |key, value|
-            colorize(key,value)
-          end
-        end
-      end
-
-      def self.audit_ec2(options)
-        puts "=============== EC2 ==============="
-        if options[:instances]
-          EC2Instance.instance_count_hash(EC2Instance.get_instances).each do |key,value|
-            say "<%= color('#{key}: #{value}', :white) %>"
-          end
-        elsif options[:reserved]
-          EC2Instance.instance_count_hash(EC2Instance.get_reserved_instances).each do |key,value|
-            say "<%= color('#{key}: #{value}', :white) %>"
-          end
-        else
-          EC2Instance.compare.each do |key,value|
-            colorize(key,value)
-          end
-        end
-      end
-
-      def self.audit_cache(options)
-        puts "============== CACHE =============="
-        if options[:instances]
-          CacheInstance.instance_count_hash(CacheInstance.get_instances).each do |key,value|
-            say "<%= color('#{key}: #{value}', :white) %>"
-          end
-        elsif options[:reserved]
-          CacheInstance.instance_count_hash(CacheInstance.get_reserved_instances).each do |key,value|
-            say "<%= color('#{key}: #{value}', :white) %>"
-          end
-        else
-          CacheInstance.compare.each do |key,value|
-            colorize(key,value)
-          end
+          compared = klass.compare
+          puts header(class_type)
+          compared.each{ |key,value| colorize(key,value) }
         end
       end
 
@@ -80,6 +44,16 @@ module AwsAuditor
         elsif value > 0 
           say "<%= color('#{key}: #{value}', :red) %>"
         end
+      end
+
+      def self.header(type, length = 50)
+        type.upcase!.slice! "INSTANCE"
+        half_length = (length - type.length)/2.0 - 1
+        [
+          "*" * length,
+          "*" * half_length.floor + " #{type} " + "*" * half_length.ceil,
+          "*" * length
+        ].join("\n")
       end
 
     end

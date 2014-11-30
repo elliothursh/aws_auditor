@@ -23,7 +23,11 @@ module AwsAuditor
     def self.load_config
       return @config if @config
       @config = AwsConfig[YAML.load_file(config_path)]
-      @config = @config[@environment] if @environment
+      if @config.has_key? @environment
+        @config = @config[@environment]
+      else
+        puts "Could not find AWS credentials for #{@environment} environment"; exit
+      end
       @config[:region] ||= 'us-east-1'
       @config
     end
@@ -37,8 +41,7 @@ module AwsAuditor
         if old_dir != Dir.pwd
           config_path
         else
-          puts "Could not find #{FILE_NAMES.join(' or ')}"
-          exit
+          puts "Could not find #{FILE_NAMES.join(' or ')}"; exit
         end
       end
     end
