@@ -39,13 +39,15 @@ module AwsAuditor
 
       def self.upload_to_drive(keys, info)
         @file = GoogleSheet.new(Google.file[:name], Google.file[:path], environment)
+        print "Exporting to Google Drive, please wait..."
         file.write_header(keys)
         info.each do |value_hash|
           response = file.worksheet.list.push(value_hash)
           puts response unless response.is_a? GoogleDrive::ListRow
         end
         file.worksheet.save
-
+        print "\r" + " " * 50 + "\r"
+        puts "Exporting Complete."
         `open #{file.sheet.human_url}`
       end
 
