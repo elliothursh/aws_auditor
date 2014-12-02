@@ -34,13 +34,13 @@ account2:
 ```
 
 ### Google Setup (optional)
-You can export audit information to a Google Spreadsheet, but you must first create a `.google.yml` in the root directory with the following structure.
+You can export audit information to a Google Spreadsheet, but you must first follow “Create a client ID and client secret” on [this page](https://developers.google.com/drive/web/auth/web-server) to get a client ID and client secret for OAuth. Then create a `.google.yml` in the root directory with the following structure. 
 
 ```yaml
 ---
-login:
-  email: 'GOOGLE_EMAIL_ADDRESS'
-  password: 'GOOGLE_EMAIL_PASSWORD'
+credentials:
+  client_id: 'GOOGLE_CLIENT_ID'
+  client_secret: 'GOOGLE_CLIENT_ID'
 file:
   path: 'DESIRED_PATH_TO_FILE' #optional, creates in root directory otherwise
   name: 'NAME_OF_FILE'
@@ -50,17 +50,17 @@ To find discrepancies between number of running instances and purchased instance
 
     $ aws_auditor audit account1
 
-To list running instances for all stacks in your account, run:
+To list information about all running instances in your account, run:
 
     $ aws_auditor inspect account1
 
 To export audit information to a Google Spreadsheet, make sure you added a `.google.yml` and run:
 
-    $ aws_auditor export account1
+    $ aws_auditor export -d account1
     
 ## Contributing
 
-1. Fork it ( https://github.com/[my-github-username]/aws_auditor/fork )
+1. Fork it ( https://github.com/elliothursh/aws_auditor/fork )
 2. Create your feature branch (`git checkout -b my-new-feature`)
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
