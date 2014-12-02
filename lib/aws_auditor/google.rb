@@ -1,10 +1,12 @@
+require "google_drive"
+
 module AwsAuditor
 	class GoogleConfig < Hash
     include Hashie::Extensions::IndifferentAccess
   end
 
   class Google
-  FILE_NAMES = %w[.google.yml]
+    FILE_NAMES = %w[.google.yml]
 
     def self.configuration
       credentials = load_config[:login]
