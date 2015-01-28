@@ -21,7 +21,7 @@ Or install it yourself as:
 ## How-to
 
 ### AWS Setup
-Create a `.aws.yml` file in the root directory with the following structure.
+Create a `.aws.yml` file in your home directory with the following structure.
 
 ```yaml
 ---
@@ -34,7 +34,7 @@ account2:
 ```
 
 ### Google Setup (optional)
-You can export audit information to a Google Spreadsheet, but you must first follow “Create a client ID and client secret” on [this page](https://developers.google.com/drive/web/auth/web-server) to get a client ID and client secret for OAuth. Then create a `.google.yml` in the root directory with the following structure. 
+You can export audit information to a Google Spreadsheet, but you must first follow “Create a client ID and client secret” on [this page](https://developers.google.com/drive/web/auth/web-server) to get a client ID and client secret for OAuth. Then create a `.google.yml` in your home directory with the following structure.
 
 ```yaml
 ---
@@ -46,6 +46,8 @@ file:
   name: 'NAME_OF_FILE'
 ```
  
+## Usage
+
 To find discrepancies between number of running instances and purchased instances, run:
 
     $ aws_auditor audit account1
