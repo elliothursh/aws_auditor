@@ -58,9 +58,9 @@ module AwsAuditor
       def self.get_all_keys
         return @keys if @keys
         @keys = [
-          ec2_instances.values.map{ |x| x.to_s }.uniq.sort! { |a,b| a.downcase <=> b.downcase },
-          rds_instances.values.map{ |x| x.to_s }.uniq.sort! { |a,b| a.downcase <=> b.downcase },
-          cache_instances.values.map{ |x| x.to_s }.uniq.sort! { |a,b| a.downcase <=> b.downcase }
+          [ec2_reserved_instances.values,ec2_instances.values].flatten.map{ |x| x.to_s }.uniq.sort! { |a,b| a.downcase <=> b.downcase },
+          [rds_reserved_instances.values,rds_instances.values].flatten.map{ |x| x.to_s }.uniq.sort! { |a,b| a.downcase <=> b.downcase },
+          [cache_reserved_instances.values,cache_instances.values].flatten.map{ |x| x.to_s }.uniq.sort! { |a,b| a.downcase <=> b.downcase }
         ].flatten
       end
 
@@ -121,12 +121,24 @@ module AwsAuditor
         @ec2_instances ||= EC2Instance.instance_hash
       end
 
+      def self.ec2_reserved_instances
+        @ec2_reserved_instances ||= EC2Instance.reserved_instance_hash
+      end
+
       def self.rds_instances
         @rds_instances ||= RDSInstance.instance_hash
       end
 
+      def self.rds_reserved_instances
+        @rds_reserved_instances ||= RDSInstance.reserved_instance_hash
+      end
+      
       def self.cache_instances
         @cache_instances ||= CacheInstance.instance_hash
+      end
+
+      def self.cache_reserved_instances
+        @cache_reserved_instances ||= CacheInstance.reserved_instance_hash
       end
 
     end
