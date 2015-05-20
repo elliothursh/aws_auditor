@@ -5,6 +5,10 @@ module AwsAuditor
       Hash[get_instances.map { |instance| instance.nil? ? next : [instance.id, instance]}.compact]
     end
 
+    def reserved_instance_hash
+      Hash[get_reserved_instances.map { |instance| instance.nil? ? next : [instance.id, instance]}.compact]
+    end
+
     def instance_count_hash(instances)
       instance_hash = Hash.new()
       instances.each do |instance|

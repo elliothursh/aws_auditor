@@ -80,8 +80,12 @@ module AwsAuditor
       buckets = {}
       get_instances.map do |instance|
         name = instance.stack_name || instance.name
-        buckets[name] = [] unless buckets.has_key? name
-        buckets[name] << instance
+        if name
+          buckets[name] = [] unless buckets.has_key? name
+          buckets[name] << instance
+        else
+          puts "Could not sort #{instance.id}, as it has no stack_name or name"
+        end
       end
       buckets.sort_by{|k,v| k }
     end
