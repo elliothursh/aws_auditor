@@ -26,7 +26,7 @@ module AwsAuditor
       if @config.has_key? @environment
         @config = @config[@environment]
       else
-        puts "Could not find AWS credentials for #{@environment} environment"; exit
+        raise MissingEnvironment, "Could not find AWS credentials for #{@environment} environment"
       end
       @config[:region] ||= 'us-east-1'
       @config
@@ -45,5 +45,7 @@ module AwsAuditor
         end
       end
     end
+
+    MissingEnvironment = Class.new(StandardError)
   end
 end
