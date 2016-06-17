@@ -8,14 +8,14 @@ module AwsAuditor
   end
 
   class AWSSDK
-    FILE_NAMES = %w[.aws.yml]
+    FILE_NAMES = %w[.aws.yml .fog]
 
     def self.configuration(environment)
       @environment = environment
       load_config
       AWS.config({
-        :access_key_id => @config[:access_key_id],
-        :secret_access_key => @config[:secret_access_key],
+        :access_key_id => @config[:access_key_id] || @config[:aws_access_key_id],
+        :secret_access_key => @config[:secret_access_key] || @config[:aws_secret_access_key],
         :region => @config[:region]
       })
     end
