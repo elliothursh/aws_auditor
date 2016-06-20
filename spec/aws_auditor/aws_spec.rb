@@ -14,8 +14,15 @@ module AwsAuditor
     end
 
     it "should aws config for given environemnt" do
-      config = {"staging" => {access_key_id: "foo", secret_access_key: "bar", region: "us-east-1"}}
+      config = {"staging" => {access_key_id: "foo", secret_access_key: "bar"}}
       allow(YAML).to receive(:load_file).and_return(config)
+      expect(AWSSDK::configuration('staging')).to be_an_instance_of(AWS::Core::Configuration)
+    end
+
+    it "should ask for mfa" do
+      config = {"staging" => {access_key_id: "foo", secret_access_key: "bar", mfa_serial_number: "taco"}}
+      allow(YAML).to receive(:load_file).and_return(config)
+      allow(Output).to receive(:ask).and_return('123456').once
       expect(AWSSDK::configuration('staging')).to be_an_instance_of(AWS::Core::Configuration)
     end
   end
