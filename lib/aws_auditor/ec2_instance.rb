@@ -5,7 +5,7 @@ module AwsAuditor
     extend InstanceHelper
     extend EC2Wrapper
 
-    class <<self
+    class << self
       attr_accessor :instances, :reserved_instances
     end
 
