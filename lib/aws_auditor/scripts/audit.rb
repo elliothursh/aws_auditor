@@ -21,22 +21,20 @@ module AwsAuditor
       def self.output(class_type)
         klass = AwsAuditor.const_get(class_type)
         print "Gathering info, please wait..."; print "\r"
-        if options[:instances] # logic here for when we only want to get instances
+        if options[:instances]
+          date = klass.get_todays_date
           instances = klass.get_instances
-          # instances_with_tag = klass.filter_instances_with_tags(instances).first
-          # instances_without_tag = klass.filter_instances_with_tags(instances).last
-          # instances_hash = klass.instance_count_hash(instances_without_tag)
-          instance_hash = klass.instance_count_hash(instances)
-          # add_instances_with_tag_to_hash(instances_with_tag, instances_hash)
+          instances_with_tag = klass.filter_instances_with_tags(instances, date).first
+          instances_without_tag = klass.filter_instances_with_tags(instances, date).last
+          instance_hash = klass.instance_count_hash(instances_without_tag)
+          klass.add_instances_with_tag_to_hash(instances_with_tag, instance_hash)
           puts header(class_type)
-          puts "options[:instances]"
           instance_hash.each{ |key,value| say "<%= color('#{key}: #{value}', :white) %>" }
-        elsif options[:reserved] # reserved won't have any tags that we care about
+        elsif options[:reserved]
           reserved = klass.instance_count_hash(klass.get_reserved_instances)
           puts header(class_type)
-          puts "options[:reserved]"
           reserved.each{ |key,value| say "<%= color('#{key}: #{value}', :white) %>" }
-        else # for when we want both instances and reserved; we need logic
+        else
           compared = klass.compare
           puts header(class_type)
           compared.each{ |key,value| colorize(key,value) }

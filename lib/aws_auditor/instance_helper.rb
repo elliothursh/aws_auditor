@@ -22,38 +22,49 @@ module AwsAuditor
       instances_to_add.each do |instance|
         next if instance.nil?
         key = instance.to_s << " with tag"
-        instance_hash[key] = instance_hash.has_key?(key) ? instance_hash[key] + instances_to_add.count : instances_to_add.count
+        instance_hash[key] = instance_hash.has_key?(key) ? instance_hash[key] + 1 : 1
       end if instances_to_add
       instance_hash
     end
 
     def compare
+      date = get_todays_date
       differences = Hash.new()
       instances = get_instances
-      # instances_with_tag = filter_instances_with_tags(instances).first
-      # instances_without_tag = filter_instances_with_tags(instances).last
-      # instance_hash = instance_count_hash(instances_without_tag)
-      instance_hash = instance_count_hash(instances)
-      # add_instances_with_tag_to_hash(instances_with_tag, instance_hash)
+      instances_with_tag = filter_instances_with_tags(instances, date).first
+      instances_without_tag = filter_instances_with_tags(instances, date).last
+      instance_hash = instance_count_hash(instances_without_tag)
       ris = instance_count_hash(get_reserved_instances)
       instance_hash.keys.concat(ris.keys).uniq.each do |key|
         instance_count = instance_hash.has_key?(key) ? instance_hash[key] : 0
         ris_count = ris.has_key?(key) ? ris[key] : 0
         differences[key] = ris_count - instance_count
       end
+      add_instances_with_tag_to_hash(instances_with_tag, differences)
       differences
     end
 
-    def filter_instances_with_tags(instances)
+    def filter_instances_with_tags(instances, date)
       instances_with_tag = instances.select do |instance|
-        # instance has tag && tag < Date.today
+        value = instance.no_reserved_instance_tag_value
+        value && (date < value)
       end
 
       instances_without_tag = instances.select do |instance|
-        # instance does not have tag || tag >= Date.today
+        value = instance.no_reserved_instance_tag_value
+        !value || (date <= value)
       end
 
       [instances_with_tag, instances_without_tag]
+    end
+
+    def get_todays_date
+      time = Time.new
+      month = time.month.to_s.length == 1 ? "0" << time.month.to_s : time.month.to_s
+      day = time.day.to_s.length == 1 ? "0" << time.day.to_s : time.day.to_s
+      year = time.year.to_s
+      date = month << "/" << day << "/" << year
+      date
     end
 	end
 end
