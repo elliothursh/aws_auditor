@@ -5,7 +5,7 @@ module AwsAuditor
     extend InstanceHelper
     extend CacheWrapper
 
-    class <<self
+    class << self
       attr_accessor :instances, :reserved_instances
     end
 
@@ -16,6 +16,13 @@ module AwsAuditor
       @instance_type = cache_instance[:cache_node_type]
       @engine = cache_instance[:engine] || cache_instance[:product_description]
       @count = cache_instance[:num_cache_nodes] || cache_instance[:cache_node_count]
+      # tags = cache_instance[:tags]
+
+      # tags.each do |key, value| # go through to see if the tag we're looking for is one of them
+      #   if key == "no-reserved-instance"
+      #     @tag_value = value
+      #   end
+      # end
     end
 
     def to_s
@@ -28,6 +35,10 @@ module AwsAuditor
         next unless instance[:cache_cluster_status].to_s == 'available'
         new(instance)
       end.compact
+    end
+
+    def no_reserved_instance_tag_value
+      @tag_value
     end
 
     def self.get_reserved_instances

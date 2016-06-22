@@ -5,11 +5,11 @@ module AwsAuditor
     extend InstanceHelper
     extend RDSWrapper
 
-    class <<self
+    class << self
       attr_accessor :instances, :reserved_instances
     end
 
-    attr_accessor :id, :name, :multi_az, :instance_type, :engine, :count
+    attr_accessor :id, :name, :multi_az, :instance_type, :engine, :count, :tag_value
     def initialize(rds_instance)
       @id = rds_instance[:db_instance_identifier] || rds_instance[:reserved_db_instances_offering_id]
       @name = rds_instance[:db_instance_identifier] || rds_instance[:db_name]
@@ -17,6 +17,13 @@ module AwsAuditor
       @instance_type = rds_instance[:db_instance_class]
       @engine = rds_instance[:engine] || rds_instance[:product_description]
       @count = rds_instance[:db_instance_count] || 1
+      # tags = rds_instance[:tags]
+
+      # tags.each do |key, value| # go through to see if the tag we're looking for is one of them
+      #   if key == "no-reserved-instance"
+      #     @tag_value = value
+      #   end
+      # end
     end
 
     def to_s
@@ -29,6 +36,10 @@ module AwsAuditor
         next unless instance[:db_instance_status].to_s == 'available'
         new(instance)
       end.compact
+    end
+
+    def no_reserved_instance_tag_value
+      @tag_value
     end
 
     def self.get_reserved_instances

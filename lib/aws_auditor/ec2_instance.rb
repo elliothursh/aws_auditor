@@ -9,7 +9,7 @@ module AwsAuditor
       attr_accessor :instances, :reserved_instances
     end
 
-    attr_accessor :id, :name, :platform, :availability_zone, :instance_type, :count, :stack_name, :no_reserved_instance_tag, :tag_value
+    attr_accessor :id, :name, :platform, :availability_zone, :instance_type, :count, :stack_name, :tag_value
     def initialize(ec2_instance, count=1)
       @id = ec2_instance.id
       @name = nil
@@ -20,10 +20,8 @@ module AwsAuditor
       @stack_name = nil
       tags = ec2_instance.tags.to_h
 
-      @no_reserved_instance_tag = false
       tags.each do |key, value| # go through to see if the tag we're looking for is one of them
         if key == "no-reserved-instance"
-          @no_reserved_instance_tag = true
           @tag_value = value
         end
       end
