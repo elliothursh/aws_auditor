@@ -9,6 +9,6 @@ command 'audit' do |c|
   c.action do |global_options, options, args|
     require_relative '../scripts/audit'
     raise ArgumentError, 'You must specify an AWS account' unless args.first
-    AwsAuditor::Scripts::Audit.execute(args.first,options)
+    AwsAuditor::Scripts::Audit.execute(args, options)
   end
 end

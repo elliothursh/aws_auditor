@@ -9,16 +9,17 @@ module AwsAuditor
         attr_accessor :options
       end
 
-      def self.execute(environment, options=nil)
-        aws(environment)
+      def self.execute(args_array, options=nil)
+        aws(args_array.delete_at(0))
+        tag_name = args_array.delete_at(0) || "no-reserved-instance"
         @options = options
         no_selection = options.values.uniq == [false]
-        output("EC2Instance") if options[:ec2] || no_selection
-        output("RDSInstance") if options[:rds] || no_selection 
-        output("CacheInstance") if options[:cache] || no_selection
+        output("EC2Instance", tag_name) if options[:ec2] || no_selection
+        # output("RDSInstance") if options[:rds] || no_selection 
+        # output("CacheInstance") if options[:cache] || no_selection
       end
 
-      def self.output(class_type)
+      def self.output(class_type, tag_name)
         klass = AwsAuditor.const_get(class_type)
         print "Gathering info, please wait..."; print "\r"
         if options[:instances]
@@ -35,7 +36,7 @@ module AwsAuditor
           puts header(class_type)
           reserved.each{ |key,value| say "<%= color('#{key}: #{value}', :white) %>" }
         else
-          compared = klass.compare
+          compared = klass.compare(tag_name)
           puts header(class_type)
           compared.each{ |key,value| colorize(key,value) }
         end

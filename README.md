@@ -52,7 +52,7 @@ To find discrepancies between number of running instances and purchased instance
 
     $ aws_auditor audit account1
 
-Any running instances that are not matched with a reserved instance with show up as yellow (with the negative number indicating the amount), the reserved instances that are not matched with an running instance will show up in red (with the number indicating the amount), and any reserved instances and running instances that match will show up in green. Any instances in blue have a special hard-coded tag called `no-reserved-instance-tag` and have an asterik, indicating that we intentionally do not want to purchase reserved instances to pair with these running instances.
+Any running instances that are not matched with a reserved instance with show up as yellow (with the negative number indicating the amount), the reserved instances that are not matched with an running instance will show up in red (with the number indicating the amount), and any reserved instances and running instances that match will show up in green. Any instances in blue have a special tag that can either be specified in the audit command (`aws_auditor audit account1 tag_name`) or will be defaulted to `no-reserved-instance-tag`. The blue instances will also have an asterik.
 
 To list information about all running instances in your account, run:
 

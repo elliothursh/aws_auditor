@@ -10,7 +10,7 @@ module AwsAuditor
     end
 
     attr_accessor :id, :name, :platform, :availability_zone, :instance_type, :count, :stack_name, :tag_value
-    def initialize(ec2_instance, count=1)
+    def initialize(ec2_instance, tag_name, count=1)
       @id = ec2_instance.id
       @name = nil
       @platform = platform_helper(ec2_instance)
@@ -21,7 +21,7 @@ module AwsAuditor
       tags = ec2_instance.tags.to_h
 
       tags.each do |key, value| # go through to see if the tag we're looking for is one of them
-        if key == "no-reserved-instance"
+        if key == tag_name
           @tag_value = value
         end
       end
@@ -31,13 +31,13 @@ module AwsAuditor
       "#{@platform} #{@availability_zone} #{@instance_type}"
     end
 
-    def self.get_instances
+    def self.get_instances(tag_name)
       return @instances if @instances
       @instances = ec2.instances.map do |instance|
         next unless instance.status.to_s == 'running'
-        new(instance)
+        new(instance, tag_name)
       end.compact
-      get_more_info
+      get_more_info(tag_name)
     end
 
     def no_reserved_instance_tag_value
@@ -77,8 +77,8 @@ module AwsAuditor
     end
     private :platform_helper
 
-    def self.get_more_info
-      get_instances.each do |instance|
+    def self.get_more_info(tag_name)
+      get_instances(tag_name).each do |instance|
         tags = ec2.client.describe_tags(:filters => [{:name => "resource-id", :values => [instance.id]}])[:tag_set]
         tags = Hash[tags.map { |tag| [tag[:key], tag[:value]]}.compact]
         instance.name = tags["Name"]

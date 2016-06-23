@@ -27,10 +27,10 @@ module AwsAuditor
       instance_hash
     end
 
-    def compare
+    def compare(tag_name)
       date = get_todays_date
       differences = Hash.new()
-      instances = get_instances
+      instances = get_instances(tag_name)
       instances_with_tag = filter_instances_with_tags(instances, date).first
       instances_without_tag = filter_instances_with_tags(instances, date).last
       instance_hash = instance_count_hash(instances_without_tag)
