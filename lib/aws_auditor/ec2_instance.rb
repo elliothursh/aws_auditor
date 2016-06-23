@@ -44,11 +44,11 @@ module AwsAuditor
       @tag_value
     end
 
-    def self.get_reserved_instances
+    def self.get_reserved_instances(tag_name)
       return @reserved_instances if @reserved_instances
       @reserved_instances = ec2.reserved_instances.map do |ri|
         next unless ri.state == 'active'
-        new(ri, ri.instance_count)
+        new(ri, tag_name, ri.instance_count)
       end.compact
     end
 
