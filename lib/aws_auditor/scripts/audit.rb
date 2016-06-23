@@ -15,7 +15,7 @@ module AwsAuditor
         no_selection = options.values.uniq == [false]
         output("EC2Instance") if options[:ec2] || no_selection
         output("RDSInstance") if options[:rds] || no_selection
-        # output("CacheInstance") if options[:cache] || no_selection
+        output("CacheInstance") if options[:cache] || no_selection
       end
 
       def self.output(class_type)
