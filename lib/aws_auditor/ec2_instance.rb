@@ -10,14 +10,24 @@ module AwsAuditor
     end
 
     attr_accessor :id, :name, :platform, :availability_zone, :instance_type, :count, :stack_name
-    def initialize(ec2_instance, count=1)
-      @id = ec2_instance.id
-      @name = nil
-      @platform = platform_helper(ec2_instance)
-      @availability_zone = ec2_instance.availability_zone
-      @instance_type = ec2_instance.instance_type
-      @count = count
-      @stack_name = nil
+    def initialize(ec2_instance, reserved, count=1)
+      if reserved
+        @id = ec2_instance.reserved_instances_id
+        @name = nil
+        @platform = platform_helper(ec2_instance, reserved)
+        @availability_zone = ec2_instance.availability_zone
+        @instance_type = ec2_instance.instance_type
+        @count = count
+        @stack_name = nil
+      else
+        @id = ec2_instance.instance_id
+        @name = nil
+        @platform = platform_helper(ec2_instance, reserved)
+        @availability_zone = ec2_instance.placement.availability_zone
+        @instance_type = ec2_instance.instance_type
+        @count = count
+        @stack_name = nil
+      end
     end
 
     def to_s
@@ -26,24 +36,26 @@ module AwsAuditor
 
     def self.get_instances
       return @instances if @instances
-      @instances = ec2.instances.map do |instance|
-        next unless instance.status.to_s == 'running'
-        new(instance)
-      end.compact
+      @instances = ec2.describe_instances.reservations.map do |reservation|
+        reservation.instances.map do |instance|
+          next unless instance.state.name == 'running'
+          new(instance, false)
+        end.compact
+      end.flatten.compact
       get_more_info
     end
 
     def self.get_reserved_instances
       return @reserved_instances if @reserved_instances
-      @reserved_instances = ec2.reserved_instances.map do |ri|
+      @reserved_instances = ec2.describe_reserved_instances.reserved_instances.map do |ri|
         next unless ri.state == 'active'
-        new(ri, ri.instance_count)
+        new(ri, true, ri.instance_count)
       end.compact
     end
 
-    def platform_helper(ec2_instance)
-      if ec2_instance.class.to_s == 'AWS::EC2::Instance'
-        if ec2_instance.vpc? 
+    def platform_helper(ec2_instance, reserved)
+      if !reserved
+        if ec2_instance.vpc_id
           return 'VPC'
         elsif ec2_instance.platform
           if ec2_instance.platform.downcase.include? 'windows' 
@@ -54,8 +66,8 @@ module AwsAuditor
         else
           return 'Linux'
         end
-      elsif ec2_instance.class.to_s == 'AWS::EC2::ReservedInstances'
-        if ec2_instance.product_description.downcase.include? 'vpc' 
+      elsif reserved
+        if ec2_instance.product_description.downcase.include? 'vpc'
           return 'VPC'
         elsif ec2_instance.product_description.downcase.include? 'windows'
           return 'Windows'
@@ -68,7 +80,7 @@ module AwsAuditor
 
     def self.get_more_info
       get_instances.each do |instance|
-        tags = ec2.client.describe_tags(:filters => [{:name => "resource-id", :values => [instance.id]}])[:tag_set]
+        tags = ec2.describe_tags(:filters => [{:name => "resource-id", :values => [instance.id]}]).tags
         tags = Hash[tags.map { |tag| [tag[:key], tag[:value]]}.compact]
         instance.name = tags["Name"]
         instance.stack_name = tags["opsworks:stack"]

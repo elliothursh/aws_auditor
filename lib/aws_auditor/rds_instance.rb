@@ -10,13 +10,20 @@ module AwsAuditor
     end
 
     attr_accessor :id, :name, :multi_az, :instance_type, :engine, :count
-    def initialize(rds_instance)
-      @id = rds_instance[:db_instance_identifier] || rds_instance[:reserved_db_instances_offering_id]
-      @name = rds_instance[:db_instance_identifier] || rds_instance[:db_name]
-      @multi_az = rds_instance[:multi_az] ? "Multi-AZ" : "Single-AZ"
-      @instance_type = rds_instance[:db_instance_class]
-      @engine = rds_instance[:engine] || rds_instance[:product_description]
-      @count = rds_instance[:db_instance_count] || 1
+    def initialize(rds_instance, reserved)
+      if reserved
+        @id = rds_instance.reserved_db_instances_offering_id
+        @multi_az = rds_instance.multi_az ? "Multi-AZ" : "Single-AZ"
+        @instance_type = rds_instance.db_instance_class
+        @engine = rds_instance.product_description
+        @count = 1
+      else
+        @id = rds_instance.db_instance_identifier
+        @multi_az = rds_instance.multi_az ? "Multi-AZ" : "Single-AZ"
+        @instance_type = rds_instance.db_instance_class
+        @engine = rds_instance.engine
+        @count = 1
+      end
     end
 
     def to_s
@@ -25,17 +32,17 @@ module AwsAuditor
 
     def self.get_instances
       return @instances if @instances
-      @instances = rds.describe_db_instances[:db_instances].map do |instance|
-        next unless instance[:db_instance_status].to_s == 'available'
-        new(instance)
+      @instances = rds.describe_db_instances.db_instances.map do |instance|
+        next unless instance.db_instance_status.to_s == 'available'
+        new(instance, false)
       end.compact
     end
 
     def self.get_reserved_instances
       return @reserved_instances if @reserved_instances
-      @reserved_instances = rds.describe_reserved_db_instances[:reserved_db_instances].map do |instance|
-        next unless instance[:state].to_s == 'active'
-        new(instance)
+      @reserved_instances = rds.describe_reserved_db_instances.reserved_db_instances.map do |instance|
+        next unless instance.state.to_s == 'active'
+        new(instance, true)
       end.compact
     end
 

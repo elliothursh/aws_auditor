@@ -2,11 +2,15 @@ require_relative './aws'
 require_relative './google'
 
 module AwsAuditor
+  attr_accessor :creds
+
   module AWSWrapper
     attr_accessor :aws
 
     def aws(environment)
-      @aws ||= AwsAuditor::AWSSDK.configuration(environment)
+      # @aws ||= AwsAuditor::AWSSDK.configuration(environment)
+      aws = AwsAuditor::AWSSDK.authenticate(environment)
+      Aws.config.update({region: 'us-east-1', credentials: aws})
     end
   end
 
@@ -14,7 +18,7 @@ module AwsAuditor
     attr_accessor :ec2
 
     def ec2
-      @ec2 ||= AWS::EC2.new
+      @ec2 ||= Aws::EC2::Client.new(region: 'us-east-1')
     end
   end
 
@@ -22,7 +26,7 @@ module AwsAuditor
     attr_accessor :opsworks
 
     def opsworks
-      @opsworks ||= AWS::OpsWorks.new.client
+      @opsworks ||= Aws::OpsWorks::Client.new(region: 'us-east-1')
     end
   end
 
@@ -30,7 +34,7 @@ module AwsAuditor
     attr_accessor :rds
 
     def rds
-      @rds ||= AWS::RDS.new.client
+      @rds ||= Aws::RDS::Client.new(region: 'us-east-1')
     end
   end
     
@@ -38,7 +42,7 @@ module AwsAuditor
     attr_accessor :cache
 
     def cache
-      @cache ||= AWS::ElastiCache.new.client
+      @cache ||= Aws::ElastiCache::Client.new(region: 'us-east-1')
     end
   end
 

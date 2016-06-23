@@ -14,13 +14,13 @@ module AwsAuditor
         @options = options
         no_selection = options.values.uniq == [false]
         output("EC2Instance") if options[:ec2] || no_selection
-        output("RDSInstance") if options[:rds] || no_selection 
-        output("CacheInstance") if options[:cache] || no_selection
+        output("RDSInstance") if options[:rds] || no_selection
+        # output("CacheInstance") if options[:cache] || no_selection
       end
 
       def self.output(class_type)
         klass = AwsAuditor.const_get(class_type)
-        print "Gathering info, please wait..."; print "\r"
+        puts "Gathering info, please wait..."#; print "\r"
         if options[:instances]
           instances = klass.instance_count_hash(klass.get_instances)
           puts header(class_type)

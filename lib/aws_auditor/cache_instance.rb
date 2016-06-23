@@ -24,7 +24,7 @@ module AwsAuditor
 
     def self.get_instances
       return @instances if @instances
-      @instances = cache.describe_cache_clusters[:cache_clusters].map do |instance|
+      @instances = cache.describe_cache_clusters.each do |instance|
         next unless instance[:cache_cluster_status].to_s == 'available'
         new(instance)
       end.compact
@@ -32,7 +32,7 @@ module AwsAuditor
 
     def self.get_reserved_instances
       return @reserved_instances if @reserved_instances
-      @reserved_instances = cache.describe_reserved_cache_nodes[:reserved_cache_nodes].map do |instance|
+      @reserved_instances = cache.describe_reserved_cache_nodes.each do |instance|
         next unless instance[:state].to_s == 'active'
         new(instance)
       end.compact
