@@ -17,20 +17,13 @@ module AwsAuditor
       @instance_type = rds_instance[:db_instance_class]
       @engine = rds_instance[:engine] || rds_instance[:product_description]
       @count = rds_instance[:db_instance_count] || 1
-      # tags = rds_instance[:tags]
-
-      # tags.each do |key, value| # go through to see if the tag we're looking for is one of them
-      #   if key == "no-reserved-instance"
-      #     @tag_value = value
-      #   end
-      # end
     end
 
     def to_s
       "#{engine_helper} #{multi_az} #{instance_type}"
     end
 
-    def self.get_instances
+    def self.get_instances(tag_name)
       return @instances if @instances
       @instances = rds.describe_db_instances[:db_instances].map do |instance|
         next unless instance[:db_instance_status].to_s == 'available'
@@ -42,7 +35,7 @@ module AwsAuditor
       @tag_value
     end
 
-    def self.get_reserved_instances
+    def self.get_reserved_instances(tag_name)
       return @reserved_instances if @reserved_instances
       @reserved_instances = rds.describe_reserved_db_instances[:reserved_db_instances].map do |instance|
         next unless instance[:state].to_s == 'active'
