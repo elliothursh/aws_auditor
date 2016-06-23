@@ -43,5 +43,5 @@ RSpec.configure do |config|
   end
 
   # http://docs.aws.amazon.com/AWSRubySDK/latest/index.html
-  AWS.stub!
+  # AWS.stub!
 end

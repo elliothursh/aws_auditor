@@ -20,7 +20,7 @@ module AwsAuditor
 
       def self.output(class_type)
         klass = AwsAuditor.const_get(class_type)
-        puts "Gathering info, please wait..."#; print "\r"
+        print "Gathering info, please wait..."; print "\r"
         if options[:instances]
           instances = klass.instance_count_hash(klass.get_instances)
           puts header(class_type)
