@@ -8,8 +8,7 @@ module AwsAuditor
     attr_accessor :aws
 
     def aws(environment)
-      aws = AwsAuditor::AWSSDK.authenticate(environment)
-      Aws.config.update({region: 'us-east-1', credentials: aws})
+      AwsAuditor::AWSSDK.authenticate(environment)
     end
   end
 

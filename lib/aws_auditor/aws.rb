@@ -8,10 +8,9 @@ module AwsAuditor
   end
 
   class AWSSDK
-    FILE_NAMES = %w[.aws.yml .fog]
-
     def self.authenticate(environment)
-      Aws::SharedCredentials.new(profile_name: environment)
+      aws = Aws::SharedCredentials.new(profile_name: environment)
+      Aws.config.update({region: 'us-east-1', credentials: aws})
     end
   end
 end
