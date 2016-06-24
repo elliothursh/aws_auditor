@@ -5,28 +5,28 @@ module AwsAuditor
     extend InstanceHelper
     extend EC2Wrapper
 
-    class <<self
+    class << self
       attr_accessor :instances, :reserved_instances
     end
 
     attr_accessor :id, :name, :platform, :availability_zone, :instance_type, :count, :stack_name
     def initialize(ec2_instance, reserved, count=1)
       if reserved
-        @id = ec2_instance.reserved_instances_id
-        @name = nil
-        @platform = platform_helper(ec2_instance, reserved)
-        @availability_zone = ec2_instance.availability_zone
-        @instance_type = ec2_instance.instance_type
-        @count = count
-        @stack_name = nil
+        self.id = ec2_instance.reserved_instances_id
+        self.name = nil
+        self.platform = platform_helper(ec2_instance, reserved)
+        self.availability_zone = ec2_instance.availability_zone
+        self.instance_type = ec2_instance.instance_type
+        self.count = count
+        self.stack_name = nil
       else
-        @id = ec2_instance.instance_id
-        @name = nil
-        @platform = platform_helper(ec2_instance, reserved)
-        @availability_zone = ec2_instance.placement.availability_zone
-        @instance_type = ec2_instance.instance_type
-        @count = count
-        @stack_name = nil
+        self.id = ec2_instance.instance_id
+        self.name = nil
+        self.platform = platform_helper(ec2_instance, reserved)
+        self.availability_zone = ec2_instance.placement.availability_zone
+        self.instance_type = ec2_instance.instance_type
+        self.count = count
+        self.stack_name = nil
       end
     end
 

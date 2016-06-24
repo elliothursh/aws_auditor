@@ -36,6 +36,15 @@ module AwsAuditor
         expect(instances).not_to be_empty
         expect(instances.length).to eq(2)
       end
+
+      it "should have proper variables set" do
+        instances = CacheInstance::get_instances
+        instance = instances.first
+        expect(instance.id).to eq("job-queue-cluster")
+        expect(instance.name).to eq("job-queue-cluster")
+        expect(instance.instance_type).to eq("cache.t2.small")
+        expect(instance.engine).to eq("redis")
+      end
     end
 
     context "for reserved_cache_instances" do
@@ -65,6 +74,15 @@ module AwsAuditor
         reserved_instances = CacheInstance::get_reserved_instances
         expect(reserved_instances).not_to be_empty
         expect(reserved_instances.length).to eq(2)
+      end
+
+      it "should have proper variables set" do
+        instances = CacheInstance::get_reserved_instances
+        instance = instances.first
+        expect(instance.id).to eq("job-queue-cluster")
+        expect(instance.name).to eq("job-queue-cluster")
+        expect(instance.instance_type).to eq("cache.t2.small")
+        expect(instance.engine).to eq("redis")
       end
     end
 
