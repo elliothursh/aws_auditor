@@ -5,24 +5,24 @@ module AwsAuditor
     extend InstanceHelper
     extend RDSWrapper
 
-    class <<self
+    class << self
       attr_accessor :instances, :reserved_instances
     end
 
     attr_accessor :id, :name, :multi_az, :instance_type, :engine, :count
     def initialize(rds_instance, reserved)
       if reserved
-        @id = rds_instance.reserved_db_instances_offering_id
-        @multi_az = rds_instance.multi_az ? "Multi-AZ" : "Single-AZ"
-        @instance_type = rds_instance.db_instance_class
-        @engine = rds_instance.product_description
-        @count = 1
+        self.id = rds_instance.reserved_db_instances_offering_id
+        self.multi_az = rds_instance.multi_az ? "Multi-AZ" : "Single-AZ"
+        self.instance_type = rds_instance.db_instance_class
+        self.engine = rds_instance.product_description
+        self.count = 1
       else
-        @id = rds_instance.db_instance_identifier
-        @multi_az = rds_instance.multi_az ? "Multi-AZ" : "Single-AZ"
-        @instance_type = rds_instance.db_instance_class
-        @engine = rds_instance.engine
-        @count = 1
+        self.id = rds_instance.db_instance_identifier
+        self.multi_az = rds_instance.multi_az ? "Multi-AZ" : "Single-AZ"
+        self.instance_type = rds_instance.db_instance_class
+        self.engine = rds_instance.engine
+        self.count = 1
       end
     end
 
