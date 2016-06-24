@@ -1,0 +1,101 @@
+require "aws_auditor"
+
+module AwsAuditor
+  describe RDSInstance do
+
+    after :each do
+      RDSInstance.instance_variable_set("@instances", nil)
+      RDSInstance.instance_variable_set("@reserved_instances", nil)
+    end
+
+    context "for normal rds_instances" do
+      before :each do
+        rds_instance1 = double('rds_instance', db_instance_identifier: "our-service",
+                                               multi_az: false,
+                                               db_instance_class: "db.t2.small",
+                                               db_instance_status: "available",
+                                               engine: "mysql")
+        rds_instance2 = double('rds_instance', db_instance_identifier: "our-service",
+                                               multi_az: false,
+                                               db_instance_class: "db.m3.large",
+                                               db_instance_status: "available",
+                                               engine: "mysql")
+        db_instances = double('db_instances', db_instances: [rds_instance1, rds_instance2])
+        rds_client = double('rds_client', describe_db_instances: db_instances)
+        allow(RDSInstance).to receive(:rds).and_return(rds_client)
+      end
+
+      it "should make a rds_instance for each instance" do
+        instances = RDSInstance::get_instances
+        expect(instances.first).to be_an_instance_of(RDSInstance)
+        expect(instances.last).to be_an_instance_of(RDSInstance)
+      end
+
+      it "should return an array of rds_instances" do
+        instances = RDSInstance::get_instances
+        expect(instances).not_to be_empty
+        expect(instances.length).to eq(2)
+      end
+    end
+
+    context "for reserved_rds_instances" do
+      before :each do
+        reserved_rds_instance1 = double('reserved_rds_instance', reserved_db_instances_offering_id: "555te4yy-1234-555c-5678-thisisafake!!",
+                                                                 multi_az: false,
+                                                                 db_instance_class: "db.t2.small",
+                                                                 state: "active",
+                                                                 product_description: "mysql")
+        reserved_rds_instance2 = double('reserved_rds_instance', reserved_db_instances_offering_id: "555te4yy-1234-555c-5678-thisisafake!!",
+                                                                 multi_az: false,
+                                                                 db_instance_class: "db.m3.large",
+                                                                 state: "active",
+                                                                 product_description: "postgresql")
+        reserved_db_instances = double('db_instances', reserved_db_instances: [reserved_rds_instance1, reserved_rds_instance2])
+        rds_client = double('rds_client', describe_reserved_db_instances: reserved_db_instances)
+        allow(RDSInstance).to receive(:rds).and_return(rds_client)
+      end
+
+      it "should make a reserved_rds_instance for each instance" do
+        reserved_instances = RDSInstance::get_reserved_instances
+        expect(reserved_instances.first).to be_an_instance_of(RDSInstance)
+        expect(reserved_instances.last).to be_an_instance_of(RDSInstance)
+      end
+
+      it "should make a reserved_rds_instance for each instance" do
+        reserved_instances = RDSInstance::get_reserved_instances
+        expect(reserved_instances).not_to be_empty
+        expect(reserved_instances.length).to eq(2)
+      end
+    end
+
+    context "for returning pretty string formats" do
+      it "should return a string version of the name of the reserved_rds_instance" do
+        reserved_rds_instance = double('reserved_rds_instance', reserved_db_instances_offering_id: "555te4yy-1234-555c-5678-thisisafake!!",
+                                                                multi_az: false,
+                                                                db_instance_class: "db.t2.small",
+                                                                state: "active",
+                                                                product_description: "mysql")
+        reserved_db_instances = double('db_instances', reserved_db_instances: [reserved_rds_instance])
+        rds_client = double('rds_client', describe_reserved_db_instances: reserved_db_instances)
+        allow(RDSInstance).to receive(:rds).and_return(rds_client)
+        reserved_instances = RDSInstance::get_reserved_instances
+        reserved_instance = reserved_instances.first
+        expect(reserved_instance.to_s).to eq("MySQL Single-AZ db.t2.small")
+      end
+
+      it "should return a string version of the name of the rds_instance" do
+        rds_instance = double('rds_instance', db_instance_identifier: "our-service",
+                                              multi_az: false,
+                                              db_instance_class: "db.t2.small",
+                                              db_instance_status: "available",
+                                              engine: "postgresql")
+        db_instances = double('db_instances', db_instances: [rds_instance])
+        rds_client = double('rds_client', describe_db_instances: db_instances)
+        allow(RDSInstance).to receive(:rds).and_return(rds_client)
+        instances = RDSInstance::get_instances
+        instance = instances.first
+        expect(instance.to_s).to eq("PostgreSQL Single-AZ db.t2.small")
+      end
+    end
+  end
+end

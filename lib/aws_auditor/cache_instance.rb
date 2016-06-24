@@ -12,17 +12,17 @@ module AwsAuditor
     attr_accessor :id, :name, :instance_type, :engine, :count
     def initialize(cache_instance, reserved)
       if reserved
-        @id = cache_instance.reserved_cache_node_id
-        @name = cache_instance.reserved_cache_node_id
-        @instance_type = cache_instance.cache_node_type
-        @engine = cache_instance.product_description
-        @count = cache_instance.cache_node_count
+        self.id = cache_instance.reserved_cache_node_id
+        self.name = cache_instance.reserved_cache_node_id
+        self.instance_type = cache_instance.cache_node_type
+        self.engine = cache_instance.product_description
+        self.count = cache_instance.cache_node_count
       else
-        @id = cache_instance.cache_cluster_id
-        @name = cache_instance.cache_cluster_id
-        @instance_type = cache_instance.cache_node_type
-        @engine = cache_instance.engine
-        @count = cache_instance.num_cache_nodes
+        self.id = cache_instance.cache_cluster_id
+        self.name = cache_instance.cache_cluster_id
+        self.instance_type = cache_instance.cache_node_type
+        self.engine = cache_instance.engine
+        self.count = cache_instance.num_cache_nodes
       end
     end
 
