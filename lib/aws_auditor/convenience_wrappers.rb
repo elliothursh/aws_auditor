@@ -16,7 +16,7 @@ module AwsAuditor
     attr_accessor :ec2
 
     def ec2
-      @ec2 ||= Aws::EC2::Client.new(region: 'us-east-1')
+      @ec2 ||= Aws::EC2::Client.new
     end
   end
 
@@ -24,7 +24,7 @@ module AwsAuditor
     attr_accessor :opsworks
 
     def opsworks
-      @opsworks ||= Aws::OpsWorks::Client.new(region: 'us-east-1')
+      @opsworks ||= Aws::OpsWorks::Client.new
     end
   end
 
@@ -32,7 +32,7 @@ module AwsAuditor
     attr_accessor :rds
 
     def rds
-      @rds ||= Aws::RDS::Client.new(region: 'us-east-1')
+      @rds ||= Aws::RDS::Client.new
     end
   end
     
@@ -40,7 +40,7 @@ module AwsAuditor
     attr_accessor :cache
 
     def cache
-      @cache ||= Aws::ElastiCache::Client.new(region: 'us-east-1')
+      @cache ||= Aws::ElastiCache::Client.new
     end
   end
 
