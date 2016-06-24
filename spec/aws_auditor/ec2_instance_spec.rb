@@ -12,24 +12,29 @@ module AwsAuditor
       before :each do
         state = double('state', name: 'running')
         placement = double('placement', availability_zone: "us-east-1d")
+        tag1 = double('tag', key: "cookie", value: "chocolate chip")
+        tag2 = double('tag', key: "ice cream", value: "oreo")
+        instance_tags = [tag1, tag2]
         ec2_instance1 = double('ec2_instance', instance_id: "i-thisisfake",
                                                instance_type: "t2.large",
                                                vpc_id: "vpc-alsofake",
                                                platform: nil,
                                                state: state,
-                                               placement: placement)
+                                               placement: placement,
+                                               tags: instance_tags)
         ec2_instance2 = double('ec2_instance', instance_id: "i-thisisfake",
                                                instance_type: "t2.large",
                                                vpc_id: "vpc-alsofake",
                                                platform: nil,
                                                state: state,
-                                               placement: placement)
+                                               placement: placement,
+                                               tags: instance_tags)
         ec2_reservations = double('ec2_reservations', instances: [ec2_instance1, ec2_instance2])
         ec2_instances = double('ec2_instances', reservations: [ec2_reservations])
         name_tag = { key: "Name", value: "our-app-instance-100" }
         stack_tag = { key: "opsworks:stack", value: "our_app_service_2" }
-        tags = double('tags', tags: [name_tag, stack_tag])
-        ec2_client = double('rds_client', describe_instances: ec2_instances, describe_tags: tags)
+        client_tags = double('tags', tags: [name_tag, stack_tag])
+        ec2_client = double('rds_client', describe_instances: ec2_instances, describe_tags: client_tags)
         allow(EC2Instance).to receive(:ec2).and_return(ec2_client)
       end
 
@@ -103,12 +108,16 @@ module AwsAuditor
       it "should return a string version of the name of the reserved_rds_instance" do
         state = double('state', name: 'running')
         placement = double('placement', availability_zone: "us-east-1d")
+        tag1 = double('tag', key: "cookie", value: "chocolate chip")
+        tag2 = double('tag', key: "ice cream", value: "oreo")
+        instance_tags = [tag1, tag2]
         ec2_instance = double('ec2_instance', instance_id: "i-thisisfake",
                                               instance_type: "t2.large",
                                               vpc_id: "vpc-alsofake",
                                               platform: nil,
                                               state: state,
-                                              placement: placement)
+                                              placement: placement,
+                                              tags: instance_tags)
         ec2_reservations = double('ec2_reservations', instances: [ec2_instance])
         ec2_instances = double('ec2_instances', reservations: [ec2_reservations])
         name_tag = { key: "Name", value: "our-app-instance-100" }
@@ -148,13 +157,13 @@ module AwsAuditor
       end
 
       it "should return a hash where the first element's key is the opsworks:stack name of the instances" do
-        instances = EC2Instance::get_instances("tag_name")
+        instances = EC2Instance::get_instances
         buckets = EC2Instance::bucketize
         expect(buckets.first.first).to eq("our_app_service_2")
       end
 
       it "should return a hash where each element is a list of ec2_instances" do
-        instances = EC2Instance::get_instances("tag_name")
+        instances = EC2Instance::get_instances
         buckets = EC2Instance::bucketize
         expect(buckets).not_to be_empty
         expect(buckets.length).to eq(1)
