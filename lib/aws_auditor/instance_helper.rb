@@ -34,7 +34,7 @@ module AwsAuditor
       instances_with_tag = filter_instances_with_tags(instances, date).first
       instances_without_tag = filter_instances_with_tags(instances, date).last
       instance_hash = instance_count_hash(instances_without_tag)
-      ris = instance_count_hash(get_reserved_instances(tag_name))
+      ris = instance_count_hash(get_reserved_instances)
       instance_hash.keys.concat(ris.keys).uniq.each do |key|
         instance_count = instance_hash.has_key?(key) ? instance_hash[key] : 0
         ris_count = ris.has_key?(key) ? ris[key] : 0
@@ -63,8 +63,7 @@ module AwsAuditor
     def modify_date_value(value)
       year = value.split(//).last(4).join
       rest = value.split(//).first(5).join
-      date = year << "/" << rest
-      date
+      year << "/" << rest
     end
 
     def get_todays_date
@@ -72,8 +71,7 @@ module AwsAuditor
       month = time.month.to_s.length == 1 ? "0" << time.month.to_s : time.month.to_s
       day = time.day.to_s.length == 1 ? "0" << time.day.to_s : time.day.to_s
       year = time.year.to_s
-      date = year << "/" << month << "/" << day
-      date
+      year << "/" << month << "/" << day
     end
 	end
 end

@@ -9,8 +9,8 @@ module AwsAuditor
       attr_accessor :instances, :reserved_instances
     end
 
-    attr_accessor :id, :name, :platform, :availability_zone, :instance_type, :count, :stack_name
-    def initialize(ec2_instance, reserved, count=1)
+    attr_accessor :id, :name, :platform, :availability_zone, :instance_type, :count, :stack_name, :tag_value
+    def initialize(ec2_instance, reserved, tag_name, count=1)
       if reserved
         self.id = ec2_instance.reserved_instances_id
         self.name = nil
@@ -19,13 +19,6 @@ module AwsAuditor
         self.instance_type = ec2_instance.instance_type
         self.count = count
         self.stack_name = nil
-        tags = ec2_instance.tags.to_h
-
-        tags.each do |key, value| # go through to see if the tag we're looking for is one of them
-          if key == tag_name
-            @tag_value = value
-          end
-        end
       else
         self.id = ec2_instance.instance_id
         self.name = nil
@@ -34,11 +27,12 @@ module AwsAuditor
         self.instance_type = ec2_instance.instance_type
         self.count = count
         self.stack_name = nil
-        tags = ec2_instance.tags.to_h
 
-        tags.each do |key, value| # go through to see if the tag we're looking for is one of them
-          if key == tag_name
-            @tag_value = value
+        if tag_name
+          ec2_instance.tags.each do |tag| # go through to see if the tag we're looking for is one of them
+            if tag.key == tag_name
+              self.tag_value = tag.value
+            end
           end
         end
       end
@@ -48,26 +42,26 @@ module AwsAuditor
       "#{platform} #{availability_zone} #{instance_type}"
     end
 
-    def self.get_instances(tag_name)
+    def self.get_instances(tag_name=nil)
       return @instances if @instances
       @instances = ec2.describe_instances.reservations.map do |reservation|
         reservation.instances.map do |instance|
           next unless instance.state.name == 'running'
-          new(instance, false)
+          new(instance, false, tag_name)
         end.compact
       end.flatten.compact
-      get_more_info
+      get_more_info(tag_name)
     end
 
     def no_reserved_instance_tag_value
       @tag_value
     end
 
-    def self.get_reserved_instances(tag_name)
+    def self.get_reserved_instances
       return @reserved_instances if @reserved_instances
       @reserved_instances = ec2.describe_reserved_instances.reserved_instances.map do |ri|
         next unless ri.state == 'active'
-        new(ri, true, ri.instance_count)
+        new(ri, true, nil, ri.instance_count)
       end.compact
     end
 
@@ -96,8 +90,8 @@ module AwsAuditor
     end
     private :platform_helper
 
-    def self.get_more_info
-      get_instances.each do |instance|
+    def self.get_more_info(tag_name)
+      get_instances(tag_name).each do |instance|
         tags = ec2.describe_tags(:filters => [{:name => "resource-id", :values => [instance.id]}]).tags
         tags = Hash[tags.map { |tag| [tag[:key], tag[:value]]}.compact]
         instance.name = tags["Name"]

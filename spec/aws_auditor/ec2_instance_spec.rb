@@ -34,19 +34,19 @@ module AwsAuditor
       end
 
       it "should make an ec2_instance for each instance" do
-        instances = EC2Instance::get_instances
+        instances = EC2Instance::get_instances("tag_name")
         expect(instances.first).to be_an_instance_of(EC2Instance)
         expect(instances.last).to be_an_instance_of(EC2Instance)
       end
 
       it "should return an array of ec2_instances" do
-        instances = EC2Instance::get_instances
+        instances = EC2Instance::get_instances("tag_name")
         expect(instances).not_to be_empty
         expect(instances.length).to eq(2)
       end
 
       it "should have proper variables set" do
-        instances = EC2Instance::get_instances
+        instances = EC2Instance::get_instances("tag_name")
         instance = instances.first
         expect(instance.stack_name).to eq("our_app_service_2")
         expect(instance.name).to eq("our-app-instance-100")
@@ -116,7 +116,7 @@ module AwsAuditor
         tags = double('tags', tags: [name_tag, stack_tag])
         ec2_client = double('rds_client', describe_instances: ec2_instances, describe_tags: tags)
         allow(EC2Instance).to receive(:ec2).and_return(ec2_client)
-        instances = EC2Instance::get_instances
+        instances = EC2Instance::get_instances("tag_name")
         instance = instances.first
         expect(instance.to_s).to eq("VPC us-east-1d t2.large")
       end
@@ -148,13 +148,13 @@ module AwsAuditor
       end
 
       it "should return a hash where the first element's key is the opsworks:stack name of the instances" do
-        instances = EC2Instance::get_instances
+        instances = EC2Instance::get_instances("tag_name")
         buckets = EC2Instance::bucketize
         expect(buckets.first.first).to eq("our_app_service_2")
       end
 
       it "should return a hash where each element is a list of ec2_instances" do
-        instances = EC2Instance::get_instances
+        instances = EC2Instance::get_instances("tag_name")
         buckets = EC2Instance::bucketize
         expect(buckets).not_to be_empty
         expect(buckets.length).to eq(1)

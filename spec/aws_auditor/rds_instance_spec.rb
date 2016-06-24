@@ -26,19 +26,19 @@ module AwsAuditor
       end
 
       it "should make a rds_instance for each instance" do
-        instances = RDSInstance::get_instances
+        instances = RDSInstance::get_instances("tag_name")
         expect(instances.first).to be_an_instance_of(RDSInstance)
         expect(instances.last).to be_an_instance_of(RDSInstance)
       end
 
       it "should return an array of rds_instances" do
-        instances = RDSInstance::get_instances
+        instances = RDSInstance::get_instances("tag_name")
         expect(instances).not_to be_empty
         expect(instances.length).to eq(2)
       end
 
       it "should have proper variables set" do
-        instances = RDSInstance::get_instances
+        instances = RDSInstance::get_instances("tag_name")
         instance = instances.first
         expect(instance.id).to eq("our-service")
         expect(instance.multi_az).to eq("Single-AZ")
@@ -110,7 +110,7 @@ module AwsAuditor
         db_instances = double('db_instances', db_instances: [rds_instance])
         rds_client = double('rds_client', describe_db_instances: db_instances)
         allow(RDSInstance).to receive(:rds).and_return(rds_client)
-        instances = RDSInstance::get_instances
+        instances = RDSInstance::get_instances("tag_name")
         instance = instances.first
         expect(instance.to_s).to eq("PostgreSQL Single-AZ db.t2.small")
       end

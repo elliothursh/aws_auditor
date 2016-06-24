@@ -26,19 +26,19 @@ module AwsAuditor
       end
 
       it "should make a cache_instance for each instance" do
-        instances = CacheInstance::get_instances
+        instances = CacheInstance::get_instances("tag_name")
         expect(instances.first).to be_an_instance_of(CacheInstance)
         expect(instances.last).to be_an_instance_of(CacheInstance)
       end
 
       it "should return an array of cache_instances" do
-        instances = CacheInstance::get_instances
+        instances = CacheInstance::get_instances("tag_name")
         expect(instances).not_to be_empty
         expect(instances.length).to eq(2)
       end
 
       it "should have proper variables set" do
-        instances = CacheInstance::get_instances
+        instances = CacheInstance::get_instances("tag_name")
         instance = instances.first
         expect(instance.id).to eq("job-queue-cluster")
         expect(instance.name).to eq("job-queue-cluster")
@@ -96,7 +96,7 @@ module AwsAuditor
         cache_clusters = double('cache_cluster', cache_clusters: [cache_instance])
         cache_client = double('cache_client', describe_cache_clusters: cache_clusters)
         allow(CacheInstance).to receive(:cache).and_return(cache_client)
-        instances = CacheInstance::get_instances
+        instances = CacheInstance::get_instances("tag_name")
         instance = instances.first
         expect(instance.to_s).to eq("redis cache.t2.small")
       end
