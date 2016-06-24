@@ -70,19 +70,19 @@ module AwsAuditor
         expect(reserved_instances.last).to be_an_instance_of(RDSInstance)
       end
 
-      it "should make a reserved_rds_instance for each instance" do
+      it "should return an array of reserved_rds_instances" do
         reserved_instances = RDSInstance::get_reserved_instances
         expect(reserved_instances).not_to be_empty
         expect(reserved_instances.length).to eq(2)
       end
 
       it "should have proper variables set" do
-        instances = RDSInstance::get_reserved_instances
-        instance = instances.first
-        expect(instance.id).to eq("555te4yy-1234-555c-5678-thisisafake!!")
-        expect(instance.multi_az).to eq("Single-AZ")
-        expect(instance.instance_type).to eq("db.t2.small")
-        expect(instance.engine).to eq("mysql")
+        reserved_instances = RDSInstance::get_reserved_instances
+        reserved_instance = reserved_instances.first
+        expect(reserved_instance.id).to eq("555te4yy-1234-555c-5678-thisisafake!!")
+        expect(reserved_instance.multi_az).to eq("Single-AZ")
+        expect(reserved_instance.instance_type).to eq("db.t2.small")
+        expect(reserved_instance.engine).to eq("mysql")
       end
     end
 

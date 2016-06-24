@@ -77,12 +77,12 @@ module AwsAuditor
       end
 
       it "should have proper variables set" do
-        instances = CacheInstance::get_reserved_instances
-        instance = instances.first
-        expect(instance.id).to eq("job-queue-cluster")
-        expect(instance.name).to eq("job-queue-cluster")
-        expect(instance.instance_type).to eq("cache.t2.small")
-        expect(instance.engine).to eq("redis")
+        reserved_instances = CacheInstance::get_reserved_instances
+        reserved_instance = reserved_instances.first
+        expect(reserved_instance.id).to eq("job-queue-cluster")
+        expect(reserved_instance.name).to eq("job-queue-cluster")
+        expect(reserved_instance.instance_type).to eq("cache.t2.small")
+        expect(reserved_instance.engine).to eq("redis")
       end
     end
 

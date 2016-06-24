@@ -31,7 +31,7 @@ module AwsAuditor
     end
 
     def to_s
-      "#{@platform} #{@availability_zone} #{@instance_type}"
+      "#{platform} #{availability_zone} #{instance_type}"
     end
 
     def self.get_instances
