@@ -81,5 +81,19 @@ module AwsAuditor
       expect(reserved_instances).not_to be_empty
       expect(reserved_instances.length).to eq(2)
     end
+
+    it "should return a string version of the name of the instance" do
+      cache_instance = double('cache_instance', cache_cluster_id: "job-queue-cluster",
+                                                cache_node_type: "cache.t2.small",
+                                                engine: "redis",
+                                                cache_cluster_status: "available",
+                                                num_cache_nodes: 1)
+      cache_clusters = double('cache_cluster', cache_clusters: [cache_instance])
+      cache_client = double('cache_client', describe_cache_clusters: cache_clusters)
+      allow(CacheInstance).to receive(:cache).and_return(cache_client)
+      instances = CacheInstance::get_instances
+      instance = instances.first
+      expect(instance.to_s).to eq("redis cache.t2.small")
+    end
   end
 end

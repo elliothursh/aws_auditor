@@ -5,7 +5,7 @@ module AwsAuditor
     extend InstanceHelper
     extend CacheWrapper
 
-    class <<self
+    class << self
       attr_accessor :instances, :reserved_instances
     end
 
