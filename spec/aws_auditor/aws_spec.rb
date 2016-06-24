@@ -11,14 +11,14 @@ module AwsAuditor
     end
 
     it "should receive new Aws::SharedCredentials" do
-      expect(Aws::SharedCredentials).to receive(:new)
+      expect(Aws::SharedCredentials).to receive(:new).with(profile_name: 'staging')
       AWSSDK::authenticate('staging')
     end
 
     it "should update configs" do
-      creds = {:thing1 => 2, :thing2 => 1}
-      allow(Aws::SharedCredentials).to receive(:new).and_return(creds)
-      expect(Aws.config).to receive(:update).with({region: 'us-east-1', credentials: creds})
+      coffee_types = {:coffee => "cappuccino", :beans => "arabica"}
+      allow(Aws::SharedCredentials).to receive(:new).and_return(coffee_types)
+      expect(Aws.config).to receive(:update).with({region: 'us-east-1', credentials: coffee_types})
       AWSSDK::authenticate('staging')
     end
   end
