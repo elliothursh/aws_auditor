@@ -51,7 +51,7 @@ module AwsAuditor
           new(instance, tag_name)
         end.compact
       end.flatten.compact
-      get_more_info(tag_name)
+      get_more_info
     end
 
     def self.get_reserved_instances
@@ -91,8 +91,8 @@ module AwsAuditor
     end
     private :platform_helper
 
-    def self.get_more_info(tag_name)
-      get_instances(tag_name).each do |instance|
+    def self.get_more_info
+      get_instances.each do |instance|
         tags = ec2.describe_tags(:filters => [{:name => "resource-id", :values => [instance.id]}]).tags
         tags = Hash[tags.map { |tag| [tag[:key], tag[:value]]}.compact]
         instance.name = tags["Name"]
