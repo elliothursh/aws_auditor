@@ -8,68 +8,37 @@ module AwsAuditor
   end
 
   class AWSSDK
-    FILE_NAMES = %w[.aws.yml .fog]
+    def self.authenticate(environment)
+      shared_credentials = Aws::SharedCredentials.new(profile_name: environment)
+      Aws.config.update({region: 'us-east-1', credentials: shared_credentials})
 
-    def self.configuration(environment)
-      @environment = environment
-      load_config
-      if @config[:mfa_serial_number]
-        creds = get_session(@config).credentials
-      else
-        creds = { access_key_id: access_key_id(@config), secret_access_key: secret_access_key(@config) }
-      end
-      AWS.config(creds)
-    end
+      iam = Aws::IAM::Client.new
 
-    def self.access_key_id(config)
-      config[:access_key_id] || config[:aws_access_key_id]
-    end
+       # this will be an array of 0 or 1 because iam.list_mfa_devices.mfa_devices will only return 0 or 1 device per user;
+       # if user doesn't have MFA enabled, then this loop won't even execute
+      iam.list_mfa_devices.mfa_devices.each do |mfadevice|
+        mfa_serial_number = mfadevice.serial_number
+        mfa_token = Output.ask("Enter MFA token: "){ |q|  q.validate = /^\d{6}$/ }
+        session_credentials_hash = get_session(mfa_token,
+                                               mfa_serial_number,
+                                               shared_credentials.credentials.access_key_id,
+                                               shared_credentials.credentials.secret_access_key).credentials
 
-
-    def self.secret_access_key(config)
-      config[:secret_access_key] || config[:aws_secret_access_key]
-    end
-
-    def self.region(config)
-      config[:region] || 'us-east-1'
-    end
-
-    def self.load_config
-      return @config if @config
-      @config = AwsConfig[YAML.load_file(config_path)]
-      if @config.has_key? @environment
-        @config = @config[@environment]
-      else
-        raise MissingEnvironment, "Could not find AWS credentials for #{@environment} environment"
-      end
-      @config
-    end
-
-    def self.config_path
-      if filepath = FILE_NAMES.detect {|filename| File.exists?(filename)}
-        File.join(Dir.pwd, filepath)
-      else
-        old_dir = Dir.pwd
-        Dir.chdir('..')
-        if old_dir != Dir.pwd
-          config_path
-        else
-          puts "Could not find #{FILE_NAMES.join(' or ')}"; exit
-        end
+        session_credentials = Aws::Credentials.new(session_credentials_hash.access_key_id,
+                                                   session_credentials_hash.secret_access_key,
+                                                   session_credentials_hash.session_token)
+        Aws.config.update({region: 'us-east-1', credentials: session_credentials})
       end
     end
 
-    def self.get_mfa_token
-      Output.ask("Enter MFA token: "){ |q|  q.validate = /^\d{6}$/ }
-    end
-
-    def self.get_session(config)
+    def self.get_session(mfa_token, mfa_serial_number, access_key_id, secret_access_key)
       return @session if @session
-      sts = AWS::STS.new(access_key_id: access_key_id(config),
-                         secret_access_key: secret_access_key(config))
-      @session = sts.new_session(serial_number: config[:mfa_serial_number], token_code: get_mfa_token)
+      sts = Aws::STS::Client.new(access_key_id: access_key_id,
+                                 secret_access_key: secret_access_key,
+                                 region: 'us-east-1')
+      @session = sts.get_session_token(duration_seconds: 3600,
+                                       serial_number: mfa_serial_number,
+                                       token_code: mfa_token)
     end
-
-    MissingEnvironment = Class.new(StandardError)
   end
 end
