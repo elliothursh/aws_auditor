@@ -14,12 +14,14 @@ module AwsAuditor
                                                multi_az: false,
                                                db_instance_class: "db.t2.small",
                                                db_instance_status: "available",
-                                               engine: "mysql")
+                                               engine: "mysql",
+                                               class: "Aws::RDS::Types::DBInstance")
         rds_instance2 = double('rds_instance', db_instance_identifier: "our-service",
                                                multi_az: false,
                                                db_instance_class: "db.m3.large",
                                                db_instance_status: "available",
-                                               engine: "mysql")
+                                               engine: "mysql",
+                                               class: "Aws::RDS::Types::DBInstance")
         db_instances = double('db_instances', db_instances: [rds_instance1, rds_instance2])
         rds_client = double('rds_client', describe_db_instances: db_instances)
         allow(RDSInstance).to receive(:rds).and_return(rds_client)
@@ -53,12 +55,14 @@ module AwsAuditor
                                                                  multi_az: false,
                                                                  db_instance_class: "db.t2.small",
                                                                  state: "active",
-                                                                 product_description: "mysql")
+                                                                 product_description: "mysql",
+                                                                 class: "Aws::RDS::Types::ReservedDBInstance")
         reserved_rds_instance2 = double('reserved_rds_instance', reserved_db_instances_offering_id: "555te4yy-1234-555c-5678-thisisafake!!",
                                                                  multi_az: false,
                                                                  db_instance_class: "db.m3.large",
                                                                  state: "active",
-                                                                 product_description: "postgresql")
+                                                                 product_description: "postgresql",
+                                                                 class: "Aws::RDS::Types::ReservedDBInstance")
         reserved_db_instances = double('db_instances', reserved_db_instances: [reserved_rds_instance1, reserved_rds_instance2])
         rds_client = double('rds_client', describe_reserved_db_instances: reserved_db_instances)
         allow(RDSInstance).to receive(:rds).and_return(rds_client)
@@ -92,7 +96,8 @@ module AwsAuditor
                                                                 multi_az: false,
                                                                 db_instance_class: "db.t2.small",
                                                                 state: "active",
-                                                                product_description: "mysql")
+                                                                product_description: "mysql",
+                                                                class: "Aws::RDS::Types::ReservedDBInstance")
         reserved_db_instances = double('db_instances', reserved_db_instances: [reserved_rds_instance])
         rds_client = double('rds_client', describe_reserved_db_instances: reserved_db_instances)
         allow(RDSInstance).to receive(:rds).and_return(rds_client)
@@ -106,7 +111,8 @@ module AwsAuditor
                                               multi_az: false,
                                               db_instance_class: "db.t2.small",
                                               db_instance_status: "available",
-                                              engine: "postgresql")
+                                              engine: "postgresql",
+                                              class: "Aws::RDS::Types::DBInstance")
         db_instances = double('db_instances', db_instances: [rds_instance])
         rds_client = double('rds_client', describe_db_instances: db_instances)
         allow(RDSInstance).to receive(:rds).and_return(rds_client)

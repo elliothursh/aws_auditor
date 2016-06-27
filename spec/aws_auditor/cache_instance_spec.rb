@@ -14,12 +14,14 @@ module AwsAuditor
                                                    cache_node_type: "cache.t2.small",
                                                    engine: "redis",
                                                    cache_cluster_status: "available",
-                                                   num_cache_nodes: 1)
+                                                   num_cache_nodes: 1,
+                                                   class: "Aws::ElastiCache::Types::CacheCluster")
         cache_instance2 = double('cache_instance', cache_cluster_id: "job-queue-cluster",
                                                    cache_node_type: "cache.t2.medium",
                                                    engine: "mysql",
                                                    cache_cluster_status: "available",
-                                                   num_cache_nodes: 1)
+                                                   num_cache_nodes: 1,
+                                                   class: "Aws::ElastiCache::Types::CacheCluster")
         cache_clusters = double('cache_cluster', cache_clusters: [cache_instance1, cache_instance2])
         cache_client = double('cache_client', describe_cache_clusters: cache_clusters)
         allow(CacheInstance).to receive(:cache).and_return(cache_client)
@@ -53,12 +55,14 @@ module AwsAuditor
                                                                      cache_node_type: "cache.t2.small",
                                                                      product_description: "redis",
                                                                      state: "active",
-                                                                     cache_node_count: 1)
+                                                                     cache_node_count: 1,
+                                                                     class: "Aws::ElastiCache::Types::ReservedCacheNode")
         reserved_cache_instance2 = double('reserved_cache_instance', reserved_cache_node_id: "job-queue-cluster",
                                                                      cache_node_type: "cache.t2.medium",
                                                                      product_description: "mysql",
                                                                      state: "active",
-                                                                     cache_node_count: 1)
+                                                                     cache_node_count: 1,
+                                                                     class: "Aws::ElastiCache::Types::ReservedCacheNode")
         reserved_cache_nodes = double('cache_cluster', reserved_cache_nodes: [reserved_cache_instance1, reserved_cache_instance2])
         cache_client = double('cache_client', describe_reserved_cache_nodes: reserved_cache_nodes)
         allow(CacheInstance).to receive(:cache).and_return(cache_client)
@@ -92,7 +96,8 @@ module AwsAuditor
                                                   cache_node_type: "cache.t2.small",
                                                   engine: "redis",
                                                   cache_cluster_status: "available",
-                                                  num_cache_nodes: 1)
+                                                  num_cache_nodes: 1,
+                                                  class: "Aws::ElastiCache::Types::CacheCluster")
         cache_clusters = double('cache_cluster', cache_clusters: [cache_instance])
         cache_client = double('cache_client', describe_cache_clusters: cache_clusters)
         allow(CacheInstance).to receive(:cache).and_return(cache_client)

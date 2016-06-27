@@ -10,14 +10,14 @@ module AwsAuditor
     end
 
     attr_accessor :id, :name, :instance_type, :engine, :count
-    def initialize(cache_instance, reserved)
-      if reserved
+    def initialize(cache_instance)
+      if cache_instance.class.to_s == "Aws::ElastiCache::Types::ReservedCacheNode"
         self.id = cache_instance.reserved_cache_node_id
         self.name = cache_instance.reserved_cache_node_id
         self.instance_type = cache_instance.cache_node_type
         self.engine = cache_instance.product_description
         self.count = cache_instance.cache_node_count
-      else
+      elsif cache_instance.class.to_s == "Aws::ElastiCache::Types::CacheCluster"
         self.id = cache_instance.cache_cluster_id
         self.name = cache_instance.cache_cluster_id
         self.instance_type = cache_instance.cache_node_type
@@ -34,7 +34,7 @@ module AwsAuditor
       return @instances if @instances
       @instances = cache.describe_cache_clusters.cache_clusters.map do |instance|
         next unless instance.cache_cluster_status.to_s == 'available'
-        new(instance, false)
+        new(instance)
       end.compact
     end
 
@@ -42,7 +42,7 @@ module AwsAuditor
       return @reserved_instances if @reserved_instances
       @reserved_instances = cache.describe_reserved_cache_nodes.reserved_cache_nodes.map do |instance|
         next unless instance.state.to_s == 'active'
-        new(instance, true)
+        new(instance)
       end.compact
     end
 

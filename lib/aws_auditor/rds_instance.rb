@@ -10,14 +10,14 @@ module AwsAuditor
     end
 
     attr_accessor :id, :name, :multi_az, :instance_type, :engine, :count
-    def initialize(rds_instance, reserved)
-      if reserved
+    def initialize(rds_instance)
+      if rds_instance.class.to_s == "Aws::RDS::Types::ReservedDBInstance"
         self.id = rds_instance.reserved_db_instances_offering_id
         self.multi_az = rds_instance.multi_az ? "Multi-AZ" : "Single-AZ"
         self.instance_type = rds_instance.db_instance_class
         self.engine = rds_instance.product_description
         self.count = 1
-      else
+      elsif rds_instance.class.to_s == "Aws::RDS::Types::DBInstance"
         self.id = rds_instance.db_instance_identifier
         self.multi_az = rds_instance.multi_az ? "Multi-AZ" : "Single-AZ"
         self.instance_type = rds_instance.db_instance_class
@@ -34,7 +34,7 @@ module AwsAuditor
       return @instances if @instances
       @instances = rds.describe_db_instances.db_instances.map do |instance|
         next unless instance.db_instance_status.to_s == 'available'
-        new(instance, false)
+        new(instance)
       end.compact
     end
 
@@ -42,7 +42,7 @@ module AwsAuditor
       return @reserved_instances if @reserved_instances
       @reserved_instances = rds.describe_reserved_db_instances.reserved_db_instances.map do |instance|
         next unless instance.state.to_s == 'active'
-        new(instance, true)
+        new(instance)
       end.compact
     end
 
