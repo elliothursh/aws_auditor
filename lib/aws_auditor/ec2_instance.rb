@@ -28,8 +28,9 @@ module AwsAuditor
         self.count = count
         self.stack_name = nil
 
+        # go through to see if the tag we're looking for is one of them
         if tag_name
-          ec2_instance.tags.each do |tag| # go through to see if the tag we're looking for is one of them
+          ec2_instance.tags.each do |tag|
             if tag.key == tag_name
               self.tag_value = tag.value
             end

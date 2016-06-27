@@ -30,7 +30,8 @@ module AwsAuditor
           region = "us-east-1" if region == "Multiple"
           arn = "arn:aws:elasticache:#{region}:#{account_id}:cluster:#{self.id}"
 
-          cache.list_tags_for_resource(resource_name: arn).tag_list.each do |tag| # go through to see if the tag we're looking for is one of them
+           # go through to see if the tag we're looking for is one of them
+          cache.list_tags_for_resource(resource_name: arn).tag_list.each do |tag|
             if tag.key == tag_name
               self.tag_value = tag.value
             end
