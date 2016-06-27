@@ -14,7 +14,7 @@ module AwsAuditor
 
       iam = Aws::IAM::Client.new
 
-       # this will be an array of 1 because iam.list_mfa_devices.mfa_devices will only return 0 or 1 device per user;
+       # this will be an array of 0 or 1 because iam.list_mfa_devices.mfa_devices will only return 0 or 1 device per user;
        # if user doesn't have MFA enabled, then this loop won't even execute
       iam.list_mfa_devices.mfa_devices.each do |mfadevice|
         mfa_serial_number = mfadevice.serial_number
