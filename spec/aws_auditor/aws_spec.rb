@@ -25,6 +25,9 @@ module AwsAuditor
 
     context 'with mfa' do
       it "should use MFA if it should" do
+        shared_credentials = double('shared_credentials', access_key_id: 'access_key_id',
+                                                          secret_access_key: 'secret_access_key')
+        shared_creds = double('shared_creds', credentials: shared_credentials)
         cred_double = double('cred_hash', access_key_id: 'access_key_id',
                                           secret_access_key: 'secret_access_key',
                                           session_token: 'session_token')
@@ -38,6 +41,7 @@ module AwsAuditor
         allow(Aws::IAM::Client).to receive(:new).and_return(iam_client)
 
         expect(Aws::Credentials).to receive(:new).and_return(cred_double).at_least(:once)
+        expect(Aws::SharedCredentials).to receive(:new).and_return(shared_creds)
         AWSSDK::authenticate('staging')
       end
     end
