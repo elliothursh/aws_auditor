@@ -15,20 +15,16 @@ module AwsAuditor
       iam = Aws::IAM::Client.new
       iam.list_mfa_devices.mfa_devices.each do |mfadevice|
         mfa_serial_number = mfadevice.serial_number
-        if mfa_serial_number
-          mfa_token = Output.ask("Enter MFA token: "){ |q|  q.validate = /^\d{6}$/ }
+        mfa_token = Output.ask("Enter MFA token: "){ |q|  q.validate = /^\d{6}$/ }
+        session_credentials_hash = get_session(mfa_token,
+                                               mfa_serial_number,
+                                               shared_credentials.credentials.access_key_id,
+                                               shared_credentials.credentials.secret_access_key).credentials
 
-          session_credentials_hash = get_session(mfa_token,
-                                                 mfa_serial_number,
-                                                 shared_credentials.credentials.access_key_id,
-                                                 shared_credentials.credentials.secret_access_key).credentials
-
-          session_credentials = Aws::Credentials.new(session_credentials_hash.access_key_id,
-                                                     session_credentials_hash.secret_access_key,
-                                                     session_credentials_hash.session_token)
-
-          Aws.config.update({region: 'us-east-1', credentials: session_credentials})
-        end
+        session_credentials = Aws::Credentials.new(session_credentials_hash.access_key_id,
+                                                   session_credentials_hash.secret_access_key,
+                                                   session_credentials_hash.session_token)
+        Aws.config.update({region: 'us-east-1', credentials: session_credentials})
       end
     end
 

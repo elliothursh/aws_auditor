@@ -4,8 +4,7 @@ module AwsAuditor
   describe AWSSDK do
     context 'without mfa' do
       before :each do
-        device = double('mfa_device', serial_number: nil)
-        mfa_devices = double('mfa_devices', mfa_devices: [device])
+        mfa_devices = double('mfa_devices', mfa_devices: [])
         iam_client = double('iam_client', list_mfa_devices: mfa_devices)
         allow(Aws::IAM::Client).to receive(:new).and_return(iam_client)
       end
