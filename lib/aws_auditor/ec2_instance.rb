@@ -10,19 +10,19 @@ module AwsAuditor
     end
 
     attr_accessor :id, :name, :platform, :availability_zone, :instance_type, :count, :stack_name, :tag_value
-    def initialize(ec2_instance, reserved, tag_name, count=1)
-      if reserved
+    def initialize(ec2_instance, tag_name, count=1)
+      if ec2_instance.class.to_s == "Aws::EC2::Types::ReservedInstances"
         self.id = ec2_instance.reserved_instances_id
         self.name = nil
-        self.platform = platform_helper(ec2_instance, reserved)
+        self.platform = platform_helper(ec2_instance)
         self.availability_zone = ec2_instance.availability_zone
         self.instance_type = ec2_instance.instance_type
         self.count = count
         self.stack_name = nil
-      else
+      elsif ec2_instance.class.to_s == "Aws::EC2::Types::Instance"
         self.id = ec2_instance.instance_id
         self.name = nil
-        self.platform = platform_helper(ec2_instance, reserved)
+        self.platform = platform_helper(ec2_instance)
         self.availability_zone = ec2_instance.placement.availability_zone
         self.instance_type = ec2_instance.instance_type
         self.count = count
@@ -47,26 +47,26 @@ module AwsAuditor
       @instances = ec2.describe_instances.reservations.map do |reservation|
         reservation.instances.map do |instance|
           next unless instance.state.name == 'running'
-          new(instance, false, tag_name)
+          new(instance, tag_name)
         end.compact
       end.flatten.compact
       get_more_info(tag_name)
-    end
-
-    def no_reserved_instance_tag_value
-      @tag_value
     end
 
     def self.get_reserved_instances
       return @reserved_instances if @reserved_instances
       @reserved_instances = ec2.describe_reserved_instances.reserved_instances.map do |ri|
         next unless ri.state == 'active'
-        new(ri, true, nil, ri.instance_count)
+        new(ri, nil, ri.instance_count)
       end.compact
     end
 
-    def platform_helper(ec2_instance, reserved)
-      if !reserved
+    def no_reserved_instance_tag_value
+      @tag_value
+    end
+
+    def platform_helper(ec2_instance)
+      if ec2_instance.class.to_s == "Aws::EC2::Types::Instance"
         if ec2_instance.vpc_id
           return 'VPC'
         elsif ec2_instance.platform
@@ -78,7 +78,7 @@ module AwsAuditor
         else
           return 'Linux'
         end
-      elsif reserved
+      elsif ec2_instance.class.to_s == "Aws::EC2::Types::ReservedInstances"
         if ec2_instance.product_description.downcase.include? 'vpc'
           return 'VPC'
         elsif ec2_instance.product_description.downcase.include? 'windows'

@@ -11,14 +11,14 @@ module AwsAuditor
     end
 
     attr_accessor :id, :name, :multi_az, :instance_type, :engine, :count, :tag_value
-    def initialize(rds_instance, reserved, account_id=nil, tag_name=nil, rds=nil)
-      if reserved
+    def initialize(rds_instance, account_id=nil, tag_name=nil, rds=nil)
+      if rds_instance.class.to_s == "Aws::RDS::Types::ReservedDBInstance"
         self.id = rds_instance.reserved_db_instances_offering_id
         self.multi_az = rds_instance.multi_az ? "Multi-AZ" : "Single-AZ"
         self.instance_type = rds_instance.db_instance_class
         self.engine = rds_instance.product_description
         self.count = 1
-      else
+      elsif rds_instance.class.to_s == "Aws::RDS::Types::DBInstance"
         self.id = rds_instance.db_instance_identifier
         self.multi_az = rds_instance.multi_az ? "Multi-AZ" : "Single-AZ"
         self.instance_type = rds_instance.db_instance_class
@@ -48,20 +48,20 @@ module AwsAuditor
       account_id = get_account_id
       @instances = rds.describe_db_instances.db_instances.map do |instance|
         next unless instance.db_instance_status.to_s == 'available'
-        new(instance, false, account_id, tag_name, rds)
+        new(instance, account_id, tag_name, rds)
       end.compact
-    end
-
-    def no_reserved_instance_tag_value
-      @tag_value
     end
 
     def self.get_reserved_instances
       return @reserved_instances if @reserved_instances
       @reserved_instances = rds.describe_reserved_db_instances.reserved_db_instances.map do |instance|
         next unless instance.state.to_s == 'active'
-        new(instance, true)
+        new(instance)
       end.compact
+    end
+
+    def no_reserved_instance_tag_value
+      @tag_value
     end
 
     def engine_helper

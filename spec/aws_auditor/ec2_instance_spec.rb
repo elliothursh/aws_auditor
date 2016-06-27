@@ -21,14 +21,16 @@ module AwsAuditor
                                                platform: nil,
                                                state: state,
                                                placement: placement,
-                                               tags: instance_tags)
+                                               tags: instance_tags,
+                                               class: "Aws::EC2::Types::Instance")
         ec2_instance2 = double('ec2_instance', instance_id: "i-thisisfake",
                                                instance_type: "t2.large",
                                                vpc_id: "vpc-alsofake",
                                                platform: nil,
                                                state: state,
                                                placement: placement,
-                                               tags: instance_tags)
+                                               tags: instance_tags,
+                                               class: "Aws::EC2::Types::Instance")
         ec2_reservations = double('ec2_reservations', instances: [ec2_instance1, ec2_instance2])
         ec2_instances = double('ec2_instances', reservations: [ec2_reservations])
         name_tag = { key: "Name", value: "our-app-instance-100" }
@@ -69,13 +71,15 @@ module AwsAuditor
                                                                  product_description: "Linux/UNIX (Amazon VPC)",
                                                                  state: "active",
                                                                  availability_zone: "us-east-1b",
-                                                                 instance_count: 4)
+                                                                 instance_count: 4,
+                                                                 class: "Aws::EC2::Types::ReservedInstances")
         reserved_ec2_instance2 = double('reserved_ec2_instance', reserved_instances_id: "12345-dfas-1234-asdf-thisisalsofake",
                                                                  instance_type: "t2.small",
                                                                  product_description: "Linux/UNIX (Amazon VPC)",
                                                                  state: "active",
                                                                  availability_zone: "us-east-1b",
-                                                                 instance_count: 2)
+                                                                 instance_count: 2,
+                                                                 class: "Aws::EC2::Types::ReservedInstances")
         reserved_ec2_instances = double('reserved_ec2_instances', reserved_instances: [reserved_ec2_instance1, reserved_ec2_instance2])
         ec2_client = double('rds_client', describe_reserved_instances: reserved_ec2_instances)
         allow(EC2Instance).to receive(:ec2).and_return(ec2_client)
@@ -117,7 +121,8 @@ module AwsAuditor
                                               platform: nil,
                                               state: state,
                                               placement: placement,
-                                              tags: instance_tags)
+                                              tags: instance_tags,
+                                              class: "Aws::EC2::Types::Instance")
         ec2_reservations = double('ec2_reservations', instances: [ec2_instance])
         ec2_instances = double('ec2_instances', reservations: [ec2_reservations])
         name_tag = { key: "Name", value: "our-app-instance-100" }
@@ -140,13 +145,15 @@ module AwsAuditor
                                                vpc_id: "vpc-alsofake",
                                                platform: nil,
                                                state: state,
-                                               placement: placement)
+                                               placement: placement,
+                                               class: "Aws::EC2::Types::Instance")
         ec2_instance2 = double('ec2_instance', instance_id: "i-alsofake",
                                                instance_type: "t2.small",
                                                vpc_id: "vpc-alsofake",
                                                platform: nil,
                                                state: state,
-                                               placement: placement)
+                                               placement: placement,
+                                               class: "Aws::EC2::Types::Instance")
         ec2_reservations = double('ec2_reservations', instances: [ec2_instance1, ec2_instance2])
         ec2_instances = double('ec2_instances', reservations: [ec2_reservations])
         name_tag = { key: "Name", value: "our-app-instance-100" }
