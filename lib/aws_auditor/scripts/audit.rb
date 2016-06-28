@@ -11,18 +11,19 @@ module AwsAuditor
       end
 
       def self.execute(args_array, options=nil)
-        aws(args_array.delete_at(0))
+        environment = args_array.delete_at(0)
+        aws(environment)
         slack = args_array.delete_at(0) == "slack=true"
         tag_name = args_array.delete_at(0) || "no-reserved-instance"
         @options = options
         no_selection = options.values.uniq == [false]
         puts "Condensed results from this audit will print into Slack instead of directly to an output." if slack
-        output("EC2Instance", tag_name, slack) if options[:ec2] || no_selection
-        output("RDSInstance", tag_name, slack) if options[:rds] || no_selection
-        output("CacheInstance", tag_name, slack) if options[:cache] || no_selection
+        output("EC2Instance", tag_name, slack, environment) if options[:ec2] || no_selection
+        output("RDSInstance", tag_name, slack, environment) if options[:rds] || no_selection
+        output("CacheInstance", tag_name, slack, environment) if options[:cache] || no_selection
       end
 
-      def self.output(class_type, tag_name, slack)
+      def self.output(class_type, tag_name, slack, environment)
         klass = AwsAuditor.const_get(class_type)
 
         if !slack
@@ -46,7 +47,7 @@ module AwsAuditor
           compared = klass.compare(tag_name)
 
           if slack
-            print_to_slack(compared, class_type)
+            print_to_slack(compared, class_type, environment)
           else
             puts header(class_type)
             compared.each{ |key,value| colorize(key,value) }
@@ -68,7 +69,7 @@ module AwsAuditor
         end
       end
 
-      def self.print_to_slack(instances_hash, class_type)
+      def self.print_to_slack(instances_hash, class_type, environment)
         discrepency_hash = Hash.new
         instances_hash.each do |key, value|
           if !(value == 0) && !(key.include?(" with tag"))
@@ -77,15 +78,15 @@ module AwsAuditor
         end
 
         if discrepency_hash.empty?
-          slack_job = NotifySlack.new("All #{class_type} reserved instances and running instances are up to date.")
+          slack_job = NotifySlack.new("All #{class_type} reserved instances and running instances for #{environment} are up to date.")
           slack_job.perform
         else
-          print_discrepencies(discrepency_hash, class_type)
+          print_discrepencies(discrepency_hash, class_type, environment)
         end
       end
 
-      def self.print_discrepencies(discrepency_hash, class_type)
-        to_print = "Some #{class_type} reserved instances and running instances are out of sync:\n"
+      def self.print_discrepencies(discrepency_hash, class_type, environment)
+        to_print = "Some #{class_type} reserved instances and running instances for #{environment} are out of sync:\n"
         to_print << "#{header(class_type)}\n"
 
         discrepency_hash.each do |key, value|
