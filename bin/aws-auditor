@@ -10,10 +10,18 @@ version AwsAuditor::VERSION
 
 wrap_help_text :verbatim
 
+flag [:config], :desc => 'AwsAuditor config file path', :default_value => AwsAuditor::DefaultPaths.config
+
 program_long_desc """
 DOCUMENTATION
 """
 
 commands_from File.expand_path(File.dirname(__FILE__) + '/../lib/aws_auditor/commands')
+
+pre do |global,command,options,args|
+  AwsAuditor::Config.load(global[:config])
+  AwsAuditor::Config.set_config_options(global)
+  true
+end
 
 exit run(ARGV)
