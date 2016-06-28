@@ -3,6 +3,12 @@ require "aws_auditor"
 module AwsAuditor
   describe CacheInstance do
 
+    before :each do
+      identity = double('identity', account: 123456789)
+      client = double('client', get_caller_identity: identity)
+      allow(Aws::STS::Client).to receive(:new).and_return(client)
+    end
+
     after :each do
       CacheInstance.instance_variable_set("@instances", nil)
       CacheInstance.instance_variable_set("@reserved_instances", nil)
@@ -15,32 +21,37 @@ module AwsAuditor
                                                    engine: "redis",
                                                    cache_cluster_status: "available",
                                                    num_cache_nodes: 1,
+                                                   preferred_availability_zone: "us-east-1d",
                                                    class: "Aws::ElastiCache::Types::CacheCluster")
         cache_instance2 = double('cache_instance', cache_cluster_id: "job-queue-cluster",
                                                    cache_node_type: "cache.t2.medium",
                                                    engine: "mysql",
                                                    cache_cluster_status: "available",
                                                    num_cache_nodes: 1,
+                                                   preferred_availability_zone: "us-east-1d",
                                                    class: "Aws::ElastiCache::Types::CacheCluster")
         cache_clusters = double('cache_cluster', cache_clusters: [cache_instance1, cache_instance2])
-        cache_client = double('cache_client', describe_cache_clusters: cache_clusters)
+        tag1 = double('tag', key: "cookie", value: "chocolate chip")
+        tag2 = double('tag', key: "ice cream", value: "oreo")
+        tags = double('tags', tag_list: [tag1, tag2])
+        cache_client = double('cache_client', describe_cache_clusters: cache_clusters, list_tags_for_resource: tags)
         allow(CacheInstance).to receive(:cache).and_return(cache_client)
       end
 
       it "should make a cache_instance for each instance" do
-        instances = CacheInstance::get_instances
+        instances = CacheInstance::get_instances("tag_name")
         expect(instances.first).to be_an_instance_of(CacheInstance)
         expect(instances.last).to be_an_instance_of(CacheInstance)
       end
 
       it "should return an array of cache_instances" do
-        instances = CacheInstance::get_instances
+        instances = CacheInstance::get_instances("tag_name")
         expect(instances).not_to be_empty
         expect(instances.length).to eq(2)
       end
 
       it "should have proper variables set" do
-        instances = CacheInstance::get_instances
+        instances = CacheInstance::get_instances("tag_name")
         instance = instances.first
         expect(instance.id).to eq("job-queue-cluster")
         expect(instance.name).to eq("job-queue-cluster")
@@ -97,11 +108,15 @@ module AwsAuditor
                                                   engine: "redis",
                                                   cache_cluster_status: "available",
                                                   num_cache_nodes: 1,
+                                                  preferred_availability_zone: "us-east-1d",
                                                   class: "Aws::ElastiCache::Types::CacheCluster")
         cache_clusters = double('cache_cluster', cache_clusters: [cache_instance])
-        cache_client = double('cache_client', describe_cache_clusters: cache_clusters)
+        tag1 = double('tag', key: "cookie", value: "chocolate chip")
+        tag2 = double('tag', key: "ice cream", value: "oreo")
+        tags = double('tags', tag_list: [tag1, tag2])
+        cache_client = double('cache_client', describe_cache_clusters: cache_clusters, list_tags_for_resource: tags)
         allow(CacheInstance).to receive(:cache).and_return(cache_client)
-        instances = CacheInstance::get_instances
+        instances = CacheInstance::get_instances("tag_name")
         instance = instances.first
         expect(instance.to_s).to eq("redis cache.t2.small")
       end
