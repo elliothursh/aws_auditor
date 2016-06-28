@@ -16,15 +16,19 @@ module AwsAuditor
         tag_name = args_array.delete_at(0) || "no-reserved-instance"
         @options = options
         no_selection = options.values.uniq == [false]
-        output("EC2Instance", tag_name) if options[:ec2] || no_selection
-        output("RDSInstance", tag_name) if options[:rds] || no_selection
-        output("CacheInstance", tag_name) if options[:cache] || no_selection
+        puts "Condensed results from this audit will print into Slack instead of directly to an output." if slack
+        output("EC2Instance", tag_name, slack) if options[:ec2] || no_selection
+        output("RDSInstance", tag_name, slack) if options[:rds] || no_selection
+        output("CacheInstance", tag_name, slack) if options[:cache] || no_selection
       end
 
       def self.output(class_type, tag_name, slack)
         klass = AwsAuditor.const_get(class_type)
-        print "Gathering info, please wait..."; print "\r" if !slack
-        puts "The results from this will print into slack instead of directly to an output." if slack
+
+        if !slack
+          print "Gathering info, please wait..."; print "\r"
+        end
+
         if options[:instances]
           date = klass.get_todays_date
           instances = klass.get_instances(tag_name)
@@ -40,9 +44,13 @@ module AwsAuditor
           reserved.each{ |key,value| say "<%= color('#{key}: #{value}', :white) %>" }
         else
           compared = klass.compare(tag_name)
-          puts header(class_type)
-          compared.each{ |key,value| colorize(key,value) } if slack
-          # print_to_slack(compared) if slack
+
+          if slack
+            print_to_slack(compared, class_type)
+          else
+            puts header(class_type)
+            compared.each{ |key,value| colorize(key,value) }
+          end
         end
       end
 
@@ -60,30 +68,31 @@ module AwsAuditor
         end
       end
 
-      def self.print_to_slack(instances_hash)
+      def self.print_to_slack(instances_hash, class_type)
         discrepency_hash = Hash.new
         instances_hash.each do |key, value|
           if !(value == 0) && !(key.include?(" with tag"))
-            discrepency_hash[:key] = value
+            discrepency_hash[key] = value
           end
         end
 
         if discrepency_hash.empty?
-          slack_job = NotifySlack.new("All reserved instances and running instances are up to date.")
+          slack_job = NotifySlack.new("All #{class_type} reserved instances and running instances are up to date.")
           slack_job.perform
         else
-          print_discrepencies.(discrepency_hash)
+          print_discrepencies(discrepency_hash, class_type)
         end
       end
 
-      def self.print_discrepencies(discrepency_hash)
-        to_print = "Some reserved instances and running instances are out of sync:\n"
+      def self.print_discrepencies(discrepency_hash, class_type)
+        to_print = "Some #{class_type} reserved instances and running instances are out of sync:\n"
+        to_print << "#{header(class_type)}\n"
 
         discrepency_hash.each do |key, value|
           to_print << "#{key}: #{value}\n"
         end
 
-        slack_job = NotifySlack.new("All reserved instances and running instances are up to date.")
+        slack_job = NotifySlack.new(to_print)
         slack_job.perform
       end
 
