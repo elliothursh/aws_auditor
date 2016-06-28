@@ -58,14 +58,14 @@ To print a condensed version of the discrepencies to a Slack account, run:
 
     $ aws_auditor audit account1 slack=true
 
-For this to then use your designated channel, username, icon, and webhook, set up a global config file (called `.aws_auditor.yml`) in your home directory. It should look something like this:
+For this option use your designated channel, username, icon, and webhook, set up a global config file (called `.aws_auditor.yml`) in your home directory. The webhook urls for slack can be obtained [here](https://api.slack.com/incoming-webhooks). The config file should look something like this:
 
 ```
 slack:
   username: AWS-Auditor
   icon_url: [AN AWESOME IMAGE]
   channel: "#[AN SUPER COOL CHANNEL]"
-  webhook: [A WEBHOOK URL YOU GOT FROM [HERE](https://api.slack.com/incoming-webhooks)]
+  webhook: [YOUR WEBHOOK URL]
 ```
 
 To list information about all running instances in your account, run:
