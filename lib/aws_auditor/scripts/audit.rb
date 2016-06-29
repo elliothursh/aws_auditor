@@ -70,26 +70,26 @@ module AwsAuditor
       end
 
       def self.print_to_slack(instances_hash, class_type, environment)
-        discrepency_hash = Hash.new
+        discrepancy_hash = Hash.new
         instances_hash.each do |key, value|
           if !(value == 0) && !(key.include?(" with tag"))
-            discrepency_hash[key] = value
+            discrepancy_hash[key] = value
           end
         end
 
-        if discrepency_hash.empty?
+        if discrepancy_hash.empty?
           slack_job = NotifySlack.new("All #{class_type} reserved instances and running instances for #{environment} are up to date.")
           slack_job.perform
         else
-          print_discrepencies(discrepency_hash, class_type, environment)
+          print_discrepancies(discrepancy_hash, class_type, environment)
         end
       end
 
-      def self.print_discrepencies(discrepency_hash, class_type, environment)
+      def self.print_discrepancies(discrepancy_hash, class_type, environment)
         to_print = "Some #{class_type} reserved instances and running instances for #{environment} are out of sync:\n"
         to_print << "#{header(class_type)}\n"
 
-        discrepency_hash.each do |key, value|
+        discrepancy_hash.each do |key, value|
           to_print << "#{key}: #{value}\n"
         end
 

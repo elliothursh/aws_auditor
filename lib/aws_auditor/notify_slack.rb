@@ -13,6 +13,7 @@ module AwsAuditor
       self.text = text
       self.channel = CHANNEL
       self.username = USERNAME
+      self.icon_url = ICON_URL
     end
 
     def perform
