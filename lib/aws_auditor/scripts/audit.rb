@@ -10,14 +10,21 @@ module AwsAuditor
         attr_accessor :options
       end
 
-      def self.execute(args_array, options=nil)
-        environment = args_array.delete_at(0)
+      def self.execute(environment, options=nil)
         aws(environment)
-        slack = args_array.delete_at(0) == "slack=true"
-        tag_name = args_array.delete_at(0) || "no-reserved-instance"
         @options = options
-        no_selection = options.values.uniq == [false]
+
+        if options[:no_tag]
+          tag_name = nil
+        else
+          tag_name = options[:tag]
+        end
+
+        slack = options[:slack]
         puts "Condensed results from this audit will print into Slack instead of directly to an output." if slack
+
+        no_selection = !(options[:ec2] || options[:rds] || options[:cache])
+
         output("EC2Instance", tag_name, slack, environment) if options[:ec2] || no_selection
         output("RDSInstance", tag_name, slack, environment) if options[:rds] || no_selection
         output("CacheInstance", tag_name, slack, environment) if options[:cache] || no_selection
@@ -78,7 +85,7 @@ module AwsAuditor
         end
 
         if discrepancy_hash.empty?
-          slack_job = NotifySlack.new("All #{class_type} reserved instances and running instances for #{environment} are up to date.")
+          slack_job = NotifySlack.new("All #{class_type} instances for #{environment} are up to date.")
           slack_job.perform
         else
           print_discrepancies(discrepancy_hash, class_type, environment)
@@ -86,7 +93,7 @@ module AwsAuditor
       end
 
       def self.print_discrepancies(discrepancy_hash, class_type, environment)
-        to_print = "Some #{class_type} reserved instances and running instances for #{environment} are out of sync:\n"
+        to_print = "Some #{class_type} instances for #{environment} are out of sync:\n"
         to_print << "#{header(class_type)}\n"
 
         discrepancy_hash.each do |key, value|

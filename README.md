@@ -52,17 +52,25 @@ To find discrepancies between number of running instances and purchased instance
 
     $ aws_auditor audit account1
 
-Any running instances that are not matched with a reserved instance with show up as yellow (with the negative number indicating the amount), the reserved instances that are not matched with an running instance will show up in red (with the number indicating the amount), and any reserved instances and running instances that match will show up in green. Any instances in blue with asteriks have a special tag that can either be specified in the audit command (`aws_auditor audit account1 tag_name`) or will be defaulted to `no-reserved-instance-tag`.
+Any running instances that are not matched with a reserved instance with show up as yellow (with the negative number indicating the amount), the reserved instances that are not matched with an running instance will show up in red (with the number indicating the amount), and any reserved instances and running instances that match will show up in green. Any instances in blue with asteriks have a special tag that can either be specified in the audit command or will be defaulted to `no-reserved-instance`.
+
+To specify your own tag name, run:
+
+    $ aws_auditor audit --tag=your_custom_tag account1
+
+If you don't want to use any tag at all, run:
+
+    $ aws_auditor audit --no_tag account1
 
 To print a condensed version of the discrepancies to a Slack account, run:
 
-    $ aws_auditor audit account1 slack=true
+    $ aws_auditor audit --slack account1
 
 For this option use your designated channel, username, icon, and webhook, set up a global config file (called `.aws_auditor.yml`) in your home directory. The webhook urls for slack can be obtained [here](https://api.slack.com/incoming-webhooks). The config file should look something like this:
 
 ```
 slack:
-  username: AWS-Auditor
+  username: [AN AWESOME USERNAME]
   icon_url: [AN AWESOME IMAGE]
   channel: "#[AN SUPER COOL CHANNEL]"
   webhook: [YOUR WEBHOOK URL]

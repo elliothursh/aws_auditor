@@ -28,11 +28,10 @@ module AwsAuditor
     end
 
     def compare(tag_name)
-      date = get_todays_date
       differences = Hash.new()
       instances = get_instances(tag_name)
-      instances_with_tag = filter_instances_with_tags(instances, date).first
-      instances_without_tag = filter_instances_with_tags(instances, date).last
+      instances_with_tag = filter_instances_with_tags(instances)
+      instances_without_tag = filter_instance_without_tags(instances)
       instance_hash = instance_count_hash(instances_without_tag)
       ris = instance_count_hash(get_reserved_instances)
       instance_hash.keys.concat(ris.keys).uniq.each do |key|
@@ -44,34 +43,29 @@ module AwsAuditor
       differences
     end
 
-    def filter_instances_with_tags(instances, date)
-      instances_with_tag = instances.select do |instance|
-        value = instance.no_reserved_instance_tag_value
-        value = modify_date_value(value) if value
-        value && (date < value)
+    # assuming the value of the tag is in the form: 01/01/2000 like a date
+    def filter_instances_with_tags(instances)
+      instances.select do |instance|
+        value = gather_instance_tag_date(instance)
+        value && (Date.today.to_s < value.to_s)
       end
-
-      instances_without_tag = instances.select do |instance|
-        value = instance.no_reserved_instance_tag_value
-        value = modify_date_value(value) if value
-        value.nil? || (date >= value)
-      end
-
-      [instances_with_tag, instances_without_tag]
     end
 
-    def modify_date_value(value)
-      year = value.split(//).last(4).join
-      rest = value.split(//).first(5).join
-      year << "/" << rest
+    # assuming the value of the tag is in the form: 01/01/2000 like a date
+    def filter_instance_without_tags(instances)
+      instances.select do |instance|
+        value = gather_instance_tag_date(instance)
+        value.nil? || (Date.today.to_s >= value.to_s)
+      end
     end
 
-    def get_todays_date
-      time = Time.new
-      month = time.month.to_s.length == 1 ? "0" << time.month.to_s : time.month.to_s
-      day = time.day.to_s.length == 1 ? "0" << time.day.to_s : time.day.to_s
-      year = time.year.to_s
-      year << "/" << month << "/" << day
+    def gather_instance_tag_date(instance)
+      value = instance.no_reserved_instance_tag_value
+      unless value.nil?
+        date_hash = Date._strptime(value, '%m/%d/%Y')
+        value = Date.new(date_hash[:year], date_hash[:mon], date_hash[:mday]) if date_hash
+      end
+      value
     end
 	end
 end
