@@ -29,6 +29,5 @@ module AwsAuditor
       expect(message.webhook).to eq("https://hooks.slack.com/services/totallyrandom/fakewebhookurl")
       expect(message.icon_url).to eq("http://random-picture.jpg")
     end
-    
   end
 end
