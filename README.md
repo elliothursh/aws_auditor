@@ -56,9 +56,9 @@ Any running instances that are not matched with a reserved instance with show up
 
 To specify your own tag name, run:
 
-    $ aws_auditor audit -t account1
+    $ aws_auditor audit --tag=your_custom_tag account1
 
-Then it will ask you for your own custom tag. If you don't want to use any tag at all, run:
+If you don't want to use any tag at all, run:
 
     $ aws_auditor audit -n account1
 

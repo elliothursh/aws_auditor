@@ -13,18 +13,17 @@ module AwsAuditor
         aws(environment)
         @options = options
 
-        if options[:custom_tag] && !options[:no_tag]
-          tag_name = Output.ask("Enter custom tag: "){ |q|  q.validate = /\S+/ }
-        elsif !options[:no_tag]
-          tag_name = "no-reserved-instance"
-        else
+        if options[:no_tag]
           tag_name = nil
+        else
+          tag_name = options[:tag]
         end
 
-        no_selection = options.values.uniq == [false]
-        output("EC2Instance", tag_name) if options[:ec2] || options[:custom_tag] || options[:no_tag] || no_selection
-        output("RDSInstance", tag_name) if options[:rds] || options[:custom_tag]|| options[:no_tag] || no_selection
-        output("CacheInstance", tag_name) if options[:cache] || options[:custom_tag] || options[:no_tag] || no_selection
+        no_selection = !(options[:ec2] || options[:rds] || options[:cache])
+
+        output("EC2Instance", tag_name) if options[:ec2] || no_selection
+        output("RDSInstance", tag_name) if options[:rds] || no_selection
+        output("CacheInstance", tag_name) if options[:cache] || no_selection
       end
 
       def self.output(class_type, tag_name)
