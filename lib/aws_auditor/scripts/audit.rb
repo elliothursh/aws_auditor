@@ -38,18 +38,29 @@ module AwsAuditor
         end
 
         if options[:instances]
-          date = klass.get_todays_date
           instances = klass.get_instances(tag_name)
-          instances_with_tag = klass.filter_instances_with_tags(instances, date).first
-          instances_without_tag = klass.filter_instances_with_tags(instances, date).last
+          instances_with_tag = klass.filter_instances_with_tags(instances)
+          instances_without_tag = klass.filter_instance_without_tags(instances)
           instance_hash = klass.instance_count_hash(instances_without_tag)
           klass.add_instances_with_tag_to_hash(instances_with_tag, instance_hash)
-          puts header(class_type)
-          instance_hash.each{ |key,value| say "<%= color('#{key}: #{value}', :white) %>" }
+
+          if slack
+            print_to_slack(instance_hash, class_type, environment)
+          else
+            puts header(class_type)
+            instance_hash.each{ |key,value| say "<%= color('#{key}: #{value}', :white) %>" }
+          end
+
         elsif options[:reserved]
           reserved = klass.instance_count_hash(klass.get_reserved_instances)
-          puts header(class_type)
-          reserved.each{ |key,value| say "<%= color('#{key}: #{value}', :white) %>" }
+
+          if slack
+            print_to_slack(reserved, class_type, environment)
+          else
+            puts header(class_type)
+            reserved.each{ |key,value| say "<%= color('#{key}: #{value}', :white) %>" }
+          end
+
         else
           compared = klass.compare(tag_name)
 
