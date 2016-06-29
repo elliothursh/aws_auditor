@@ -30,10 +30,9 @@ module AwsAuditor
         klass = AwsAuditor.const_get(class_type)
         print "Gathering info, please wait..."; print "\r"
         if options[:instances]
-          date = klass.get_todays_date
           instances = klass.get_instances(tag_name)
-          instances_with_tag = klass.filter_instances_with_tags(instances, date).first
-          instances_without_tag = klass.filter_instances_with_tags(instances, date).last
+          instances_with_tag = klass.filter_instances_with_tags(instances)
+          instances_without_tag = klass.filter_instance_without_tags(instances)
           instance_hash = klass.instance_count_hash(instances_without_tag)
           klass.add_instances_with_tag_to_hash(instances_with_tag, instance_hash)
           puts header(class_type)
