@@ -15,7 +15,12 @@ module AwsAuditor
 
     context "after loading a config file" do
       before do
-        config_file = {"domain"=>"example_domain", "slack"=>{"slack_option"=>true, "username"=>"Rspec Tester", "icon_url"=>"http://fake.url", "channel"=>"#test-channel", "webhook"=>"https://slack.web.hook"}}
+        config_file = {"domain" => "example_domain",
+                       "slack" => {"slack_option"=>true,
+                                   "username" => "Rspec Tester",
+                                   "icon_url" => "http://fake.url",
+                                   "channel" => "#test-channel",
+                                   "webhook" => "https://slack.web.hook"}}
         allow(YAML).to receive(:load_file).and_return(config_file)
         allow(File).to receive(:exist?).and_return(true)
         AwsAuditor::Config.load("dummy/path")
