@@ -7,6 +7,7 @@ require_relative 'aws_auditor/stack'
 require_relative 'aws_auditor/google_sheet'
 require_relative 'aws_auditor/output'
 require_relative 'aws_auditor/config'
+require_relative 'aws_auditor/notify_slack'
 
 module AwsAuditor
 

@@ -38,10 +38,16 @@ module AwsAuditor
         config
       end
 
-      def set_config_options(opts = {})
-        data.merge! opts
+      def set_config_options(opts)
+        opts.each{ |key,value| set_config_option key, value }
         config
       end
+
+      def set_config_option(key, value)
+        define_singleton_method(key.to_sym){ data[key.to_sym] }
+        data.merge!({key.to_sym => value})
+      end
+      private :set_config_option
 
       def data
         self.config_data ||= {}
@@ -54,15 +60,13 @@ module AwsAuditor
       private :default_value
 
       def method_missing(method, args=false)
-        return data[method] if data[method]
-        return default_value(method) if default_value(method)
         nil
       end
       private :method_missing
 
       def load_config(file)
         raise MissingConfig, "Missing configuration file: #{file}" unless File.exist?(file)
-        self.config_data = symbolize_keys(YAML.load_file(file)) rescue {}
+        symbolize_keys(YAML.load_file(file)).each{ |key,value| set_config_option key, value }
       end
       private :load_config
 
@@ -85,7 +89,5 @@ module AwsAuditor
       private :symbolize_keys
 
     end
-
-    MissingConfig = Class.new(StandardError)
   end
 end
