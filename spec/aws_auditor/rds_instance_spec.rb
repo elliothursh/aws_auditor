@@ -3,6 +3,12 @@ require "aws_auditor"
 module AwsAuditor
   describe RDSInstance do
 
+    before :each do
+      identity = double('identity', account: 123456789)
+      client = double('client', get_caller_identity: identity)
+      allow(Aws::STS::Client).to receive(:new).and_return(client)
+    end
+
     after :each do
       RDSInstance.instance_variable_set("@instances", nil)
       RDSInstance.instance_variable_set("@reserved_instances", nil)
@@ -15,32 +21,37 @@ module AwsAuditor
                                                db_instance_class: "db.t2.small",
                                                db_instance_status: "available",
                                                engine: "mysql",
+                                               availability_zone: "us-east-1a",
                                                class: "Aws::RDS::Types::DBInstance")
         rds_instance2 = double('rds_instance', db_instance_identifier: "our-service",
                                                multi_az: false,
                                                db_instance_class: "db.m3.large",
                                                db_instance_status: "available",
                                                engine: "mysql",
+                                               availability_zone: "us-east-1a",
                                                class: "Aws::RDS::Types::DBInstance")
         db_instances = double('db_instances', db_instances: [rds_instance1, rds_instance2])
-        rds_client = double('rds_client', describe_db_instances: db_instances)
+        tag1 = double('tag', key: "cookie", value: "chocolate chip")
+        tag2 = double('tag', key: "ice cream", value: "oreo")
+        tags = double('tags', tag_list: [tag1, tag2])
+        rds_client = double('rds_client', describe_db_instances: db_instances, list_tags_for_resource: tags)
         allow(RDSInstance).to receive(:rds).and_return(rds_client)
       end
 
       it "should make a rds_instance for each instance" do
-        instances = RDSInstance::get_instances
+        instances = RDSInstance::get_instances("tag_name")
         expect(instances.first).to be_an_instance_of(RDSInstance)
         expect(instances.last).to be_an_instance_of(RDSInstance)
       end
 
       it "should return an array of rds_instances" do
-        instances = RDSInstance::get_instances
+        instances = RDSInstance::get_instances("tag_name")
         expect(instances).not_to be_empty
         expect(instances.length).to eq(2)
       end
 
       it "should have proper variables set" do
-        instances = RDSInstance::get_instances
+        instances = RDSInstance::get_instances("tag_name")
         instance = instances.first
         expect(instance.id).to eq("our-service")
         expect(instance.multi_az).to eq("Single-AZ")
@@ -112,11 +123,15 @@ module AwsAuditor
                                               db_instance_class: "db.t2.small",
                                               db_instance_status: "available",
                                               engine: "postgresql",
+                                              availability_zone: "us-east-1a",
                                               class: "Aws::RDS::Types::DBInstance")
         db_instances = double('db_instances', db_instances: [rds_instance])
-        rds_client = double('rds_client', describe_db_instances: db_instances)
+        tag1 = double('tag', key: "cookie", value: "chocolate chip")
+        tag2 = double('tag', key: "ice cream", value: "oreo")
+        tags = double('tags', tag_list: [tag1, tag2])
+        rds_client = double('rds_client', describe_db_instances: db_instances, list_tags_for_resource: tags)
         allow(RDSInstance).to receive(:rds).and_return(rds_client)
-        instances = RDSInstance::get_instances
+        instances = RDSInstance::get_instances("tag_name")
         instance = instances.first
         expect(instance.to_s).to eq("PostgreSQL Single-AZ db.t2.small")
       end

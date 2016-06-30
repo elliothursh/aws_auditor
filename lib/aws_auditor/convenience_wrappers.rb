@@ -5,10 +5,14 @@ module AwsAuditor
   attr_accessor :creds
 
   module AWSWrapper
-    attr_accessor :aws
+    attr_accessor :aws, :account_id
 
     def aws(environment)
       AwsAuditor::AWSSDK.authenticate(environment)
+    end
+
+    def get_account_id
+      @account_id ||= Aws::STS::Client.new.get_caller_identity.account
     end
   end
 

@@ -5,7 +5,7 @@ module AwsAuditor
     extend OpsWorksWrapper
     extend EC2Wrapper
 
-    class <<self
+    class << self
       attr_accessor :instances, :stacks
     end
 
