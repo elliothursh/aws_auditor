@@ -1,15 +1,36 @@
+require 'spec_helper'
 require 'aws_auditor'
 
 module AwsAuditor
   describe Config do
-    context "Before loading a config file" do
-      it "unset config key methods should return nil" do
-        expect(AwsAuditor::Config.something).to eql(nil)
-      end
 
-      it "manually setting a key should create a corresponding method that returns the value" do
+    context "#set_config_options" do
+      it "should create a corresponding method that returns the value" do
         AwsAuditor::Config.set_config_options(test: "something")
         expect(AwsAuditor::Config.test).to eql("something")
+      end
+
+      it "setting a new key should return the entire config hash" do
+        items = AwsAuditor::Config.config.count
+        expect(AwsAuditor::Config.set_config_options(test1: "something_else").count).to eql(items + 1)
+        expect(AwsAuditor::Config.set_config_options(test2: "something else").count).to eql(items + 2)
+      end
+    end
+
+    context "#config_data" do
+      it "should be a private method" do
+        expect(AwsAuditor::Config).not_to respond_to(:config_data)
+      end
+    end
+
+    context "config key methods" do
+      it "should return nil when not set" do
+        expect(AwsAuditor::Config.doesnt_exist).to eql(nil)
+      end
+
+      it "should return the config value when set" do
+        AwsAuditor::Config.set_config_options(new_value: "testing")
+        expect(AwsAuditor::Config.new_value).to eql("testing")
       end
     end
 
