@@ -20,7 +20,7 @@ commands_from File.expand_path(File.dirname(__FILE__) + '/../lib/aws_auditor/com
 
 pre do |global,command,options,args|
   AwsAuditor::Config.load(global[:config])
-  AwsAuditor::Config.set_config_options(global)
+  AwsAuditor::Config.merge! global
   true
 end
 
