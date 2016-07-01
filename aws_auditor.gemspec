@@ -24,6 +24,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'highline', '~> 1.6'
   spec.add_dependency 'google_drive', '~> 1.0.0.pre2'
   spec.add_dependency 'slack-notifier'
+  spec.add_dependency 'rack', '1.3.0'
 
   spec.add_development_dependency "bundler", "~> 1.7"
   spec.add_development_dependency "rake", "~> 10.0"
