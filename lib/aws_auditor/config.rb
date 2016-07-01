@@ -38,7 +38,7 @@ module AwsAuditor
       private :method_missing
 
       def load_config(file)
-        raise MissingConfig, "Missing configuration file: #{file}  Run 'cloudcover help'" unless File.exist?(file)
+        raise MissingConfig, "Missing configuration file: #{file}" unless File.exist?(file)
         YAML.load_file(file).each{ |key,value| config_data.assign_property(key, value) }
       end
       private :load_config
