@@ -13,6 +13,8 @@ module AwsAuditor
       def self.execute(environment, options=nil)
         aws(environment)
         @options = options
+        slack = options[:slack]
+        no_selection = !(options[:ec2] || options[:rds] || options[:cache])
 
         if options[:no_tag]
           tag_name = nil
@@ -20,22 +22,24 @@ module AwsAuditor
           tag_name = options[:tag]
         end
 
-        slack = options[:slack]
-        puts "Condensed results from this audit will print into Slack instead of directly to an output." if slack
-
-        no_selection = !(options[:ec2] || options[:rds] || options[:cache])
-
-        output("EC2Instance", tag_name, slack, environment) if options[:ec2] || no_selection
-        output("RDSInstance", tag_name, slack, environment) if options[:rds] || no_selection
-        output("CacheInstance", tag_name, slack, environment) if options[:cache] || no_selection
-      end
-
-      def self.output(class_type, tag_name, slack, environment)
-        klass = AwsAuditor.const_get(class_type)
-
         if !slack
           print "Gathering info, please wait..."; print "\r"
+        else
+          puts "Condensed results from this audit will print into Slack instead of directly to an output."
         end
+
+        data = gather_data("EC2Instance", tag_name) if options[:ec2] || no_selection
+        print_data(slack, environment, data, "EC2Instance") if options[:ec2] || no_selection
+
+        data = gather_data("RDSInstance", tag_name) if options[:rds] || no_selection
+        print_data(slack, environment, data, "RDSInstance") if options[:ec2] || no_selection
+
+        data = gather_data("CacheInstance", tag_name) if options[:cache] || no_selection
+        print_data(slack, environment, data, "CacheInstance") if options[:ec2] || no_selection
+      end
+
+      def self.gather_data(class_type, tag_name)
+        klass = AwsAuditor.const_get(class_type)
 
         if options[:instances]
           instances = klass.get_instances(tag_name)
@@ -43,37 +47,27 @@ module AwsAuditor
           instances_without_tag = klass.filter_instance_without_tags(instances)
           instance_hash = klass.instance_count_hash(instances_without_tag)
           klass.add_instances_with_tag_to_hash(instances_with_tag, instance_hash)
-
-          if slack
-            print_to_slack(instance_hash, class_type, environment)
-          else
-            puts header(class_type)
-            instance_hash.each{ |key,value| say "<%= color('#{key}: #{value}', :white) %>" }
-          end
-
+          return instance_hash
         elsif options[:reserved]
-          reserved = klass.instance_count_hash(klass.get_reserved_instances)
-
-          if slack
-            print_to_slack(reserved, class_type, environment)
-          else
-            puts header(class_type)
-            reserved.each{ |key,value| say "<%= color('#{key}: #{value}', :white) %>" }
-          end
-
+          return klass.instance_count_hash(klass.get_reserved_instances)
         else
-          compared = klass.compare(tag_name)
-
-          if slack
-            print_to_slack(compared, class_type, environment)
-          else
-            puts header(class_type)
-            compared.each{ |key,value| colorize(key,value) }
-          end
+          return klass.compare(tag_name)
         end
       end
 
-      def self.colorize(key,value)
+      def self.print_data(slack, environment, data, class_type)
+        if slack
+          print_to_slack(data, class_type, environment)
+        elsif options[:reserved] || options[:instances]
+          puts header(class_type)
+          data.each{ |key, value| say "<%= color('#{key}: #{value}', :white) %>" }
+        else
+          puts header(class_type)
+          data.each{ |key, value| colorize(key, value) }
+        end
+      end
+
+      def self.colorize(key, value)
         if key.include?(" with tag")
           k = key.dup # because key is a frozen string right now
           k.slice!(" with tag")
