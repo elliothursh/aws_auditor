@@ -1,3 +1,12 @@
+#### v2.1.0
+* Adding option to print audit results to Slack channel
+
+  > Emma Sax, Matt Krieger: Brian Bergstrom: https://github.com/sportngin/aws_auditor/pull/4
+
+* Adding option to print audit results to Slack channel
+
+  > Emma Sax, Matt Krieger: Brian Bergstrom: https://github.com/sportngin/aws_auditor/pull/4
+
 #### v2.0.0
 * Adding enhancements for taking no-reserved-instance tag into consideration during audit
 
