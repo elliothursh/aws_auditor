@@ -1,4 +1,5 @@
 require 'highline/import'
+require_relative "../notify_slack"
 
 module AwsAuditor
   module Scripts
@@ -12,6 +13,8 @@ module AwsAuditor
       def self.execute(environment, options=nil)
         aws(environment)
         @options = options
+        slack = options[:slack]
+        no_selection = !(options[:ec2] || options[:rds] || options[:cache])
 
         if options[:no_tag]
           tag_name = nil
@@ -19,36 +22,52 @@ module AwsAuditor
           tag_name = options[:tag]
         end
 
-        no_selection = !(options[:ec2] || options[:rds] || options[:cache])
+        if !slack
+          print "Gathering info, please wait..."; print "\r"
+        else
+          puts "Condensed results from this audit will print into Slack instead of directly to an output."
+        end
 
-        output("EC2Instance", tag_name) if options[:ec2] || no_selection
-        output("RDSInstance", tag_name) if options[:rds] || no_selection
-        output("CacheInstance", tag_name) if options[:cache] || no_selection
+        data = gather_data("EC2Instance", tag_name) if options[:ec2] || no_selection
+        print_data(slack, environment, data, "EC2Instance") if options[:ec2] || no_selection
+
+        data = gather_data("RDSInstance", tag_name) if options[:rds] || no_selection
+        print_data(slack, environment, data, "RDSInstance") if options[:ec2] || no_selection
+
+        data = gather_data("CacheInstance", tag_name) if options[:cache] || no_selection
+        print_data(slack, environment, data, "CacheInstance") if options[:ec2] || no_selection
       end
 
-      def self.output(class_type, tag_name)
+      def self.gather_data(class_type, tag_name)
         klass = AwsAuditor.const_get(class_type)
-        print "Gathering info, please wait..."; print "\r"
+
         if options[:instances]
           instances = klass.get_instances(tag_name)
           instances_with_tag = klass.filter_instances_with_tags(instances)
           instances_without_tag = klass.filter_instance_without_tags(instances)
           instance_hash = klass.instance_count_hash(instances_without_tag)
           klass.add_instances_with_tag_to_hash(instances_with_tag, instance_hash)
-          puts header(class_type)
-          instance_hash.each{ |key,value| say "<%= color('#{key}: #{value}', :white) %>" }
+          return instance_hash
         elsif options[:reserved]
-          reserved = klass.instance_count_hash(klass.get_reserved_instances)
-          puts header(class_type)
-          reserved.each{ |key,value| say "<%= color('#{key}: #{value}', :white) %>" }
+          return klass.instance_count_hash(klass.get_reserved_instances)
         else
-          compared = klass.compare(tag_name)
-          puts header(class_type)
-          compared.each{ |key,value| colorize(key,value) }
+          return klass.compare(tag_name)
         end
       end
 
-      def self.colorize(key,value)
+      def self.print_data(slack, environment, data, class_type)
+        if slack
+          print_to_slack(data, class_type, environment)
+        elsif options[:reserved] || options[:instances]
+          puts header(class_type)
+          data.each{ |key, value| say "<%= color('#{key}: #{value}', :white) %>" }
+        else
+          puts header(class_type)
+          data.each{ |key, value| colorize(key, value) }
+        end
+      end
+
+      def self.colorize(key, value)
         if key.include?(" with tag")
           k = key.dup # because key is a frozen string right now
           k.slice!(" with tag")
@@ -60,6 +79,34 @@ module AwsAuditor
         elsif value > 0 
           say "<%= color('#{key}: #{value}', :red) %>"
         end
+      end
+
+      def self.print_to_slack(instances_hash, class_type, environment)
+        discrepancy_hash = Hash.new
+        instances_hash.each do |key, value|
+          if !(value == 0) && !(key.include?(" with tag"))
+            discrepancy_hash[key] = value
+          end
+        end
+
+        if discrepancy_hash.empty?
+          slack_job = NotifySlack.new("All #{class_type} instances for #{environment} are up to date.")
+          slack_job.perform
+        else
+          print_discrepancies(discrepancy_hash, class_type, environment)
+        end
+      end
+
+      def self.print_discrepancies(discrepancy_hash, class_type, environment)
+        to_print = "Some #{class_type} instances for #{environment} are out of sync:\n"
+        to_print << "#{header(class_type)}\n"
+
+        discrepancy_hash.each do |key, value|
+          to_print << "#{key}: #{value}\n"
+        end
+
+        slack_job = NotifySlack.new(to_print)
+        slack_job.perform
       end
 
       def self.header(type, length = 50)

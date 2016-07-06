@@ -21,16 +21,20 @@ Or install it yourself as:
 ## How-to
 
 ### AWS Setup
-Create a `.aws.yml` file in your home directory with the following structure.
+Create an `~/.aws/credentials` file that should have the following structure:
 
-```yaml
----
-account1:
-  access_key_id: 'ACCESS_KEY_ID'
-  secret_access_key: 'SECRET_ACCESS_KEY'
-account2:
-  access_key_id: 'ACCESS_KEY_ID'
-  secret_access_key: 'SECRET_ACCESS_KEY
+```
+[ACCOUNT 1]
+aws_access_key_id = [AWS ACCESS KEY]
+aws_secret_access_key = [SECRET ACCESS KEY]
+
+[ACCOUNT 2]
+aws_access_key_id = [AWS ACCESS KEY]
+aws_secret_access_key = [SECRET ACCESS KEY]
+
+[ACCOUNT 3]
+aws_access_key_id = [AWS ACCESS KEY]
+aws_secret_access_key = [SECRET ACCESS KEY]
 ```
 
 ### Google Setup (optional)
@@ -42,11 +46,13 @@ credentials:
   client_id: 'GOOGLE_CLIENT_ID'
   client_secret: 'GOOGLE_CLIENT_ID'
 file:
-  path: 'DESIRED_PATH_TO_FILE' #optional, creates in root directory otherwise
+  path: 'DESIRED_PATH_TO_FILE' # optional, creates in root directory otherwise
   name: 'NAME_OF_FILE'
 ```
  
 ## Usage
+
+### The Audit Command
 
 To find discrepancies between number of running instances and purchased instances, run:
 
@@ -60,11 +66,29 @@ To specify your own tag name, run:
 
 If you don't want to use any tag at all, run:
 
-    $ aws_auditor audit -n account1
+    $ aws_auditor audit --no_tag account1
+
+To print a condensed version of the discrepancies to a Slack account (instead of printing to the terminal), run:
+
+    $ aws_auditor audit --slack account1
+
+For this option to use a designated channel, username, icon/emoji, and webhook, set up a global config file (called `.aws_auditor.yml`) in your home directory. The webhook urls for slack can be obtained [here](https://api.slack.com/incoming-webhooks). The config file should look something like this:
+
+```
+slack:
+  username: [AN AWESOME USERNAME]
+  icon_url: [AN AWESOME IMAGE]
+  channel: "#[AN SUPER COOL CHANNEL]"
+  webhook: [YOUR WEBHOOK URL]
+```
+
+### The Inspect Command
 
 To list information about all running instances in your account, run:
 
     $ aws_auditor inspect account1
+
+### The Export Command
 
 To export audit information to a Google Spreadsheet, make sure you added a `.google.yml` and run:
 
@@ -72,7 +96,7 @@ To export audit information to a Google Spreadsheet, make sure you added a `.goo
     
 ## Contributing
 
-1. Fork it ( https://github.com/elliothursh/aws_auditor/fork )
+1. Fork it (https://github.com/elliothursh/aws_auditor/fork)
 2. Create your feature branch (`git checkout -b my-new-feature`)
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
