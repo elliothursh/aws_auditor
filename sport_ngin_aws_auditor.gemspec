@@ -23,7 +23,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'gli', '~> 2.10'
   spec.add_dependency 'highline', '~> 1.6'
   spec.add_dependency 'google_drive', '~> 1.0.0.pre2'
-  spec.add_dependency 'slack-notifier'
+  spec.add_dependency 'slack-notifier', '~> 1.5.1'
   spec.add_dependency 'rack', '1.3.0'
   spec.add_dependency 'activesupport', '3.2'
 
