@@ -1,3 +1,8 @@
+#### v3.0.0
+* Rename gem directories and modules
+
+  > Emma Sax: Brian Bergstrom: https://github.com/sportngin/sport_ngin_aws_auditor/pull/6
+
 #### v2.1.0
 * Adding option to print audit results to Slack channel
 
