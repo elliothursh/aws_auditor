@@ -23,8 +23,12 @@ module SportNginAwsAuditor
       end
 
       def load(path)
-        load_config(path)
-        config
+        if File.exist?(path)
+          load_config(path)
+          return config
+        else
+          return {}
+        end
       end
 
       def config_data
@@ -38,7 +42,6 @@ module SportNginAwsAuditor
       private :method_missing
 
       def load_config(file)
-        raise MissingConfig, "Missing configuration file: #{file}" unless File.exist?(file)
         YAML.load_file(file).each{ |key,value| config_data.assign_property(key, value) }
       end
       private :load_config
