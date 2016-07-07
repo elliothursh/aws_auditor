@@ -1,4 +1,4 @@
-github_repo: sportngin/aws_auditor
+github_repo: sportngin/sport_ngin_aws_auditor
 semantic_versioning: true
 branches_to_keep:
 - master

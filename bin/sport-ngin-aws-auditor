@@ -1,0 +1,27 @@
+#!/usr/bin/env ruby
+require 'rubygems'
+require 'gli'
+require_relative '../lib/sport_ngin_aws_auditor'
+
+include GLI::App
+
+program_desc 'Sport Ngin AWS Auditor'
+version SportNginAwsAuditor::VERSION
+
+wrap_help_text :verbatim
+
+flag [:config], :desc => 'SportNginAwsAuditor config file path', :default_value => SportNginAwsAuditor::DefaultPaths.config
+
+program_long_desc """
+DOCUMENTATION
+"""
+
+commands_from File.expand_path(File.dirname(__FILE__) + '/../lib/sport_ngin_aws_auditor/commands')
+
+pre do |global,command,options,args|
+  SportNginAwsAuditor::Config.load(global[:config])
+  SportNginAwsAuditor::Config.merge! global
+  true
+end
+
+exit run(ARGV)
