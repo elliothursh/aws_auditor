@@ -4,7 +4,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'sport_ngin_aws_auditor/version'
 
 Gem::Specification.new do |spec|
-  spec.name          = "sport-ngin-aws_auditor"
+  spec.name          = "sport_ngin_aws_auditor"
   spec.version       = SportNginAwsAuditor::VERSION
   spec.authors       = ["Elliot Hursh", "Emma Sax", "Brian Bergstrom"]
   spec.email         = ["elliothursh@gmail.com", "emma.sax4@gmail.com", "brian.bergstrom@sportngin.com"]

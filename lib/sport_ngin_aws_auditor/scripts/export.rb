@@ -7,7 +7,7 @@ module SportNginAwsAuditor
       extend GoogleWrapper
       extend AWSWrapper
 
-      class <<self
+      class << self
         attr_accessor :ec2_instances, :rds_instances, :cache_instances, :options, :file, :keys_hash, :environment
       end
 
