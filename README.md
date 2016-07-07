@@ -1,4 +1,4 @@
-# AwsAuditor
+# SportNginAwsAuditor
 
 Audits your AWS accounts to find discrepancies between the number of running instances and purchased reserved instances.
 
@@ -7,7 +7,7 @@ Audits your AWS accounts to find discrepancies between the number of running ins
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'aws_auditor'
+gem 'sport_ngin_aws_auditor'
 ```
 
 And then execute:
@@ -16,7 +16,7 @@ And then execute:
 
 Or install it yourself as:
 
-    $ gem install aws_auditor
+    $ gem install sport_ngin_aws_auditor
 
 ## How-to
 
@@ -56,21 +56,21 @@ file:
 
 To find discrepancies between number of running instances and purchased instances, run:
 
-    $ aws_auditor audit account1
+    $ sport_ngin_aws_auditor audit account1
 
-Any running instances that are not matched with a reserved instance with show up as yellow (with the negative number indicating the amount), the reserved instances that are not matched with an running instance will show up in red (with the number indicating the amount), and any reserved instances and running instances that match will show up in green. Any instances in blue with asteriks have a special tag that can either be specified in the audit command or will be defaulted to `no-reserved-instance`.
+Any running instances that are not matched with a reserved instance with show up as yellow (with the negative number indicating the amount), the reserved instances that are not matched with an running instance will show up in red (with the positive number indicating the amount), and any reserved instances and running instances that match will show up in green. Any instances in blue with asteriks have a special tag that can either be specified in the audit command or will be defaulted to `no-reserved-instance`.
 
 To specify your own tag name, run:
 
-    $ aws_auditor audit --tag=your_custom_tag account1
+    $ sport_ngin_aws_auditor audit --tag=your_custom_tag account1
 
 If you don't want to use any tag at all, run:
 
-    $ aws_auditor audit --no_tag account1
+    $ sport_ngin_aws_auditor audit --no_tag account1
 
 To print a condensed version of the discrepancies to a Slack account (instead of printing to the terminal), run:
 
-    $ aws_auditor audit --slack account1
+    $ sport_ngin_aws_auditor audit --slack account1
 
 For this option to use a designated channel, username, icon/emoji, and webhook, set up a global config file (called `.aws_auditor.yml`) in your home directory. The webhook urls for slack can be obtained [here](https://api.slack.com/incoming-webhooks). The config file should look something like this:
 
@@ -86,17 +86,17 @@ slack:
 
 To list information about all running instances in your account, run:
 
-    $ aws_auditor inspect account1
+    $ sport_ngin_aws_auditor inspect account1
 
 ### The Export Command
 
 To export audit information to a Google Spreadsheet, make sure you added a `.google.yml` and run:
 
-    $ aws_auditor export -d account1
+    $ sport_ngin_aws_auditor export -d account1
     
 ## Contributing
 
-1. Fork it (https://github.com/elliothursh/aws_auditor/fork)
+1. Fork it (https://github.com/sportngin/sport_ngin_aws_auditor/fork)
 2. Create your feature branch (`git checkout -b my-new-feature`)
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
