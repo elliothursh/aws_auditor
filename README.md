@@ -39,7 +39,7 @@ aws_secret_access_key = [SECRET ACCESS KEY]
 
 Then this gem will use [AWS Shared Credentials](http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html) with your credentials file. However, if you'd like to run these through either a default profile in your credentials file or through [User Roles](http://docs.aws.amazon.com/IAM/latest/UserGuide/tutorial_cross-account-with-roles.html), then use the flag `aws_roles`:
 
-    $ sport_ngin_aws_auditor --aws_roles [command] account1
+    $ sport-ngin-aws-auditor --aws_roles [command] account1
 
 ### Google Setup (optional)
 You can export audit information to a Google Spreadsheet, but you must first follow “Create a client ID and client secret” on [this page](https://developers.google.com/drive/web/auth/web-server) to get a client ID and client secret for OAuth. Then create a `.google.yml` in your home directory with the following structure.
@@ -60,21 +60,21 @@ file:
 
 To find discrepancies between number of running instances and purchased instances, run:
 
-    $ sport_ngin_aws_auditor audit account1
+    $ sport-ngin-aws-auditor audit account1
 
 Any running instances that are not matched with a reserved instance with show up as yellow (with the negative number indicating the amount), the reserved instances that are not matched with an running instance will show up in red (with the positive number indicating the amount), and any reserved instances and running instances that match will show up in green. Any instances in blue with asteriks have a special tag that can either be specified in the audit command or will be defaulted to `no-reserved-instance`.
 
 To specify your own tag name, run:
 
-    $ sport_ngin_aws_auditor audit --tag=your_custom_tag account1
+    $ sport-ngin-aws-auditor audit --tag=your_custom_tag account1
 
 If you don't want to use any tag at all, run:
 
-    $ sport_ngin_aws_auditor audit --no_tag account1
+    $ sport-ngin-aws-auditor audit --no_tag account1
 
 To print a condensed version of the discrepancies to a Slack account (instead of printing to the terminal), run:
 
-    $ sport_ngin_aws_auditor audit --slack account1
+    $ sport-ngin-aws-auditor audit --slack account1
 
 For this option to use a designated channel, username, icon/emoji, and webhook, set up a global config file that should look like this:
 
@@ -88,7 +88,7 @@ slack:
 
 The default is for the file to be called `.aws_auditor.yml` in your home directory, but to pass in a different path, feel free to pass it in via command line like this:
 
-    $ sport_ngin_aws-auditor --config="/PATH/TO/FILE/slack_file_creds.yml" audit --slack staging
+    $ sport-ngin-aws-auditor --config="/PATH/TO/FILE/slack_file_creds.yml" audit --slack staging
 
 The webhook urls for slack can be obtained [here](https://api.slack.com/incoming-webhooks).
 
@@ -96,13 +96,13 @@ The webhook urls for slack can be obtained [here](https://api.slack.com/incoming
 
 To list information about all running instances in your account, run:
 
-    $ sport_ngin_aws_auditor inspect account1
+    $ sport-ngin-aws-auditor inspect account1
 
 ### The Export Command
 
 To export audit information to a Google Spreadsheet, make sure you added a `.google.yml` and run:
 
-    $ sport_ngin_aws_auditor export -d account1
+    $ sport-ngin-aws-auditor export -d account1
     
 ## Contributing
 
