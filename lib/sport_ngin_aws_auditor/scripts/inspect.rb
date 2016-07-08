@@ -4,8 +4,8 @@ module SportNginAwsAuditor
       extend AWSWrapper
       extend OpsWorksWrapper
 
-      def self.execute(environment, options=nil)
-        aws(environment)
+      def self.execute(environment, options=nil, global_options=nil)
+        aws(environment, global_options[:aws_roles])
         no_selection = options.values.uniq == [false]
         output("EC2Instance") if options[:ec2] || no_selection
         output("RDSInstance") if options[:rds] || no_selection 

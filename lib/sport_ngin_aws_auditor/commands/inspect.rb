@@ -7,6 +7,6 @@ command 'inspect' do |c|
   c.action do |global_options, options, args|
     require_relative '../scripts/inspect'
     raise ArgumentError, 'You must specify an AWS account' unless args.first
-    SportNginAwsAuditor::Scripts::Inspect.execute(args.first,options)
+    SportNginAwsAuditor::Scripts::Inspect.execute(args.first,options, global_options)
   end
 end

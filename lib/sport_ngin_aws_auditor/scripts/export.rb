@@ -13,10 +13,10 @@ module SportNginAwsAuditor
 
       CLASS_TYPES = %w[EC2Instance RDSInstance CacheInstance]
 
-      def self.execute(environment, options = nil)
+      def self.execute(environment, options = nil, global_options = nil)
         @environment = environment
         (puts "Must specify either --drive or --csv"; exit) unless options[:csv] || options[:drive]
-        aws(environment)
+        aws(environment, global_options[:aws_roles])
         print "Gathering info, please wait..."
         all_keys = get_all_keys
         all_info = prepare

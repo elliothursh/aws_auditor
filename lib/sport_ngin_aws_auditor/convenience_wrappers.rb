@@ -7,8 +7,12 @@ module SportNginAwsAuditor
   module AWSWrapper
     attr_accessor :aws, :account_id
 
-    def aws(environment)
-      SportNginAwsAuditor::AWSSDK.authenticate(environment)
+    def aws(environment, roles)
+      if roles
+        SportNginAwsAuditor::AWSSDK.authenticate_with_roles(environment)
+      else
+        SportNginAwsAuditor::AWSSDK.authenticate(environment)
+      end
     end
 
     def get_account_id

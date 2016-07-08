@@ -40,5 +40,9 @@ module SportNginAwsAuditor
                                        serial_number: mfa_serial_number,
                                        token_code: mfa_token)
     end
+
+    def self.authenticate_with_roles(environment)
+        Aws.config.update({region: 'us-east-1'})
+    end
   end
 end
