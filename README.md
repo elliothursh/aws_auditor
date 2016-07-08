@@ -21,7 +21,7 @@ Or install it yourself as:
 ## How-to
 
 ### AWS Setup
-Create an `~/.aws/credentials` file that should have the following structure:
+Either create an `~/.aws/credentials` file that should have the following structure:
 
 ```
 [ACCOUNT 1]
@@ -36,6 +36,10 @@ aws_secret_access_key = [SECRET ACCESS KEY]
 aws_access_key_id = [AWS ACCESS KEY]
 aws_secret_access_key = [SECRET ACCESS KEY]
 ```
+
+Then this gem will use [AWS Shared Credentials](http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html) with your credentials file. However, if you'd like to run these through either a default profile in your credentials file or through [User Roles](http://docs.aws.amazon.com/IAM/latest/UserGuide/tutorial_cross-account-with-roles.html), then use the flag `aws_roles`:
+
+    $ sport_ngin_aws_auditor --aws_roles [command] account1
 
 ### Google Setup (optional)
 You can export audit information to a Google Spreadsheet, but you must first follow “Create a client ID and client secret” on [this page](https://developers.google.com/drive/web/auth/web-server) to get a client ID and client secret for OAuth. Then create a `.google.yml` in your home directory with the following structure.
@@ -72,7 +76,7 @@ To print a condensed version of the discrepancies to a Slack account (instead of
 
     $ sport_ngin_aws_auditor audit --slack account1
 
-For this option to use a designated channel, username, icon/emoji, and webhook, set up a global config file (called `.aws_auditor.yml`) in your home directory. The webhook urls for slack can be obtained [here](https://api.slack.com/incoming-webhooks). The config file should look something like this:
+For this option to use a designated channel, username, icon/emoji, and webhook, set up a global config file that should look like this:
 
 ```
 slack:
@@ -81,6 +85,12 @@ slack:
   channel: "#[AN SUPER COOL CHANNEL]"
   webhook: [YOUR WEBHOOK URL]
 ```
+
+The default is for the file to be called `.aws_auditor.yml` in your home directory, but to pass in a different path, feel free to pass it in via command line like this:
+
+    $ sport_ngin_aws-auditor --config="/PATH/TO/FILE/slack_file_creds.yml" audit --slack staging
+
+The webhook urls for slack can be obtained [here](https://api.slack.com/incoming-webhooks).
 
 ### The Inspect Command
 

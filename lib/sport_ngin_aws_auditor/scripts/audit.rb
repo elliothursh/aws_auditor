@@ -10,8 +10,8 @@ module SportNginAwsAuditor
         attr_accessor :options
       end
 
-      def self.execute(environment, options=nil)
-        aws(environment)
+      def self.execute(environment, options=nil, global_options=nil)
+        aws(environment, global_options[:aws_roles])
         @options = options
         slack = options[:slack]
         no_selection = !(options[:ec2] || options[:rds] || options[:cache])

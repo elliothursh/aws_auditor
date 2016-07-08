@@ -11,6 +11,7 @@ version SportNginAwsAuditor::VERSION
 wrap_help_text :verbatim
 
 flag [:config], :desc => 'SportNginAwsAuditor config file path', :default_value => SportNginAwsAuditor::DefaultPaths.config
+switch [:aws_roles], :desc => 'Use AWS roles instead of an ~/.aws/credentials file'
 
 program_long_desc """
 DOCUMENTATION
