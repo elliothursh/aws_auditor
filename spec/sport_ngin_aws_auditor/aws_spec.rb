@@ -2,7 +2,7 @@ require "sport_ngin_aws_auditor"
 
 module SportNginAwsAuditor
   describe AWSSDK do
-    context 'without mfa' do
+    context 'without mfa without roles' do
       before :each do
         mfa_devices = double('mfa_devices', mfa_devices: [])
         iam_client = double('iam_client', list_mfa_devices: mfa_devices)
@@ -22,7 +22,7 @@ module SportNginAwsAuditor
       end
     end
 
-    context 'with mfa' do
+    context 'with mfa without roles' do
       it "should use MFA if it should" do
         shared_credentials = double('shared_credentials', access_key_id: 'access_key_id',
                                                           secret_access_key: 'secret_access_key')
@@ -42,6 +42,13 @@ module SportNginAwsAuditor
         expect(Aws::Credentials).to receive(:new).and_return(cred_double).at_least(:once)
         expect(Aws::SharedCredentials).to receive(:new).and_return(shared_creds)
         AWSSDK::authenticate('staging')
+      end
+    end
+
+    context 'without mfa with roles' do
+      it "should update configs" do
+        expect(Aws.config).to receive(:update).with({region: 'us-east-1'})
+        AWSSDK::authenticate_with_roles('staging')
       end
     end
   end
