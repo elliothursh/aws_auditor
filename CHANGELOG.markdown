@@ -1,3 +1,4 @@
+#### v3.1.1
 #### v3.1.0
 * Authentication with AWS roles instead of credentials file
 
