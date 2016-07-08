@@ -1,3 +1,8 @@
+#### v3.1.0
+* Authentication with AWS roles instead of credentials file
+
+  > Emma Sax: Brian Bergstrom: https://github.com/sportngin/sport_ngin_aws_auditor/pull/7
+
 #### v3.0.2
 #### v3.0.1
 #### v3.0.0
