@@ -56,7 +56,7 @@ module SportNginAwsAuditor
         expect(instance.id).to eq("our-service")
         expect(instance.multi_az).to eq("Single-AZ")
         expect(instance.instance_type).to eq("db.t2.small")
-        expect(instance.engine).to eq("mysql")
+        expect(instance.engine).to eq("MySQL")
       end
     end
 
@@ -97,7 +97,7 @@ module SportNginAwsAuditor
         expect(reserved_instance.id).to eq("555te4yy-1234-555c-5678-thisisafake!!")
         expect(reserved_instance.multi_az).to eq("Single-AZ")
         expect(reserved_instance.instance_type).to eq("db.t2.small")
-        expect(reserved_instance.engine).to eq("mysql")
+        expect(reserved_instance.engine).to eq("MySQL")
       end
     end
 

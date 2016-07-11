@@ -118,7 +118,7 @@ module SportNginAwsAuditor
         allow(CacheInstance).to receive(:cache).and_return(cache_client)
         instances = CacheInstance::get_instances("tag_name")
         instance = instances.first
-        expect(instance.to_s).to eq("redis cache.t2.small")
+        expect(instance.to_s).to eq("Redis cache.t2.small")
       end
     end
   end

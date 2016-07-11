@@ -26,7 +26,7 @@ module SportNginAwsAuditor
         ec2_instance2 = double('ec2_instance', instance_id: "i-thisisfake",
                                                instance_type: "t2.large",
                                                vpc_id: "vpc-alsofake",
-                                               platform: nil,
+                                               platform: "Windows",
                                                state: state,
                                                placement: placement,
                                                tags: instance_tags,
@@ -36,7 +36,7 @@ module SportNginAwsAuditor
         name_tag = { key: "Name", value: "our-app-instance-100" }
         stack_tag = { key: "opsworks:stack", value: "our_app_service_2" }
         client_tags = double('tags', tags: [name_tag, stack_tag])
-        ec2_client = double('rds_client', describe_instances: ec2_instances, describe_tags: client_tags)
+        ec2_client = double('ec2_client', describe_instances: ec2_instances, describe_tags: client_tags)
         allow(EC2Instance).to receive(:ec2).and_return(ec2_client)
       end
 
@@ -60,7 +60,15 @@ module SportNginAwsAuditor
         expect(instance.id).to eq("i-thisisfake")
         expect(instance.availability_zone).to eq("us-east-1d")
         expect(instance.instance_type).to eq("t2.large")
-        expect(instance.platform).to eq("VPC")
+        expect(instance.platform).to eq("Linux VPC")
+      end
+
+      it "should recognize Windows vs. Linux" do
+        instances = EC2Instance::get_instances("tag_name")
+        instance1 = instances.first
+        instance2 = instances.last
+        expect(instance1.platform).to eq("Linux VPC")
+        expect(instance2.platform).to eq("Windows VPC")
       end
     end
 
@@ -68,7 +76,7 @@ module SportNginAwsAuditor
       before :each do
         reserved_ec2_instance1 = double('reserved_ec2_instance', reserved_instances_id: "12345-dfas-1234-asdf-thisisfake!!",
                                                                  instance_type: "t2.medium",
-                                                                 product_description: "Linux/UNIX (Amazon VPC)",
+                                                                 product_description: "Windows (Amazon VPC)",
                                                                  state: "active",
                                                                  availability_zone: "us-east-1b",
                                                                  instance_count: 4,
@@ -81,7 +89,7 @@ module SportNginAwsAuditor
                                                                  instance_count: 2,
                                                                  class: "Aws::EC2::Types::ReservedInstances")
         reserved_ec2_instances = double('reserved_ec2_instances', reserved_instances: [reserved_ec2_instance1, reserved_ec2_instance2])
-        ec2_client = double('rds_client', describe_reserved_instances: reserved_ec2_instances)
+        ec2_client = double('ec2_client', describe_reserved_instances: reserved_ec2_instances)
         allow(EC2Instance).to receive(:ec2).and_return(ec2_client)
       end
 
@@ -101,15 +109,23 @@ module SportNginAwsAuditor
         reserved_instances = EC2Instance::get_reserved_instances
         reserved_instance = reserved_instances.first
         expect(reserved_instance.id).to eq("12345-dfas-1234-asdf-thisisfake!!")
-        expect(reserved_instance.platform).to eq("VPC")
+        expect(reserved_instance.platform).to eq("Windows VPC")
         expect(reserved_instance.availability_zone).to eq("us-east-1b")
         expect(reserved_instance.instance_type).to eq("t2.medium")
         expect(reserved_instance.count).to eq(4)
       end
+
+      it "should recognize Windows vs. Linux" do
+        reserved_instances = EC2Instance::get_reserved_instances
+        reserved_instance1 = reserved_instances.first
+        reserved_instance2 = reserved_instances.last
+        expect(reserved_instance1.platform).to eq("Windows VPC")
+        expect(reserved_instance2.platform).to eq("Linux VPC")
+      end
     end
 
     context "for returning pretty string formats" do
-      it "should return a string version of the name of the reserved_rds_instance" do
+      it "should return a string version of the name of the reserved_ec2_instance" do
         state = double('state', name: 'running')
         placement = double('placement', availability_zone: "us-east-1d")
         tag1 = double('tag', key: "cookie", value: "chocolate chip")
@@ -128,11 +144,11 @@ module SportNginAwsAuditor
         name_tag = { key: "Name", value: "our-app-instance-100" }
         stack_tag = { key: "opsworks:stack", value: "our_app_service_2" }
         tags = double('tags', tags: [name_tag, stack_tag])
-        ec2_client = double('rds_client', describe_instances: ec2_instances, describe_tags: tags)
+        ec2_client = double('ec2_client', describe_instances: ec2_instances, describe_tags: tags)
         allow(EC2Instance).to receive(:ec2).and_return(ec2_client)
         instances = EC2Instance::get_instances("tag_name")
         instance = instances.first
-        expect(instance.to_s).to eq("VPC us-east-1d t2.large")
+        expect(instance.to_s).to eq("Linux VPC us-east-1d t2.large")
       end
     end
 
@@ -150,7 +166,7 @@ module SportNginAwsAuditor
         ec2_instance2 = double('ec2_instance', instance_id: "i-alsofake",
                                                instance_type: "t2.small",
                                                vpc_id: "vpc-alsofake",
-                                               platform: nil,
+                                               platform: "Windows",
                                                state: state,
                                                placement: placement,
                                                class: "Aws::EC2::Types::Instance")
@@ -159,7 +175,7 @@ module SportNginAwsAuditor
         name_tag = { key: "Name", value: "our-app-instance-100" }
         stack_tag = { key: "opsworks:stack", value: "our_app_service_2" }
         tags = double('tags', tags: [name_tag, stack_tag])
-        ec2_client = double('rds_client', describe_instances: ec2_instances, describe_tags: tags)
+        ec2_client = double('ec2_client', describe_instances: ec2_instances, describe_tags: tags)
         allow(EC2Instance).to receive(:ec2).and_return(ec2_client)
       end
 
@@ -167,6 +183,12 @@ module SportNginAwsAuditor
         instances = EC2Instance::get_instances
         buckets = EC2Instance::bucketize
         expect(buckets.first.first).to eq("our_app_service_2")
+      end
+
+      it "should return a hash where the last element's key is the opsworks:stack name of the instances" do
+        instances = EC2Instance::get_instances
+        buckets = EC2Instance::bucketize
+        expect(buckets.last.first).to eq("our_app_service_2")
       end
 
       it "should return a hash where each element is a list of ec2_instances" do
