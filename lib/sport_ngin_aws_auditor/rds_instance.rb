@@ -16,13 +16,13 @@ module SportNginAwsAuditor
         self.id = rds_instance.reserved_db_instances_offering_id
         self.multi_az = rds_instance.multi_az ? "Multi-AZ" : "Single-AZ"
         self.instance_type = rds_instance.db_instance_class
-        self.engine = rds_instance.product_description
+        self.engine = engine_helper(rds_instance.product_description)
         self.count = 1
       elsif rds_instance.class.to_s == "Aws::RDS::Types::DBInstance"
         self.id = rds_instance.db_instance_identifier
         self.multi_az = rds_instance.multi_az ? "Multi-AZ" : "Single-AZ"
         self.instance_type = rds_instance.db_instance_class
-        self.engine = rds_instance.engine
+        self.engine = engine_helper(rds_instance.engine)
         self.count = 1
 
         if tag_name
@@ -41,7 +41,7 @@ module SportNginAwsAuditor
     end
 
     def to_s
-      "#{engine_helper} #{multi_az} #{instance_type}"
+      "#{engine} #{multi_az} #{instance_type}"
     end
 
     def self.get_instances(tag_name=nil)
@@ -65,7 +65,7 @@ module SportNginAwsAuditor
       @tag_value
     end
 
-    def engine_helper
+    def engine_helper(engine)
       if engine.downcase.include? "post"
         return "PostgreSQL"
       elsif engine.downcase.include? "mysql"

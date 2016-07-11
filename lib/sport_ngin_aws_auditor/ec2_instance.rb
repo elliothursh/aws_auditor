@@ -14,7 +14,7 @@ module SportNginAwsAuditor
       if ec2_instance.class.to_s == "Aws::EC2::Types::ReservedInstances"
         self.id = ec2_instance.reserved_instances_id
         self.name = nil
-        self.platform = platform_helper(ec2_instance)
+        self.platform = platform_helper(ec2_instance.product_description)
         self.availability_zone = ec2_instance.availability_zone
         self.instance_type = ec2_instance.instance_type
         self.count = count
@@ -22,7 +22,7 @@ module SportNginAwsAuditor
       elsif ec2_instance.class.to_s == "Aws::EC2::Types::Instance"
         self.id = ec2_instance.instance_id
         self.name = nil
-        self.platform = platform_helper(ec2_instance)
+        self.platform = platform_helper((ec2_instance.platform || ''), ec2_instance.vpc_id)
         self.availability_zone = ec2_instance.placement.availability_zone
         self.instance_type = ec2_instance.instance_type
         self.count = count
@@ -66,28 +66,20 @@ module SportNginAwsAuditor
       @tag_value
     end
 
-    def platform_helper(ec2_instance)
-      if ec2_instance.class.to_s == "Aws::EC2::Types::Instance"
-        if ec2_instance.vpc_id
-          return 'VPC'
-        elsif ec2_instance.platform
-          if ec2_instance.platform.downcase.include? 'windows' 
-            return 'Windows'
-          else
-            return 'Linux'
-          end
-        else
-          return 'Linux'
-        end
-      elsif ec2_instance.class.to_s == "Aws::EC2::Types::ReservedInstances"
-        if ec2_instance.product_description.downcase.include? 'vpc'
-          return 'VPC'
-        elsif ec2_instance.product_description.downcase.include? 'windows'
-          return 'Windows'
-        else
-          return 'Linux'
-        end
+    def platform_helper(description, vpc=nil)
+      platform = ''
+
+      if description.downcase.include?('windows')
+        platform << 'Windows'
+      elsif description.downcase.include?('linux') || description.empty?
+        platform << 'Linux'
       end
+
+      if description.downcase.include?('vpc') || vpc
+        platform << ' VPC'
+      end
+
+      return platform
     end
     private :platform_helper
 
