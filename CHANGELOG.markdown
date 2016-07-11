@@ -1,3 +1,8 @@
+#### v3.2.0
+* Proper recognition of windows/linux/vpc instances
+
+  > Emma Sax: Andy Fleener: https://github.com/sportngin/sport_ngin_aws_auditor/pull/8
+
 #### v3.1.2
 #### v3.1.0
 * Authentication with AWS roles instead of credentials file
