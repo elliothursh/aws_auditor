@@ -41,7 +41,7 @@ module SportNginAwsAuditor
     end
 
     def to_s
-      "#{engine} #{instance_type}"
+      "#{engine.capitalize} #{instance_type}"
     end
 
     def self.get_instances(tag_name=nil)

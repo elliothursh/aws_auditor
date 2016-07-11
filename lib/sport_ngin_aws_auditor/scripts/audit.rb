@@ -32,10 +32,10 @@ module SportNginAwsAuditor
         print_data(slack, environment, data, "EC2Instance") if options[:ec2] || no_selection
 
         data = gather_data("RDSInstance", tag_name) if options[:rds] || no_selection
-        print_data(slack, environment, data, "RDSInstance") if options[:ec2] || no_selection
+        print_data(slack, environment, data, "RDSInstance") if options[:rds] || no_selection
 
         data = gather_data("CacheInstance", tag_name) if options[:cache] || no_selection
-        print_data(slack, environment, data, "CacheInstance") if options[:ec2] || no_selection
+        print_data(slack, environment, data, "CacheInstance") if options[:cache] || no_selection
       end
 
       def self.gather_data(class_type, tag_name)
