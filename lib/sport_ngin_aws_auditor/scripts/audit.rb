@@ -88,7 +88,9 @@ module SportNginAwsAuditor
           end
         end
 
-        if discrepancy_hash.empty?
+        true_discrepancies = discrepancy_hash.dup.select{ |key, value| !key.include?(" with tag")}
+
+        if true_discrepancies.empty?
           slack_job = NotifySlack.new("All #{class_type} instances for #{environment} are up to date.")
           slack_job.perform
         else
