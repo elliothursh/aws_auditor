@@ -39,19 +39,19 @@ module SportNginAwsAuditor
       end
 
       it "should make a cache_instance for each instance" do
-        instances = CacheInstance::get_instances("tag_name")
+        instances = CacheInstance.get_instances("tag_name")
         expect(instances.first).to be_an_instance_of(CacheInstance)
         expect(instances.last).to be_an_instance_of(CacheInstance)
       end
 
       it "should return an array of cache_instances" do
-        instances = CacheInstance::get_instances("tag_name")
+        instances = CacheInstance.get_instances("tag_name")
         expect(instances).not_to be_empty
         expect(instances.length).to eq(2)
       end
 
       it "should have proper variables set" do
-        instances = CacheInstance::get_instances("tag_name")
+        instances = CacheInstance.get_instances("tag_name")
         instance = instances.first
         expect(instance.id).to eq("job-queue-cluster")
         expect(instance.name).to eq("job-queue-cluster")
@@ -80,19 +80,19 @@ module SportNginAwsAuditor
       end
 
       it "should make a reserved_cache_instance for each instance" do
-        reserved_instances = CacheInstance::get_reserved_instances
+        reserved_instances = CacheInstance.get_reserved_instances
         expect(reserved_instances.first).to be_an_instance_of(CacheInstance)
         expect(reserved_instances.last).to be_an_instance_of(CacheInstance)
       end
 
       it "should return an array of reserved_cache_instances" do
-        reserved_instances = CacheInstance::get_reserved_instances
+        reserved_instances = CacheInstance.get_reserved_instances
         expect(reserved_instances).not_to be_empty
         expect(reserved_instances.length).to eq(2)
       end
 
       it "should have proper variables set" do
-        reserved_instances = CacheInstance::get_reserved_instances
+        reserved_instances = CacheInstance.get_reserved_instances
         reserved_instance = reserved_instances.first
         expect(reserved_instance.id).to eq("job-queue-cluster")
         expect(reserved_instance.name).to eq("job-queue-cluster")
@@ -116,7 +116,7 @@ module SportNginAwsAuditor
         tags = double('tags', tag_list: [tag1, tag2])
         cache_client = double('cache_client', describe_cache_clusters: cache_clusters, list_tags_for_resource: tags)
         allow(CacheInstance).to receive(:cache).and_return(cache_client)
-        instances = CacheInstance::get_instances("tag_name")
+        instances = CacheInstance.get_instances("tag_name")
         instance = instances.first
         expect(instance.to_s).to eq("Redis cache.t2.small")
       end
