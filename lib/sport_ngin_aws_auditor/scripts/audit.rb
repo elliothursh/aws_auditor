@@ -69,9 +69,8 @@ module SportNginAwsAuditor
 
       def self.colorize(key, value)
         if key.include?(" with tag")
-          k = key.dup # because key is a frozen string right now
-          k.slice!(" with tag")
-          say "<%= color('#{k}: #{"*" << value.to_s}', :blue) %>"
+          key, value = modify_tag_prints(key, value)
+          say "<%= color('#{key}: #{value}', :blue) %>"
         elsif value < 0
           say "<%= color('#{key}: #{value}', :yellow) %>"
         elsif value == 0
@@ -84,7 +83,7 @@ module SportNginAwsAuditor
       def self.print_to_slack(instances_hash, class_type, environment)
         discrepancy_hash = Hash.new
         instances_hash.each do |key, value|
-          if !(value == 0) && !(key.include?(" with tag"))
+          if value != 0
             discrepancy_hash[key] = value
           end
         end
@@ -102,11 +101,20 @@ module SportNginAwsAuditor
         to_print << "#{header(class_type)}\n"
 
         discrepancy_hash.each do |key, value|
+          if key.include?(" with tag")
+            key, value = modify_tag_prints(key, value)
+          end
           to_print << "#{key}: #{value}\n"
         end
 
         slack_job = NotifySlack.new(to_print)
         slack_job.perform
+      end
+
+      def self.modify_tag_prints(key, value)
+        key = key.dup # because key is a frozen string right now
+        key.slice!(" with tag")
+        return key, "*" << value.to_s
       end
 
       def self.header(type, length = 50)
