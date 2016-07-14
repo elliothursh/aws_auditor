@@ -1,3 +1,8 @@
+#### v3.3.0
+* Slack should print instances that have tags
+
+  > Emma Sax: Andy Fleener: https://github.com/sportngin/sport_ngin_aws_auditor/pull/12
+
 #### v3.2.0
 * Proper recognition of windows/linux/vpc instances
 
