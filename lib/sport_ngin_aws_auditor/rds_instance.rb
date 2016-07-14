@@ -28,7 +28,6 @@ module SportNginAwsAuditor
     end
 
     attr_accessor :id, :name, :multi_az, :instance_type, :engine, :count, :tag_value
-
     def initialize(rds_instance, account_id=nil, tag_name=nil, rds=nil)
       if rds_instance.class.to_s == "Aws::RDS::Types::ReservedDBInstance"
         self.id = rds_instance.reserved_db_instances_offering_id

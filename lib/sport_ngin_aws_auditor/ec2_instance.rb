@@ -7,6 +7,49 @@ module SportNginAwsAuditor
 
     class << self
       attr_accessor :instances, :reserved_instances
+
+      def get_instances(tag_name=nil)
+        return @instances if @instances
+        @instances = ec2.describe_instances.reservations.map do |reservation|
+          reservation.instances.map do |instance|
+            next unless instance.state.name == 'running'
+            new(instance, tag_name)
+          end.compact
+        end.flatten.compact
+        get_more_info
+      end
+
+      def get_reserved_instances
+        return @reserved_instances if @reserved_instances
+        @reserved_instances = ec2.describe_reserved_instances.reserved_instances.map do |ri|
+          next unless ri.state == 'active'
+          new(ri, nil, ri.instance_count)
+        end.compact
+      end
+
+      def bucketize
+        buckets = {}
+        get_instances.map do |instance|
+          name = instance.stack_name || instance.name
+          if name
+            buckets[name] = [] unless buckets.has_key? name
+            buckets[name] << instance
+          else
+            puts "Could not sort #{instance.id}, as it has no stack_name or name"
+          end
+        end
+        buckets.sort_by{|k,v| k }
+      end
+
+      def get_more_info
+        get_instances.each do |instance|
+          tags = ec2.describe_tags(:filters => [{:name => "resource-id", :values => [instance.id]}]).tags
+          tags = Hash[tags.map { |tag| [tag[:key], tag[:value]]}.compact]
+          instance.name = tags["Name"]
+          instance.stack_name = tags["opsworks:stack"]
+        end
+      end
+      private :get_more_info
     end
 
     attr_accessor :id, :name, :platform, :availability_zone, :instance_type, :count, :stack_name, :tag_value
@@ -43,25 +86,6 @@ module SportNginAwsAuditor
       "#{platform} #{availability_zone} #{instance_type}"
     end
 
-    def self.get_instances(tag_name=nil)
-      return @instances if @instances
-      @instances = ec2.describe_instances.reservations.map do |reservation|
-        reservation.instances.map do |instance|
-          next unless instance.state.name == 'running'
-          new(instance, tag_name)
-        end.compact
-      end.flatten.compact
-      get_more_info
-    end
-
-    def self.get_reserved_instances
-      return @reserved_instances if @reserved_instances
-      @reserved_instances = ec2.describe_reserved_instances.reserved_instances.map do |ri|
-        next unless ri.state == 'active'
-        new(ri, nil, ri.instance_count)
-      end.compact
-    end
-
     def no_reserved_instance_tag_value
       @tag_value
     end
@@ -82,30 +106,5 @@ module SportNginAwsAuditor
       return platform
     end
     private :platform_helper
-
-    def self.get_more_info
-      get_instances.each do |instance|
-        tags = ec2.describe_tags(:filters => [{:name => "resource-id", :values => [instance.id]}]).tags
-        tags = Hash[tags.map { |tag| [tag[:key], tag[:value]]}.compact]
-        instance.name = tags["Name"]
-        instance.stack_name = tags["opsworks:stack"]
-      end
-    end
-    private_class_method :get_more_info
-
-    def self.bucketize
-      buckets = {}
-      get_instances.map do |instance|
-        name = instance.stack_name || instance.name
-        if name
-          buckets[name] = [] unless buckets.has_key? name
-          buckets[name] << instance
-        else
-          puts "Could not sort #{instance.id}, as it has no stack_name or name"
-        end
-      end
-      buckets.sort_by{|k,v| k }
-    end
-
   end
 end
