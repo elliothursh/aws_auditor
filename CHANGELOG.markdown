@@ -1,3 +1,8 @@
+#### v3.3.1
+* Fixing bug where Slack will print discrepancies if there are *only* tagged instances
+
+  > Emma Sax: : https://github.com/sportngin/sport_ngin_aws_auditor/pull/13
+
 #### v3.3.0
 * Slack should print instances that have tags
 
