@@ -39,19 +39,19 @@ module SportNginAwsAuditor
       end
 
       it "should make a rds_instance for each instance" do
-        instances = RDSInstance::get_instances("tag_name")
+        instances = RDSInstance.get_instances("tag_name")
         expect(instances.first).to be_an_instance_of(RDSInstance)
         expect(instances.last).to be_an_instance_of(RDSInstance)
       end
 
       it "should return an array of rds_instances" do
-        instances = RDSInstance::get_instances("tag_name")
+        instances = RDSInstance.get_instances("tag_name")
         expect(instances).not_to be_empty
         expect(instances.length).to eq(2)
       end
 
       it "should have proper variables set" do
-        instances = RDSInstance::get_instances("tag_name")
+        instances = RDSInstance.get_instances("tag_name")
         instance = instances.first
         expect(instance.id).to eq("our-service")
         expect(instance.multi_az).to eq("Single-AZ")
@@ -66,13 +66,15 @@ module SportNginAwsAuditor
                                                                  multi_az: false,
                                                                  db_instance_class: "db.t2.small",
                                                                  state: "active",
-                                                                 product_description: "mysql",
+                                                                 product_description: "oracle-se2 (byol)",
+                                                                 db_instance_count: 1,
                                                                  class: "Aws::RDS::Types::ReservedDBInstance")
         reserved_rds_instance2 = double('reserved_rds_instance', reserved_db_instances_offering_id: "555te4yy-1234-555c-5678-thisisafake!!",
                                                                  multi_az: false,
                                                                  db_instance_class: "db.m3.large",
                                                                  state: "active",
                                                                  product_description: "postgresql",
+                                                                 db_instance_count: 2,
                                                                  class: "Aws::RDS::Types::ReservedDBInstance")
         reserved_db_instances = double('db_instances', reserved_db_instances: [reserved_rds_instance1, reserved_rds_instance2])
         rds_client = double('rds_client', describe_reserved_db_instances: reserved_db_instances)
@@ -80,24 +82,24 @@ module SportNginAwsAuditor
       end
 
       it "should make a reserved_rds_instance for each instance" do
-        reserved_instances = RDSInstance::get_reserved_instances
+        reserved_instances = RDSInstance.get_reserved_instances
         expect(reserved_instances.first).to be_an_instance_of(RDSInstance)
         expect(reserved_instances.last).to be_an_instance_of(RDSInstance)
       end
 
       it "should return an array of reserved_rds_instances" do
-        reserved_instances = RDSInstance::get_reserved_instances
+        reserved_instances = RDSInstance.get_reserved_instances
         expect(reserved_instances).not_to be_empty
         expect(reserved_instances.length).to eq(2)
       end
 
       it "should have proper variables set" do
-        reserved_instances = RDSInstance::get_reserved_instances
+        reserved_instances = RDSInstance.get_reserved_instances
         reserved_instance = reserved_instances.first
         expect(reserved_instance.id).to eq("555te4yy-1234-555c-5678-thisisafake!!")
         expect(reserved_instance.multi_az).to eq("Single-AZ")
         expect(reserved_instance.instance_type).to eq("db.t2.small")
-        expect(reserved_instance.engine).to eq("MySQL")
+        expect(reserved_instance.engine).to eq("Oracle SE Two")
       end
     end
 
@@ -108,11 +110,12 @@ module SportNginAwsAuditor
                                                                 db_instance_class: "db.t2.small",
                                                                 state: "active",
                                                                 product_description: "mysql",
+                                                                db_instance_count: 3,
                                                                 class: "Aws::RDS::Types::ReservedDBInstance")
         reserved_db_instances = double('db_instances', reserved_db_instances: [reserved_rds_instance])
         rds_client = double('rds_client', describe_reserved_db_instances: reserved_db_instances)
         allow(RDSInstance).to receive(:rds).and_return(rds_client)
-        reserved_instances = RDSInstance::get_reserved_instances
+        reserved_instances = RDSInstance.get_reserved_instances
         reserved_instance = reserved_instances.first
         expect(reserved_instance.to_s).to eq("MySQL Single-AZ db.t2.small")
       end
@@ -122,7 +125,7 @@ module SportNginAwsAuditor
                                               multi_az: false,
                                               db_instance_class: "db.t2.small",
                                               db_instance_status: "available",
-                                              engine: "postgresql",
+                                              engine: "postgres",
                                               availability_zone: "us-east-1a",
                                               class: "Aws::RDS::Types::DBInstance")
         db_instances = double('db_instances', db_instances: [rds_instance])
@@ -131,7 +134,7 @@ module SportNginAwsAuditor
         tags = double('tags', tag_list: [tag1, tag2])
         rds_client = double('rds_client', describe_db_instances: db_instances, list_tags_for_resource: tags)
         allow(RDSInstance).to receive(:rds).and_return(rds_client)
-        instances = RDSInstance::get_instances("tag_name")
+        instances = RDSInstance.get_instances("tag_name")
         instance = instances.first
         expect(instance.to_s).to eq("PostgreSQL Single-AZ db.t2.small")
       end
