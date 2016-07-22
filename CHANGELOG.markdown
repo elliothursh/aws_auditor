@@ -1,3 +1,4 @@
+#### v3.4.1
 #### v3.4.0
 * Add other RDS engine types
 
