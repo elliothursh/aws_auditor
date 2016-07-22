@@ -1,3 +1,8 @@
+#### v3.4.0
+* Add other RDS engine types
+
+  > matl33t: Emma Sax, Brian Bergstrom: https://github.com/sportngin/sport_ngin_aws_auditor/pull/11
+
 #### v3.3.1
 * Fixing bug where Slack will print discrepancies if there are *only* tagged instances
 
