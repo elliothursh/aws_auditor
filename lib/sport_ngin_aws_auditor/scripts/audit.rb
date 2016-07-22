@@ -56,60 +56,79 @@ module SportNginAwsAuditor
       end
 
       def self.print_data(slack, environment, data, class_type)
+        updated_data = modify_data(data)
+
         if slack
-          print_to_slack(data, class_type, environment)
+          print_to_slack(updated_data, class_type, environment)
         elsif options[:reserved] || options[:instances]
           puts header(class_type)
-          data.each{ |key, value| say "<%= color('#{key}: #{value}', :white) %>" }
+          updated_data.each{ |key, value| say "<%= color('#{key}: #{value}', :white) %>" }
         else
           puts header(class_type)
-          data.each{ |key, value| colorize(key, value) }
+          updated_data.each{ |key, value| colorize(key, value) }
         end
       end
 
+      def self.modify_data(data)
+        updated_data = []
+        data.each do |key, value|
+          if key.include?(" with tag")
+            k, v = modify_tag_prints(key, value)
+            updated_data.push([k, v])
+          else
+            if value > 0
+              value = '+' << value.to_s
+            end
+            updated_data.push([key, value.to_s])
+          end
+        end
+
+        return updated_data.sort_by { |key, value| [value, key] }
+      end
+
       def self.colorize(key, value)
-        if key.include?(" with tag")
-          key, value = modify_tag_prints(key, value)
+        if value.include?("*")
           say "<%= color('#{key}: #{value}', :blue) %>"
-        elsif value < 0
+        elsif value.include?("-")
           say "<%= color('#{key}: #{value}', :yellow) %>"
-        elsif value == 0
+        elsif value == "0"
           say "<%= color('#{key}: #{value}', :green) %>"
-        elsif value > 0 
+        elseif value.include?("+")
           say "<%= color('#{key}: #{value}', :red) %>"
         end
       end
 
-      def self.print_to_slack(instances_hash, class_type, environment)
-        discrepancy_hash = Hash.new
-        instances_hash.each do |key, value|
-          if value != 0
-            discrepancy_hash[key] = value
+      def self.print_to_slack(instances_array, class_type, environment)
+        discrepancy_array = []
+        instances_array.each do |key, value|
+          if value != "0"
+            discrepancy_array.push([key, value])
           end
         end
 
-        true_discrepancies = discrepancy_hash.dup.select{ |key, value| !key.include?(" with tag")}
+        true_discrepancies = discrepancy_array.select{ |key, value| !value.include?("*")}
 
-        if true_discrepancies.empty?
-          slack_job = NotifySlack.new("All #{class_type} instances for #{environment} are up to date.")
-          slack_job.perform
-        else
-          print_discrepancies(discrepancy_hash, class_type, environment)
+        unless true_discrepancies.empty?
+          print_discrepancies(discrepancy_array, class_type, environment)
         end
       end
 
-      def self.print_discrepancies(discrepancy_hash, class_type, environment)
-        to_print = "Some #{class_type} instances for #{environment} are out of sync:\n"
-        to_print << "#{header(class_type)}\n"
+      def self.print_discrepancies(discrepancy_array, class_type, environment)
+        title = "Some #{class_type} discrepancies for #{environment} exist:\n"
+        slack_job = NotifySlack.new(title)
 
-        discrepancy_hash.each do |key, value|
-          if key.include?(" with tag")
-            key, value = modify_tag_prints(key, value)
+        discrepancy_array.each do |key, value|
+          color = "#FFFFFF"
+          if value[0] == "+"
+            color = "#BF1616"
+          elsif value[0] == "-"
+            color = "#FFD700"
+          elsif value[0] == "*"
+            color = "#0000CC"
           end
-          to_print << "#{key}: #{value}\n"
+          slack_job.attachments.push({"color" => color, "text" => "#{key}: #{value}", "mrkdwn_in" => ["text"]})
         end
 
-        slack_job = NotifySlack.new(to_print)
         slack_job.perform
       end
 
