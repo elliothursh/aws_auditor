@@ -14,9 +14,8 @@ module SportNginAwsAuditor
     end
 
     it 'should ping Slack Notifier' do
-      notifier = double('notifier', ping: true)
-      allow(Slack::Notifier).to receive(:new).and_return(notifier)
-      expect(notifier).to receive(:ping).and_return(true)
+      notifier = double('notifier')
+      expect(HTTParty).to receive(:post)
       message = NotifySlack.new("Test message")
       message.perform
     end
