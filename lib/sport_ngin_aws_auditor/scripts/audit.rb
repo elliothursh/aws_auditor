@@ -93,7 +93,7 @@ module SportNginAwsAuditor
           say "<%= color('#{key}: #{value}', :yellow) %>"
         elsif value == "0"
           say "<%= color('#{key}: #{value}', :green) %>"
-        elseif value.include?("+")
+        elsif value.include?("+")
           say "<%= color('#{key}: #{value}', :red) %>"
         end
       end
