@@ -62,7 +62,7 @@ To find discrepancies between number of running instances and purchased instance
 
     $ sport-ngin-aws-auditor audit account1
 
-Any running instances that are not matched with a reserved instance with show up as yellow (with the negative number indicating the amount), the reserved instances that are not matched with an running instance will show up in red (with the positive number indicating the amount), and any reserved instances and running instances that match will show up in green. Any instances in blue with asteriks have a special tag that can either be specified in the audit command or will be defaulted to `no-reserved-instance`.
+Any running instances that are not matched with a reserved instance with show up as yellow, the reserved instances that are not matched with a running instance will show up in red, and any reserved instances and running instances that match will show up in green. Any instances in blue with asteriks have a special tag that can either be specified in the audit command or will be defaulted to `no-reserved-instance`.
 
 To specify your own tag name, run:
 
