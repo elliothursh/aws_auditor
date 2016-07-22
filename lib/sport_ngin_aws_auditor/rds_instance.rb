@@ -8,6 +8,23 @@ module SportNginAwsAuditor
 
     class << self
       attr_accessor :instances, :reserved_instances
+
+      def get_instances(tag_name=nil)
+        return @instances if @instances
+        account_id = get_account_id
+        @instances = rds.describe_db_instances.db_instances.map do |instance|
+          next unless instance.db_instance_status.to_s == 'available'
+          new(instance, account_id, tag_name, rds)
+        end.compact
+      end
+
+      def get_reserved_instances
+        return @reserved_instances if @reserved_instances
+        @reserved_instances = rds.describe_reserved_db_instances.reserved_db_instances.map do |instance|
+          next unless instance.state.to_s == 'active'
+          new(instance)
+        end.compact
+      end
     end
 
     attr_accessor :id, :name, :multi_az, :instance_type, :engine, :count, :tag_value
@@ -17,7 +34,7 @@ module SportNginAwsAuditor
         self.multi_az = rds_instance.multi_az ? "Multi-AZ" : "Single-AZ"
         self.instance_type = rds_instance.db_instance_class
         self.engine = engine_helper(rds_instance.product_description)
-        self.count = 1
+        self.count = rds_instance.db_instance_count
       elsif rds_instance.class.to_s == "Aws::RDS::Types::DBInstance"
         self.id = rds_instance.db_instance_identifier
         self.multi_az = rds_instance.multi_az ? "Multi-AZ" : "Single-AZ"
@@ -44,35 +61,41 @@ module SportNginAwsAuditor
       "#{engine} #{multi_az} #{instance_type}"
     end
 
-    def self.get_instances(tag_name=nil)
-      return @instances if @instances
-      account_id = get_account_id
-      @instances = rds.describe_db_instances.db_instances.map do |instance|
-        next unless instance.db_instance_status.to_s == 'available'
-        new(instance, account_id, tag_name, rds)
-      end.compact
-    end
-
-    def self.get_reserved_instances
-      return @reserved_instances if @reserved_instances
-      @reserved_instances = rds.describe_reserved_db_instances.reserved_db_instances.map do |instance|
-        next unless instance.state.to_s == 'active'
-        new(instance)
-      end.compact
-    end
-
     def no_reserved_instance_tag_value
-      @tag_value
+      tag_value
     end
 
+    # Generates a name based on the RDS engine or product description
     def engine_helper(engine)
-      if engine.downcase.include? "post"
-        return "PostgreSQL"
-      elsif engine.downcase.include? "mysql"
-        return "MySQL"
+      case engine.downcase
+      when 'aurora'
+        'Aurora'
+      when 'mariadb'
+        'MariaDB'
+      when 'mysql'
+        'MySQL'
+      when 'oracle-ee',     'oracle-ee(byol)'
+        'Oracle EE'
+      when 'oracle-se',     'oracle-se(byol)'
+        'Oracle SE'
+      when 'oracle-se1',    'oracle-se1(li)'
+        'Oracle SE One'
+      when 'oracle-se2',    'oracle-se2 (byol)' # extra space required
+        'Oracle SE Two'
+      when 'postgres',      'postgresql'
+        'PostgreSQL'
+      when 'sqlserver-ee',  'sqlserver-ee(li)'
+        'SQL Server EE'
+      when 'sqlserver-ex',  'sqlserver-ex(li)'
+        'SQL Server EX'
+      when 'sqlserver-se',  'sqlserver-se(byol)'
+        'SQL Server SE'
+      when 'sqlserver-web', 'sqlserver-web(li)'
+        'SQL Server Web'
+      else
+        'Unknown DB Engine'
       end
     end
     private :engine_helper
-
   end
 end
