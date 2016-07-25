@@ -1,11 +1,12 @@
-require 'slack-notifier'
+require 'httparty'
 
 module SportNginAwsAuditor
   class NotifySlack
-    attr_accessor :text, :channel, :webhook, :username, :icon_url, :icon_emoji
+    attr_accessor :text, :channel, :webhook, :username, :icon_url, :icon_emoji, :attachments
 
     def initialize(text)
       self.text = text
+      self.attachments = []
       if SportNginAwsAuditor::Config.slack
         self.channel = SportNginAwsAuditor::Config.slack[:channel]
         self.username = SportNginAwsAuditor::Config.slack[:username]
@@ -18,13 +19,14 @@ module SportNginAwsAuditor
 
     def perform
       if SportNginAwsAuditor::Config.slack
-        options = {webhook: webhook,
+        options = {text: text,
+                   webhook: webhook,
                    channel: channel,
                    username: username,
                    icon_url: icon_url,
-                   http_options: {open_timeout: 10}
+                   attachments: attachments
                   }
-        Slack::Notifier.new(webhook, options).ping(text)
+        HTTParty.post(options[:webhook], :body => "payload=#{options.to_json}")
       end
     end
   end

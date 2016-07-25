@@ -1,5 +1,6 @@
 require 'highline/import'
 require_relative "../notify_slack"
+require_relative "../instance"
 
 module SportNginAwsAuditor
   module Scripts
@@ -47,76 +48,79 @@ module SportNginAwsAuditor
           instances_without_tag = klass.filter_instance_without_tags(instances)
           instance_hash = klass.instance_count_hash(instances_without_tag)
           klass.add_instances_with_tag_to_hash(instances_with_tag, instance_hash)
-          return instance_hash
         elsif options[:reserved]
-          return klass.instance_count_hash(klass.get_reserved_instances)
+          instance_hash = klass.instance_count_hash(klass.get_reserved_instances)
         else
-          return klass.compare(tag_name)
+          instance_hash = klass.compare(tag_name)
         end
+
+        compared_array = []
+        instance_hash.each do |key, value|
+          compared_array.push(Instance.new(key, value))
+        end
+        compared_array
       end
 
       def self.print_data(slack, environment, data, class_type)
+        data.sort_by! { |instance| [instance.type, instance.name] }
+
         if slack
           print_to_slack(data, class_type, environment)
         elsif options[:reserved] || options[:instances]
           puts header(class_type)
-          data.each{ |key, value| say "<%= color('#{key}: #{value}', :white) %>" }
+          data.each{ |instance| say "<%= color('#{instance.name}: #{instance.count}', :white) %>" }
         else
           puts header(class_type)
-          data.each{ |key, value| colorize(key, value) }
+          data.each{ |instance| colorize(instance) }
         end
       end
 
-      def self.colorize(key, value)
-        if key.include?(" with tag")
-          key, value = modify_tag_prints(key, value)
-          say "<%= color('#{key}: #{value}', :blue) %>"
-        elsif value < 0
-          say "<%= color('#{key}: #{value}', :yellow) %>"
-        elsif value == 0
-          say "<%= color('#{key}: #{value}', :green) %>"
-        elsif value > 0 
-          say "<%= color('#{key}: #{value}', :red) %>"
-        end
+      def self.colorize(instance)
+        name = instance.name
+        count = instance.count
+        color, rgb = color_chooser(instance)
+        say "<%= color('#{name}: #{count}', :#{color}) %>"
       end
 
-      def self.print_to_slack(instances_hash, class_type, environment)
-        discrepancy_hash = Hash.new
-        instances_hash.each do |key, value|
-          if value != 0
-            discrepancy_hash[key] = value
+      def self.print_to_slack(instances_array, class_type, environment)
+        discrepancy_array = []
+        instances_array.each do |instance|
+          unless instance.matched?
+            discrepancy_array.push(instance)
           end
         end
 
-        true_discrepancies = discrepancy_hash.dup.select{ |key, value| !key.include?(" with tag")}
+        true_discrepancies = discrepancy_array.reject{ |instance| instance.tagged? }
 
-        if true_discrepancies.empty?
-          slack_job = NotifySlack.new("All #{class_type} instances for #{environment} are up to date.")
-          slack_job.perform
-        else
-          print_discrepancies(discrepancy_hash, class_type, environment)
+        unless true_discrepancies.empty?
+          print_discrepancies(discrepancy_array, class_type, environment)
         end
       end
 
-      def self.print_discrepancies(discrepancy_hash, class_type, environment)
-        to_print = "Some #{class_type} instances for #{environment} are out of sync:\n"
-        to_print << "#{header(class_type)}\n"
+      def self.print_discrepancies(discrepancy_array, class_type, environment)
+        title = "Some #{class_type} discrepancies for #{environment} exist:\n"
+        slack_job = NotifySlack.new(title)
 
-        discrepancy_hash.each do |key, value|
-          if key.include?(" with tag")
-            key, value = modify_tag_prints(key, value)
-          end
-          to_print << "#{key}: #{value}\n"
+        discrepancy_array.each do |discrepancy|
+          name = discrepancy.name
+          count = discrepancy.count
+          color, rgb = color_chooser(discrepancy)
+          slack_job.attachments.push({"color" => rgb, "text" => "#{name}: #{count}", "mrkdwn_in" => ["text"]})
         end
 
-        slack_job = NotifySlack.new(to_print)
         slack_job.perform
       end
 
-      def self.modify_tag_prints(key, value)
-        key = key.dup # because key is a frozen string right now
-        key.slice!(" with tag")
-        return key, "*" << value.to_s
+      def self.color_chooser(instance)
+        if instance.tagged?
+          return "blue", "#0000CC"
+        elsif instance.running?
+          return "yellow", "#FFD700"
+        elsif instance.matched?
+          return "green", "#32CD32"
+        elsif instance.reserved?
+          return "red", "#BF1616"
+        end
       end
 
       def self.header(type, length = 50)
