@@ -1,3 +1,8 @@
+#### v3.5.0
+* Cleaning up slack printouts with the audit command
+
+  > Emma Sax: Brian Bergstrom: https://github.com/sportngin/sport_ngin_aws_auditor/pull/15
+
 #### v3.4.1
 #### v3.4.0
 * Add other RDS engine types
