@@ -29,14 +29,18 @@ module SportNginAwsAuditor
           puts "Condensed results from this audit will print into Slack instead of directly to an output."
         end
 
-        data = gather_data("EC2Instance", tag_name) if options[:ec2] || no_selection
+        all_data = gather_data("EC2Instance", tag_name) if options[:ec2] || no_selection
+        data = all_data.first unless all_data.nil?
+        retired_reserved_instances = all_data.last unless all_data.nil?
         print_data(slack, environment, data, "EC2Instance") if options[:ec2] || no_selection
 
-        data = gather_data("RDSInstance", tag_name) if options[:rds] || no_selection
-        print_data(slack, environment, data, "RDSInstance") if options[:rds] || no_selection
+        # data = gather_data("RDSInstance", tag_name) if options[:rds] || no_selection
+        # print_data(slack, environment, data, "RDSInstance") if options[:rds] || no_selection
 
-        data = gather_data("CacheInstance", tag_name) if options[:cache] || no_selection
-        print_data(slack, environment, data, "CacheInstance") if options[:cache] || no_selection
+        # data = gather_data("CacheInstance", tag_name) if options[:cache] || no_selection
+        # print_data(slack, environment, data, "CacheInstance") if options[:cache] || no_selection
+
+        # print_reserved_instance_data
       end
 
       def self.gather_data(class_type, tag_name)
@@ -50,15 +54,23 @@ module SportNginAwsAuditor
           klass.add_instances_with_tag_to_hash(instances_with_tag, instance_hash)
         elsif options[:reserved]
           instance_hash = klass.instance_count_hash(klass.get_reserved_instances)
+          retired_reserved_instances = klass.get_retired_reserved_instances
         else
           instance_hash = klass.compare(tag_name)
+          retired_reserved_instances = klass.get_retired_reserved_instances
         end
+
+        return_array = []
 
         compared_array = []
         instance_hash.each do |key, value|
           compared_array.push(Instance.new(key, value))
         end
-        compared_array
+        return_array.push(compared_array)
+
+        return_array.push(retired_reserved_instances) if retired_reserved_instances
+
+        return_array
       end
 
       def self.print_data(slack, environment, data, class_type)

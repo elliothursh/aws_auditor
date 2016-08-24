@@ -28,17 +28,20 @@ module SportNginAwsAuditor
     end
 
     def compare(tag_name)
+      puts "comparing"
       differences = Hash.new()
       instances = get_instances(tag_name)
       instances_with_tag = filter_instances_with_tags(instances)
       instances_without_tag = filter_instance_without_tags(instances)
       instance_hash = instance_count_hash(instances_without_tag)
       ris = instance_count_hash(get_reserved_instances)
+      
       instance_hash.keys.concat(ris.keys).uniq.each do |key|
         instance_count = instance_hash.has_key?(key) ? instance_hash[key] : 0
         ris_count = ris.has_key?(key) ? ris[key] : 0
         differences[key] = ris_count - instance_count
       end
+      
       add_instances_with_tag_to_hash(instances_with_tag, differences)
       differences
     end
