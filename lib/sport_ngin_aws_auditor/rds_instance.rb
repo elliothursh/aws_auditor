@@ -7,7 +7,7 @@ module SportNginAwsAuditor
     extend AWSWrapper
 
     class << self
-      attr_accessor :instances, :reserved_instances
+      attr_accessor :instances, :reserved_instances, :retired_reserved_instances
 
       def get_instances(tag_name=nil)
         return @instances if @instances
@@ -25,9 +25,17 @@ module SportNginAwsAuditor
           new(instance)
         end.compact
       end
+
+      def get_retired_reserved_instances
+        return @retired_reserved_instances if @retired_reserved_instances
+        @retired_reserved_instances = rds.describe_reserved_db_instances.reserved_db_instances.map do |instance|
+          next unless instance.state == 'retired'
+          new(instance)
+        end.compact
+      end
     end
 
-    attr_accessor :id, :name, :multi_az, :instance_type, :engine, :count, :tag_value
+    attr_accessor :id, :name, :multi_az, :instance_type, :engine, :count, :tag_value, :expiration_date
     def initialize(rds_instance, account_id=nil, tag_name=nil, rds=nil)
       if rds_instance.class.to_s == "Aws::RDS::Types::ReservedDBInstance"
         self.id = rds_instance.reserved_db_instances_offering_id
@@ -35,6 +43,7 @@ module SportNginAwsAuditor
         self.instance_type = rds_instance.db_instance_class
         self.engine = engine_helper(rds_instance.product_description)
         self.count = rds_instance.db_instance_count
+        self.expiration_date = rds_instance.start_time + rds_instance.duration if rds_instance.state == 'retired'
       elsif rds_instance.class.to_s == "Aws::RDS::Types::DBInstance"
         self.id = rds_instance.db_instance_identifier
         self.multi_az = rds_instance.multi_az ? "Multi-AZ" : "Single-AZ"

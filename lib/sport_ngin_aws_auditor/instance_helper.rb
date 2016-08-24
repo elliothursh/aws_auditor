@@ -28,7 +28,6 @@ module SportNginAwsAuditor
     end
 
     def compare(tag_name)
-      puts "comparing"
       differences = Hash.new()
       instances = get_instances(tag_name)
       instances_with_tag = filter_instances_with_tags(instances)
@@ -44,6 +43,12 @@ module SportNginAwsAuditor
       
       add_instances_with_tag_to_hash(instances_with_tag, differences)
       differences
+    end
+
+    def get_recent_retired_reserved_instances
+      get_retired_reserved_instances.select do |ri|
+        ri.expiration_date > (Time.now - 604800)
+      end
     end
 
     # assuming the value of the tag is in the form: 01/01/2000 like a date

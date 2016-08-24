@@ -21,17 +21,17 @@ module SportNginAwsAuditor
 
       def get_reserved_instances
         return @reserved_instances if @reserved_instances
-        @reserved_instances = ec2.describe_reserved_instances.reserved_instances.map do |ri|
-          next unless ri.state == 'active'
-          new(ri, nil, ri.instance_count)
+        @reserved_instances = ec2.describe_reserved_instances.reserved_instances.map do |instance|
+          next unless instance.state == 'active'
+          new(instance, nil, instance.instance_count)
         end.compact
       end
 
       def get_retired_reserved_instances
         return @retired_reserved_instances if @retired_reserved_instances
-        @retired_reserved_instances = ec2.describe_reserved_instances.reserved_instances.map do |ri|
-          next unless ri.state == 'retired'
-          new(ri, nil, ri.instance_count)
+        @retired_reserved_instances = ec2.describe_reserved_instances.reserved_instances.map do |instance|
+          next unless instance.state == 'retired'
+          new(instance, nil, instance.instance_count)
         end.compact
       end
 
