@@ -23,26 +23,22 @@ module SportNginAwsAuditor
           tag_name = options[:tag]
         end
 
+        cycle = [["EC2Instance", options[:ec2]],
+                 ["RDSInstance", options[:rds]],
+                 ["CacheInstance", options[:cache]]]
+
         if !slack
           print "Gathering info, please wait..."; print "\r"
         else
           puts "Condensed results from this audit will print into Slack instead of directly to an output."
         end
 
-        all_data = gather_data("EC2Instance", tag_name) if options[:ec2] || no_selection
-        data = all_data.first unless all_data.nil?
-        retired_reserved_instances = all_data.last if (all_data.length == 2 && !all_data.nil?)
-        print_data(slack, environment, data, retired_reserved_instances, "EC2Instance") if options[:ec2] || no_selection
-
-        all_data = gather_data("RDSInstance", tag_name) if options[:rds] || no_selection
-        data = all_data.first unless all_data.nil?
-        retired_reserved_instances = all_data.last if (all_data.length == 2 && !all_data.nil?)
-        print_data(slack, environment, data, retired_reserved_instances, "RDSInstance") if options[:rds] || no_selection
-
-        all_data = gather_data("CacheInstance", tag_name) if options[:cache] || no_selection
-        data = all_data.first unless all_data.nil?
-        retired_reserved_instances = all_data.last if (all_data.length == 2 && !all_data.nil?)
-        print_data(slack, environment, data, retired_reserved_instances, "CacheInstance") if options[:cache] || no_selection
+        cycle.each do |c|
+          all_data = gather_data(c.first, tag_name) if (c.last || no_selection)
+          data = all_data.first unless all_data.nil?
+          retired_reserved_instances = all_data.last if (all_data.length == 2 && !all_data.nil?)
+          print_data(slack, environment, data, retired_reserved_instances, c.first) if (c.last || no_selection)
+        end
       end
 
       def self.gather_data(class_type, tag_name)
@@ -100,6 +96,7 @@ module SportNginAwsAuditor
 
       def self.print_to_slack(instances_array, retired_instances_array, class_type, environment)
         discrepancy_array = []
+
         instances_array.each do |instance|
           unless instance.matched?
             discrepancy_array.push(instance)
@@ -131,8 +128,9 @@ module SportNginAwsAuditor
 
           retired_instances_array.each do |ri|
             name = ri.to_s
+            count = ri.count
             expiration_date = ri.expiration_date
-            message << "*#{name}* (#{ri.count}) on *#{expiration_date}*\n"
+            message << "*#{name}* (#{count}) on *#{expiration_date}*\n"
           end
           
           slack_retired_instances = NotifySlack.new(message)
