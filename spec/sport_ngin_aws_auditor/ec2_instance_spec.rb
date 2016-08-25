@@ -125,6 +125,7 @@ module SportNginAwsAuditor
 
       context "for retired_reserved_ec2_instances" do
         before :each do
+          @time = Time.now
           retired_reserved_ec2_instance1 = double('reserved_ec2_instance', reserved_instances_id: "12345-dfas-1234-asdf-thisisfake!!",
                                                                            instance_type: "t2.medium",
                                                                            product_description: "Windows (Amazon VPC)",
@@ -132,7 +133,7 @@ module SportNginAwsAuditor
                                                                            availability_zone: "us-east-1b",
                                                                            instance_count: 4,
                                                                            class: "Aws::EC2::Types::ReservedInstances",
-                                                                           end: "03-24-2991 93:19:3921 UTC")
+                                                                           end: @time - 86400)
           retired_reserved_ec2_instance2 = double('reserved_ec2_instance', reserved_instances_id: "12345-dfas-1234-asdf-thisisalsofake",
                                                                            instance_type: "t2.small",
                                                                            product_description: "Linux/UNIX (Amazon VPC)",
@@ -140,7 +141,7 @@ module SportNginAwsAuditor
                                                                            availability_zone: "us-east-1b",
                                                                            instance_count: 2,
                                                                            class: "Aws::EC2::Types::ReservedInstances",
-                                                                           end: "03-24-2991 93:19:3921 UTC")
+                                                                           end: @time - 86400)
           reserved_ec2_instance1 = double('reserved_ec2_instance', reserved_instances_id: "12345-dfas-1234-asdf-thisisalsofake",
                                                                    instance_type: "t2.small",
                                                                    product_description: "Linux/UNIX (Amazon VPC)",
@@ -161,7 +162,7 @@ module SportNginAwsAuditor
           expect(retired_reserved_instances.last).to be_an_instance_of(EC2Instance)
         end
 
-        it "should return an array of reserved_ec2_instances" do
+        it "should return an array of retired_reserved_ec2_instances" do
           retired_reserved_instances = EC2Instance.get_retired_reserved_instances
           expect(retired_reserved_instances).not_to be_empty
           expect(retired_reserved_instances.length).to eq(2)
@@ -175,6 +176,7 @@ module SportNginAwsAuditor
           expect(retired_reserved_instance.availability_zone).to eq("us-east-1b")
           expect(retired_reserved_instance.instance_type).to eq("t2.medium")
           expect(retired_reserved_instance.count).to eq(4)
+          expect(retired_reserved_instance.expiration_date).to be >= @time - 86500
         end
 
         it "should recognize Windows vs. Linux" do

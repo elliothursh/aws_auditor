@@ -99,6 +99,54 @@ module SportNginAwsAuditor
         expect(reserved_instance.instance_type).to eq("cache.t2.small")
         expect(reserved_instance.engine).to eq("redis")
       end
+
+      context "for retired_reserved_cache_instances" do
+        before :each do
+          @time = Time.now
+          retired_reserved_cache_instance1 = double('reserved_cache_instance', reserved_cache_node_id: "job-queue-cluster",
+                                                                               cache_node_type: "cache.t2.small",
+                                                                               product_description: "redis",
+                                                                               state: "retired",
+                                                                               cache_node_count: 1,
+                                                                               class: "Aws::ElastiCache::Types::ReservedCacheNode",
+                                                                               start_time: @time - 31536000,
+                                                                               duration: 31536000)
+          retired_reserved_cache_instance2 = double('reserved_cache_instance', reserved_cache_node_id: "job-queue-cluster",
+                                                                               cache_node_type: "cache.t2.medium",
+                                                                               product_description: "mysql",
+                                                                               state: "retired",
+                                                                               cache_node_count: 1,
+                                                                               class: "Aws::ElastiCache::Types::ReservedCacheNode",
+                                                                               start_time: @time - 31536000,
+                                                                               duration: 31536000)
+          reserved_cache_nodes = double('cache_cluster', reserved_cache_nodes: [retired_reserved_cache_instance1,
+                                                                                retired_reserved_cache_instance2])
+          cache_client = double('cache_client', describe_reserved_cache_nodes: reserved_cache_nodes)
+          allow(CacheInstance).to receive(:cache).and_return(cache_client)
+        end
+
+        it "should make a retired_reserved_cache_instance for each instance" do
+          retired_reserved_instances = CacheInstance.get_retired_reserved_instances
+          expect(retired_reserved_instances.first).to be_an_instance_of(CacheInstance)
+          expect(retired_reserved_instances.last).to be_an_instance_of(CacheInstance)
+        end
+
+        it "should return an array of retired_reserved_cache_instances" do
+          retired_reserved_instances = CacheInstance.get_retired_reserved_instances
+          expect(retired_reserved_instances).not_to be_empty
+          expect(retired_reserved_instances.length).to eq(2)
+        end
+
+        it "should have proper variables set" do
+          retired_reserved_instances = CacheInstance.get_retired_reserved_instances
+          retired_reserved_instance = retired_reserved_instances.first
+          expect(retired_reserved_instance.id).to eq("job-queue-cluster")
+          expect(retired_reserved_instance.name).to eq("job-queue-cluster")
+          expect(retired_reserved_instance.instance_type).to eq("cache.t2.small")
+          expect(retired_reserved_instance.engine).to eq("redis")
+          expect(retired_reserved_instance.expiration_date).to be >= @time - 31536000
+        end
+      end
     end
 
     context "for returning pretty string formats" do
