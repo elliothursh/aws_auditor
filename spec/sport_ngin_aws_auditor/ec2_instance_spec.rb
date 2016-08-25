@@ -122,6 +122,69 @@ module SportNginAwsAuditor
         expect(reserved_instance1.platform).to eq("Windows VPC")
         expect(reserved_instance2.platform).to eq("Linux VPC")
       end
+
+      context "for retired_reserved_ec2_instances" do
+        before :each do
+          retired_reserved_ec2_instance1 = double('reserved_ec2_instance', reserved_instances_id: "12345-dfas-1234-asdf-thisisfake!!",
+                                                                           instance_type: "t2.medium",
+                                                                           product_description: "Windows (Amazon VPC)",
+                                                                           state: "retired",
+                                                                           availability_zone: "us-east-1b",
+                                                                           instance_count: 4,
+                                                                           class: "Aws::EC2::Types::ReservedInstances",
+                                                                           end: "03-24-2991 93:19:3921 UTC")
+          retired_reserved_ec2_instance2 = double('reserved_ec2_instance', reserved_instances_id: "12345-dfas-1234-asdf-thisisalsofake",
+                                                                           instance_type: "t2.small",
+                                                                           product_description: "Linux/UNIX (Amazon VPC)",
+                                                                           state: "retired",
+                                                                           availability_zone: "us-east-1b",
+                                                                           instance_count: 2,
+                                                                           class: "Aws::EC2::Types::ReservedInstances",
+                                                                           end: "03-24-2991 93:19:3921 UTC")
+          reserved_ec2_instance1 = double('reserved_ec2_instance', reserved_instances_id: "12345-dfas-1234-asdf-thisisalsofake",
+                                                                   instance_type: "t2.small",
+                                                                   product_description: "Linux/UNIX (Amazon VPC)",
+                                                                   state: "active",
+                                                                   availability_zone: "us-east-1b",
+                                                                   instance_count: 2,
+                                                                   class: "Aws::EC2::Types::ReservedInstances")
+          reserved_ec2_instances = double('reserved_ec2_instances', reserved_instances: [retired_reserved_ec2_instance1,
+                                                                                         retired_reserved_ec2_instance2,
+                                                                                         reserved_ec2_instance1])
+          ec2_client = double('ec2_client', describe_reserved_instances: reserved_ec2_instances)
+          allow(EC2Instance).to receive(:ec2).and_return(ec2_client)
+        end
+
+        it "should make a retired_reserved_ec2_instance for each instance" do
+          retired_reserved_instances = EC2Instance.get_retired_reserved_instances
+          expect(retired_reserved_instances.first).to be_an_instance_of(EC2Instance)
+          expect(retired_reserved_instances.last).to be_an_instance_of(EC2Instance)
+        end
+
+        it "should return an array of reserved_ec2_instances" do
+          retired_reserved_instances = EC2Instance.get_retired_reserved_instances
+          expect(retired_reserved_instances).not_to be_empty
+          expect(retired_reserved_instances.length).to eq(2)
+        end
+
+        it "should have proper variables set" do
+          retired_reserved_instances = EC2Instance.get_retired_reserved_instances
+          retired_reserved_instance = retired_reserved_instances.first
+          expect(retired_reserved_instance.id).to eq("12345-dfas-1234-asdf-thisisfake!!")
+          expect(retired_reserved_instance.platform).to eq("Windows VPC")
+          expect(retired_reserved_instance.availability_zone).to eq("us-east-1b")
+          expect(retired_reserved_instance.instance_type).to eq("t2.medium")
+          expect(retired_reserved_instance.count).to eq(4)
+        end
+
+        it "should recognize Windows vs. Linux" do
+          retired_reserved_instances = EC2Instance.get_retired_reserved_instances
+          retired_reserved_instance1 = retired_reserved_instances.first
+          retired_reserved_instance2 = retired_reserved_instances.last
+          expect(retired_reserved_instance1.platform).to eq("Windows VPC")
+          expect(retired_reserved_instance2.platform).to eq("Linux VPC")
+        end
+      end
     end
 
     context "for returning pretty string formats" do
