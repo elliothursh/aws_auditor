@@ -57,16 +57,12 @@ module SportNginAwsAuditor
           retired_reserved_instances = klass.get_recent_retired_reserved_instances
         end
 
-        return_array = []
         compared_array = []
-
         instance_hash.each do |key, value|
           compared_array.push(Instance.new(key, value))
         end
 
-        return_array.push(compared_array)
-        return_array.push(retired_reserved_instances) if retired_reserved_instances
-        return_array
+        [compared_array, retired_reserved_instances]
       end
 
       def self.print_data(slack, environment, data, retired_reserved_instances, class_type)
@@ -81,7 +77,7 @@ module SportNginAwsAuditor
           puts header(class_type)
           data.each{ |instance| colorize(instance) }
           unless retired_reserved_instances.empty?
-            say "The following reserved #{class_type} have recently expired in #{environment}:"
+            say "The following reserved #{class_type}Instance have recently expired in #{environment}:"
             retired_reserved_instances.each { |ri| say "#{ri.to_s} (#{ri.count}) on #{ri.expiration_date}"}
           end
         end

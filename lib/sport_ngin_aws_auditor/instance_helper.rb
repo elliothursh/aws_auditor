@@ -45,6 +45,8 @@ module SportNginAwsAuditor
       differences
     end
 
+    # this gets all retired reserved instances and filters out only the ones that have expired
+    # within the past week
     def get_recent_retired_reserved_instances
       get_retired_reserved_instances.select do |ri|
         ri.expiration_date > (Time.now - 604800)
