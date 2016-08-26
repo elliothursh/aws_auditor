@@ -7,7 +7,7 @@ module SportNginAwsAuditor
     extend AWSWrapper
 
     class << self
-      attr_accessor :instances, :reserved_instances
+      attr_accessor :instances, :reserved_instances, :retired_reserved_instances
 
       def get_instances(tag_name=nil)
         return @instances if @instances
@@ -25,9 +25,17 @@ module SportNginAwsAuditor
           new(instance)
         end.compact
       end
+
+      def get_retired_reserved_instances
+        return @retired_reserved_instances if @retired_reserved_instances
+        @retired_reserved_instances = cache.describe_reserved_cache_nodes.reserved_cache_nodes.map do |instance|
+          next unless instance.state == 'retired'
+          new(instance)
+        end.compact
+      end
     end
 
-    attr_accessor :id, :name, :instance_type, :engine, :count, :tag_value
+    attr_accessor :id, :name, :instance_type, :engine, :count, :tag_value, :expiration_date
     def initialize(cache_instance, account_id=nil, tag_name=nil, cache=nil)
       if cache_instance.class.to_s == "Aws::ElastiCache::Types::ReservedCacheNode"
         self.id = cache_instance.reserved_cache_node_id
@@ -35,6 +43,7 @@ module SportNginAwsAuditor
         self.instance_type = cache_instance.cache_node_type
         self.engine = cache_instance.product_description
         self.count = cache_instance.cache_node_count
+        self.expiration_date = cache_instance.start_time + cache_instance.duration if cache_instance.state == 'retired'
       elsif cache_instance.class.to_s == "Aws::ElastiCache::Types::CacheCluster"
         self.id = cache_instance.cache_cluster_id
         self.name = cache_instance.cache_cluster_id

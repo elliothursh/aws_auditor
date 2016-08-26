@@ -101,6 +101,56 @@ module SportNginAwsAuditor
         expect(reserved_instance.instance_type).to eq("db.t2.small")
         expect(reserved_instance.engine).to eq("Oracle SE Two")
       end
+
+      context "for retired_reserved_rds_instances" do
+        before :each do
+          @time = Time.now
+          retired_reserved_rds_instance1 = double('reserved_rds_instance', reserved_db_instances_offering_id: "555te4yy-1234-555c-5678-thisisafake!!",
+                                                                           multi_az: false,
+                                                                           db_instance_class: "db.t2.small",
+                                                                           state: "retired",
+                                                                           product_description: "oracle-se2 (byol)",
+                                                                           db_instance_count: 1,
+                                                                           class: "Aws::RDS::Types::ReservedDBInstance",
+                                                                           start_time: @time - 31536000,
+                                                                           duration: 31536000)
+          retired_reserved_rds_instance2 = double('reserved_rds_instance', reserved_db_instances_offering_id: "555te4yy-1234-555c-5678-thisisafake!!",
+                                                                           multi_az: false,
+                                                                           db_instance_class: "db.m3.large",
+                                                                           state: "retired",
+                                                                           product_description: "postgresql",
+                                                                           db_instance_count: 2,
+                                                                           class: "Aws::RDS::Types::ReservedDBInstance",
+                                                                           start_time: @time - 31536000,
+                                                                           duration: 31536000)
+        reserved_db_instances = double('db_instances', reserved_db_instances: [retired_reserved_rds_instance1,
+                                                                               retired_reserved_rds_instance2])
+        rds_client = double('rds_client', describe_reserved_db_instances: reserved_db_instances)
+        allow(RDSInstance).to receive(:rds).and_return(rds_client)
+        end
+
+        it "should make a retired_reserved_rds_instance for each instance" do
+          retired_reserved_instances = RDSInstance.get_retired_reserved_instances
+          expect(retired_reserved_instances.first).to be_an_instance_of(RDSInstance)
+          expect(retired_reserved_instances.last).to be_an_instance_of(RDSInstance)
+        end
+
+        it "should return an array of retired_reserved_rds_instances" do
+          retired_reserved_instances = RDSInstance.get_retired_reserved_instances
+          expect(retired_reserved_instances).not_to be_empty
+          expect(retired_reserved_instances.length).to eq(2)
+        end
+
+        it "should have proper variables set" do
+          retired_reserved_instances = RDSInstance.get_retired_reserved_instances
+          retired_reserved_instance = retired_reserved_instances.first
+          expect(retired_reserved_instance.id).to eq("555te4yy-1234-555c-5678-thisisafake!!")
+          expect(retired_reserved_instance.multi_az).to eq("Single-AZ")
+          expect(retired_reserved_instance.instance_type).to eq("db.t2.small")
+          expect(retired_reserved_instance.engine).to eq("Oracle SE Two")
+          expect(retired_reserved_instance.expiration_date).to be >= @time - 31536000
+        end
+      end
     end
 
     context "for returning pretty string formats" do

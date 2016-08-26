@@ -34,13 +34,23 @@ module SportNginAwsAuditor
       instances_without_tag = filter_instance_without_tags(instances)
       instance_hash = instance_count_hash(instances_without_tag)
       ris = instance_count_hash(get_reserved_instances)
+      
       instance_hash.keys.concat(ris.keys).uniq.each do |key|
         instance_count = instance_hash.has_key?(key) ? instance_hash[key] : 0
         ris_count = ris.has_key?(key) ? ris[key] : 0
         differences[key] = ris_count - instance_count
       end
+      
       add_instances_with_tag_to_hash(instances_with_tag, differences)
       differences
+    end
+
+    # this gets all retired reserved instances and filters out only the ones that have expired
+    # within the past week
+    def get_recent_retired_reserved_instances
+      get_retired_reserved_instances.select do |ri|
+        ri.expiration_date > (Time.now - 604800)
+      end
     end
 
     # assuming the value of the tag is in the form: 01/01/2000 like a date

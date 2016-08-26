@@ -6,7 +6,7 @@ module SportNginAwsAuditor
     extend EC2Wrapper
 
     class << self
-      attr_accessor :instances, :reserved_instances
+      attr_accessor :instances, :reserved_instances, :retired_reserved_instances
 
       def get_instances(tag_name=nil)
         return @instances if @instances
@@ -21,9 +21,17 @@ module SportNginAwsAuditor
 
       def get_reserved_instances
         return @reserved_instances if @reserved_instances
-        @reserved_instances = ec2.describe_reserved_instances.reserved_instances.map do |ri|
-          next unless ri.state == 'active'
-          new(ri, nil, ri.instance_count)
+        @reserved_instances = ec2.describe_reserved_instances.reserved_instances.map do |instance|
+          next unless instance.state == 'active'
+          new(instance, nil, instance.instance_count)
+        end.compact
+      end
+
+      def get_retired_reserved_instances
+        return @retired_reserved_instances if @retired_reserved_instances
+        @retired_reserved_instances = ec2.describe_reserved_instances.reserved_instances.map do |instance|
+          next unless instance.state == 'retired'
+          new(instance, nil, instance.instance_count)
         end.compact
       end
 
@@ -52,7 +60,7 @@ module SportNginAwsAuditor
       private :get_more_info
     end
 
-    attr_accessor :id, :name, :platform, :availability_zone, :instance_type, :count, :stack_name, :tag_value
+    attr_accessor :id, :name, :platform, :availability_zone, :instance_type, :count, :stack_name, :tag_value, :expiration_date
     def initialize(ec2_instance, tag_name, count=1)
       if ec2_instance.class.to_s == "Aws::EC2::Types::ReservedInstances"
         self.id = ec2_instance.reserved_instances_id
@@ -62,6 +70,7 @@ module SportNginAwsAuditor
         self.instance_type = ec2_instance.instance_type
         self.count = count
         self.stack_name = nil
+        self.expiration_date = ec2_instance.end if ec2_instance.state == 'retired'
       elsif ec2_instance.class.to_s == "Aws::EC2::Types::Instance"
         self.id = ec2_instance.instance_id
         self.name = nil
