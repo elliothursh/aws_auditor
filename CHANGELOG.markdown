@@ -1,3 +1,8 @@
+#### v3.6.0
+* Print reserved instances that have retired in past week
+
+  > Emma Sax: Andy Fleener: https://github.com/sportngin/sport_ngin_aws_auditor/pull/16
+
 #### v3.5.0
 * Cleaning up slack printouts with the audit command
 
