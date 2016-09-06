@@ -30,6 +30,7 @@ module SportNginAwsAuditor
     def compare(tag_name)
       differences = Hash.new()
       instances = get_instances(tag_name)
+      retired_tags_hash = get_retired_tags(instances)
       instances_with_tag = filter_instances_with_tags(instances)
       instances_without_tag = filter_instance_without_tags(instances)
       instance_hash = instance_count_hash(instances_without_tag)
@@ -42,7 +43,7 @@ module SportNginAwsAuditor
       end
       
       add_instances_with_tag_to_hash(instances_with_tag, differences)
-      differences
+      return differences, retired_tags_hash
     end
 
     # this gets all retired reserved instances and filters out only the ones that have expired
@@ -67,6 +68,19 @@ module SportNginAwsAuditor
         value = gather_instance_tag_date(instance)
         value.nil? || (Date.today.to_s >= value.to_s)
       end
+    end
+
+    # this returns a hash of all instances that have retired between 1 week ago and today
+    def get_retired_tags(instances)
+      return_hash = {}
+      
+      instances.select do |instance|
+        value = gather_instance_tag_date(instance)
+        one_week_ago = (Date.today - 7).to_s
+        return_hash[instance.to_s] = value.to_s if (value && (one_week_ago < value.to_s) && (value.to_s < Date.today.to_s))
+      end
+      
+      return_hash
     end
 
     def gather_instance_tag_date(instance)
