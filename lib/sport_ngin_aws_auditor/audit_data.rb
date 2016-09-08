@@ -5,14 +5,7 @@ module SportNginAwsAuditor
 
     attr_accessor :data, :retired_tags, :retired_ris, :selected_audit_type, :klass, :tag_name
     def initialize(instances, reserved, class_type, tag_name)
-      if instances
-        self.selected_audit_type = "instances"
-      elsif reserved
-        self.selected_audit_type = "reserved"
-      else
-        self.selected_audit_type = "all"
-      end
-
+      self.selected_audit_type = (!instances && !reserved) ? "all" : (instances ? "instances" : "reserved")
       self.klass = SportNginAwsAuditor.const_get(class_type)
       self.tag_name = tag_name
     end
@@ -25,12 +18,16 @@ module SportNginAwsAuditor
       self.selected_audit_type == "reserved"
     end
 
+    def all?
+      self.selected_audit_type == "all"
+    end
+
     def gather_data
       if instances?
         instance_hash, retired_tags = gather_instances_data
       elsif reserved?
         instance_hash = self.klass.instance_count_hash(self.klass.get_reserved_instances)
-      else
+      elsif all?
         instance_hash, retired_tags, retired_ris = gather_all_data
       end
 
@@ -40,8 +37,8 @@ module SportNginAwsAuditor
       end
 
       self.data = compared_array
-      self.retired_ris = retired_ris || nil
-      self.retired_tags = retired_tags || nil
+      self.retired_ris = retired_ris
+      self.retired_tags = retired_tags
     end
 
     def gather_instances_data
