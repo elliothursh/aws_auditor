@@ -1,3 +1,8 @@
+#### v3.7.0
+* Print retired tags into slack/terminal on audit
+
+  > Emma Sax: Brian Bergstrom: https://github.com/sportngin/sport_ngin_aws_auditor/pull/17
+
 #### v3.6.0
 * Print reserved instances that have retired in past week
 
