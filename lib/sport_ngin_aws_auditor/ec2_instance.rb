@@ -60,7 +60,7 @@ module SportNginAwsAuditor
       private :get_more_info
     end
 
-    attr_accessor :id, :name, :platform, :availability_zone, :instance_type, :count, :stack_name, :tag_value, :expiration_date
+    attr_accessor :id, :name, :platform, :availability_zone, :instance_type, :count, :stack_name, :tag_value, :tag_reason, :expiration_date
     def initialize(ec2_instance, tag_name, count=1)
       if ec2_instance.class.to_s == "Aws::EC2::Types::ReservedInstances"
         self.id = ec2_instance.reserved_instances_id
@@ -73,7 +73,7 @@ module SportNginAwsAuditor
         self.expiration_date = ec2_instance.end if ec2_instance.state == 'retired'
       elsif ec2_instance.class.to_s == "Aws::EC2::Types::Instance"
         self.id = ec2_instance.instance_id
-        self.name = nil
+        self.name = ec2_instance.key_name
         self.platform = platform_helper((ec2_instance.platform || ''), ec2_instance.vpc_id)
         self.availability_zone = ec2_instance.placement.availability_zone
         self.instance_type = ec2_instance.instance_type
@@ -85,6 +85,8 @@ module SportNginAwsAuditor
           ec2_instance.tags.each do |tag|
             if tag.key == tag_name
               self.tag_value = tag.value
+            elsif tag.key == 'no-reserved-instance-reason'
+              self.tag_reason = tag.value
             end
           end
         end
