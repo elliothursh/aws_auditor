@@ -1,4 +1,5 @@
 require 'highline/import'
+require 'colorize'
 require_relative "../notify_slack"
 require_relative "../instance"
 require_relative "../audit_data"
@@ -83,7 +84,7 @@ module SportNginAwsAuditor
         color, rgb, prefix = color_chooser(instance)
         if instance.tagged?
           if instance.reason
-            say "<%= color('#{prefix} #{name}: #{count} (expiring on #{instance.tag_value} because of #{instance.reason})', :#{color}) %>"
+            puts "#{prefix} #{name}: #{count} (expiring on #{instance.tag_value} because of #{instance.reason})".blue
           else
             say "<%= color('#{prefix} #{name}: #{count} (expiring on #{instance.tag_value})', :#{color}) %>"
           end
@@ -94,6 +95,7 @@ module SportNginAwsAuditor
 
       def self.print_to_slack(audit_results, class_type, environment)
         discrepancy_array = []
+        tagged_array = []
 
         audit_results.data.each do |instance|
           unless instance.matched?
@@ -101,11 +103,25 @@ module SportNginAwsAuditor
           end
         end
 
-        true_discrepancies = discrepancy_array.reject{ |instance| instance.tagged? }
+        audit_results.data.each do |instance|
+          if instance.tagged?
+            tagged_array.push(instance)
+          end
+        end
 
-        unless true_discrepancies.empty?
+        unless discrepancy_array.empty?
           print_discrepancies(discrepancy_array, audit_results, class_type, environment)
         end
+
+        unless tagged_array.empty?
+          print_tagged(tagged_array, audit_results, class_type, environment)
+        end
+
+        retired_ris = audit_results.retired_ris
+        retired_tags = audit_results.retired_tags
+
+        print_retired_ris(retired_ris, class_type, environment) unless retired_ris.empty?
+        print_retired_tags(retired_tags, class_type, environment) unless retired_tags.empty?
       end
 
       def self.print_discrepancies(discrepancy_array, audit_results, class_type, environment)
@@ -113,31 +129,38 @@ module SportNginAwsAuditor
         slack_instances = NotifySlack.new(title)
 
         discrepancy_array.each do |discrepancy|
-          name = discrepancy.type
+          type = discrepancy.type
           count = discrepancy.count
           color, rgb, prefix = color_chooser(discrepancy)
-          text = "#{prefix} #{name}: #{count}"
 
-          if discrepancy.tagged?
-            if discrepancy.reason
-              text = "#{prefix} #{name}: #{count} (expiring on #{discrepancy.tag_value} because of #{discrepancy.reason})"
-            else
-              text = "#{prefix} #{name}: #{count} (expiring on #{discrepancy.tag_value})"
-            end
+          unless discrepancy.tagged?
+            text = "#{prefix} #{type}: #{count}"
+            slack_instances.attachments.push({"color" => rgb, "text" => text, "mrkdwn_in" => ["text"]})
+          end
+        end
+
+        slack_instances.perform        
+      end
+
+      def self.print_tagged(tagged_array, audit_results, class_type, environment)
+        title = "There are currently some tagged #{class_type}s in #{environment}:\n"
+        slack_instances = NotifySlack.new(title)
+
+        tagged_array.each do |tagged|
+          type = tagged.type
+          count = tagged.count
+          color, rgb, prefix = color_chooser(tagged)
+          
+          if tagged.reason
+            text = "#{prefix} #{type}: #{count} (expiring on #{tagged.tag_value} because of #{tagged.reason})"
           else
-            text = "#{prefix} #{name}: #{count}"
+            text = "#{prefix} #{type}: #{count} (expiring on #{tagged.tag_value})"
           end
 
           slack_instances.attachments.push({"color" => rgb, "text" => text, "mrkdwn_in" => ["text"]})
         end
 
         slack_instances.perform
-
-        retired_ris = audit_results.retired_ris
-        retired_tags = audit_results.retired_tags
-
-        print_retired_ris(retired_ris, class_type, environment) unless retired_ris.empty?
-        print_retired_tags(retired_tags, class_type, environment) unless retired_tags.empty?
       end
 
       def self.print_retired_ris(retired_ris, class_type, environment)
