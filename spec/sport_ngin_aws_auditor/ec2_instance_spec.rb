@@ -22,7 +22,8 @@ module SportNginAwsAuditor
                                                state: state,
                                                placement: placement,
                                                tags: instance_tags,
-                                               class: "Aws::EC2::Types::Instance")
+                                               class: "Aws::EC2::Types::Instance",
+                                               key_name: 'Example-instance-01')
         ec2_instance2 = double('ec2_instance', instance_id: "i-thisisfake",
                                                instance_type: "t2.large",
                                                vpc_id: "vpc-alsofake",
@@ -30,7 +31,8 @@ module SportNginAwsAuditor
                                                state: state,
                                                placement: placement,
                                                tags: instance_tags,
-                                               class: "Aws::EC2::Types::Instance")
+                                               class: "Aws::EC2::Types::Instance",
+                                               key_name: 'Example-instance-02')
         ec2_reservations = double('ec2_reservations', instances: [ec2_instance1, ec2_instance2])
         ec2_instances = double('ec2_instances', reservations: [ec2_reservations])
         name_tag = { key: "Name", value: "our-app-instance-100" }
@@ -203,7 +205,8 @@ module SportNginAwsAuditor
                                               state: state,
                                               placement: placement,
                                               tags: instance_tags,
-                                              class: "Aws::EC2::Types::Instance")
+                                              class: "Aws::EC2::Types::Instance",
+                                              key_name: 'Example-instance-01')
         ec2_reservations = double('ec2_reservations', instances: [ec2_instance])
         ec2_instances = double('ec2_instances', reservations: [ec2_reservations])
         name_tag = { key: "Name", value: "our-app-instance-100" }
@@ -227,14 +230,16 @@ module SportNginAwsAuditor
                                                platform: nil,
                                                state: state,
                                                placement: placement,
-                                               class: "Aws::EC2::Types::Instance")
+                                               class: "Aws::EC2::Types::Instance",
+                                               key_name: 'Example-instance-01')
         ec2_instance2 = double('ec2_instance', instance_id: "i-alsofake",
                                                instance_type: "t2.small",
                                                vpc_id: "vpc-alsofake",
                                                platform: "Windows",
                                                state: state,
                                                placement: placement,
-                                               class: "Aws::EC2::Types::Instance")
+                                               class: "Aws::EC2::Types::Instance",
+                                               key_name: 'Example-instance-01')
         ec2_reservations = double('ec2_reservations', instances: [ec2_instance1, ec2_instance2])
         ec2_instances = double('ec2_instances', reservations: [ec2_reservations])
         name_tag = { key: "Name", value: "our-app-instance-100" }
