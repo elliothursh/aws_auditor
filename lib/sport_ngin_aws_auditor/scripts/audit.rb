@@ -71,7 +71,7 @@ module SportNginAwsAuditor
         say "The following #{class_type}Instance tags have recently expired in #{environment}:"
         retired_tags.each do |tag|
           if tag.reason
-            say "#{tag.instance_name} (#{tag.instance_type}) retired on #{tag.value} because of #{reason}"
+            say "#{tag.instance_name} (#{tag.instance_type}) retired on #{tag.value} because of #{tag.reason}"
           else
             say "#{tag.instance_name} (#{tag.instance_type}) retired on #{tag.value}"
           end
@@ -98,19 +98,19 @@ module SportNginAwsAuditor
         tagged_array = []
 
         audit_results.data.each do |instance|
-          unless instance.matched?
+          unless instance.matched? || instance.tagged?
             discrepancy_array.push(instance)
           end
+        end
+
+        unless discrepancy_array.empty?
+          print_discrepancies(discrepancy_array, audit_results, class_type, environment)
         end
 
         audit_results.data.each do |instance|
           if instance.tagged?
             tagged_array.push(instance)
           end
-        end
-
-        unless discrepancy_array.empty?
-          print_discrepancies(discrepancy_array, audit_results, class_type, environment)
         end
 
         unless tagged_array.empty?
@@ -182,7 +182,7 @@ module SportNginAwsAuditor
 
         retired_tags.each do |tag|
           if tag.reason
-            message << "*#{tag.instance_name}* (#{tag.instance_type}) retired on *#{tag.value}* because of #{reason}\n"
+            message << "*#{tag.instance_name}* (#{tag.instance_type}) retired on *#{tag.value}* because of #{tag.reason}\n"
           else
             message << "*#{tag.instance_name}* (#{tag.instance_type}) retired on *#{tag.value}*\n"
           end
