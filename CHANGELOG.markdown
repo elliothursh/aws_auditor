@@ -1,3 +1,8 @@
+#### v3.8.0
+* Clarifying printout of audit command
+
+  > Emma Sax: : https://github.com/sportngin/sport_ngin_aws_auditor/pull/18
+
 #### v3.7.0
 * Print retired tags into slack/terminal on audit
 
