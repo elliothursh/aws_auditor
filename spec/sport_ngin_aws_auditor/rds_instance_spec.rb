@@ -22,14 +22,16 @@ module SportNginAwsAuditor
                                                db_instance_status: "available",
                                                engine: "mysql",
                                                availability_zone: "us-east-1a",
-                                               class: "Aws::RDS::Types::DBInstance")
+                                               class: "Aws::RDS::Types::DBInstance",
+                                               db_name: 'Example-instance-01')
         rds_instance2 = double('rds_instance', db_instance_identifier: "our-service",
                                                multi_az: false,
                                                db_instance_class: "db.m3.large",
                                                db_instance_status: "available",
                                                engine: "mysql",
                                                availability_zone: "us-east-1a",
-                                               class: "Aws::RDS::Types::DBInstance")
+                                               class: "Aws::RDS::Types::DBInstance",
+                                               db_name: 'Example-instance-01')
         db_instances = double('db_instances', db_instances: [rds_instance1, rds_instance2])
         tag1 = double('tag', key: "cookie", value: "chocolate chip")
         tag2 = double('tag', key: "ice cream", value: "oreo")
@@ -177,7 +179,8 @@ module SportNginAwsAuditor
                                               db_instance_status: "available",
                                               engine: "postgres",
                                               availability_zone: "us-east-1a",
-                                              class: "Aws::RDS::Types::DBInstance")
+                                              class: "Aws::RDS::Types::DBInstance",
+                                              db_name: 'Example-instance-01')
         db_instances = double('db_instances', db_instances: [rds_instance])
         tag1 = double('tag', key: "cookie", value: "chocolate chip")
         tag2 = double('tag', key: "ice cream", value: "oreo")

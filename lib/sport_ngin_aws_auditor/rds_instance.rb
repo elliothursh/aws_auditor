@@ -35,7 +35,7 @@ module SportNginAwsAuditor
       end
     end
 
-    attr_accessor :id, :name, :multi_az, :instance_type, :engine, :count, :tag_value, :expiration_date
+    attr_accessor :id, :name, :multi_az, :instance_type, :engine, :count, :tag_value, :tag_reason, :expiration_date
     def initialize(rds_instance, account_id=nil, tag_name=nil, rds=nil)
       if rds_instance.class.to_s == "Aws::RDS::Types::ReservedDBInstance"
         self.id = rds_instance.reserved_db_instances_offering_id
@@ -46,6 +46,7 @@ module SportNginAwsAuditor
         self.expiration_date = rds_instance.start_time + rds_instance.duration if rds_instance.state == 'retired'
       elsif rds_instance.class.to_s == "Aws::RDS::Types::DBInstance"
         self.id = rds_instance.db_instance_identifier
+        self.name = rds_instance.db_name
         self.multi_az = rds_instance.multi_az ? "Multi-AZ" : "Single-AZ"
         self.instance_type = rds_instance.db_instance_class
         self.engine = engine_helper(rds_instance.engine)
@@ -60,6 +61,8 @@ module SportNginAwsAuditor
           rds.list_tags_for_resource(resource_name: arn).tag_list.each do |tag|
             if tag.key == tag_name
               self.tag_value = tag.value
+            elsif tag.key == 'no-reserved-instance-reason'
+              self.tag_reason = tag.value
             end
           end
         end

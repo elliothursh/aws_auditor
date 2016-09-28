@@ -35,7 +35,7 @@ module SportNginAwsAuditor
       end
     end
 
-    attr_accessor :id, :name, :instance_type, :engine, :count, :tag_value, :expiration_date
+    attr_accessor :id, :name, :instance_type, :engine, :count, :tag_value, :tag_reason, :expiration_date
     def initialize(cache_instance, account_id=nil, tag_name=nil, cache=nil)
       if cache_instance.class.to_s == "Aws::ElastiCache::Types::ReservedCacheNode"
         self.id = cache_instance.reserved_cache_node_id
@@ -60,6 +60,8 @@ module SportNginAwsAuditor
           cache.list_tags_for_resource(resource_name: arn).tag_list.each do |tag|
             if tag.key == tag_name
               self.tag_value = tag.value
+            elsif tag.key == 'no-reserved-instance-reason'
+              self.tag_reason = tag.value
             end
           end
         end

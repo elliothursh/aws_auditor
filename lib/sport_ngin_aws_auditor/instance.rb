@@ -4,41 +4,45 @@ module SportNginAwsAuditor
   class Instance
     extend InstanceHelper
 
-    attr_accessor :name, :count, :type
-    def initialize(name, count)
-      if name.include?(" with tag")
-        name = name.dup # because name is a frozen string right now
-        name.slice!(" with tag")
-        self.name = name
-        self.type = "tagged"
+    attr_accessor :type, :count, :category, :tag_value, :reason, :name
+    def initialize(type, data_array)
+      if type.include?(" with tag")
+        type = type.dup # because type is a frozen string right now
+        type.slice!(" with tag")
+        self.type = type
+        self.category = "tagged"
+        self.name = data_array[1] || nil
+        self.reason = data_array[2] || nil
+        self.tag_value = data_array[3] || nil
       else
-        self.name = name
-        if count < 0
-          self.type = "running"
-        elsif count == 0
-          self.type = "matched"
-        elsif count > 0 
-          self.type = "reserved"
+        self.type = type
+
+        if data_array[0] < 0
+          self.category = "running"
+        elsif data_array[0] == 0
+          self.category = "matched"
+        elsif data_array[0] > 0
+          self.category = "reserved"
         end
       end
 
-      self.count = count.abs
+      self.count = data_array[0].abs
     end
 
     def tagged?
-      self.type == "tagged"
+      self.category == "tagged"
     end
 
     def reserved?
-      self.type == "reserved"
+      self.category == "reserved"
     end
 
     def running?
-      self.type == "running"
+      self.category == "running"
     end
 
     def matched?
-      self.type == "matched"
+      self.category == "matched"
     end
   end
 end
