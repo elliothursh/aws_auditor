@@ -1,3 +1,3 @@
 module SportNginAwsAuditor
-  VERSION = "3.7.0"
+  VERSION = "3.8.1"
 end
