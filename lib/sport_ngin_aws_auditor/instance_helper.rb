@@ -2,9 +2,9 @@ require_relative './recently_retired_tag'
 require_relative './audit_data'
 
 module SportNginAwsAuditor
-	module InstanceHelper
+  module InstanceHelper
 
-		def instance_hash
+    def instance_hash
       Hash[get_instances.map { |instance| instance.nil? ? next : [instance.id, instance]}.compact]
     end
 
@@ -16,7 +16,7 @@ module SportNginAwsAuditor
       instance_hash = Hash.new()
       instances.each do |instance|
         next if instance.nil?
-        instance_hash[instance.to_s] = instance_hash.has_key?(instance.to_s) ? instance_hash[instance.to_s][0] + instance.count : instance.count
+        instance_hash[instance.to_s] = instance_hash.has_key?(instance.to_s) ? instance_hash[instance.to_s] + instance.count : instance.count
       end if instances
 
       instance_hash.each do |key, value|
@@ -31,9 +31,9 @@ module SportNginAwsAuditor
         key = instance.to_s << " with tag"
         instance_result = []
         if instance_hash.has_key?(key)
-          instance_result << instance_hash[key][0] + 1
+          instance_result << instance_hash[key][0] + instance.count
         else
-          instance_result << 1
+          instance_result << instance.count
         end
         instance_result << instance.name
         instance_result << instance.tag_reason
@@ -107,5 +107,5 @@ module SportNginAwsAuditor
       end
       value
     end
-	end
+  end
 end
