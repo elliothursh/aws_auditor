@@ -66,7 +66,7 @@ module SportNginAwsAuditor
         self.id = ec2_instance.reserved_instances_id
         self.name = nil
         self.platform = platform_helper(ec2_instance.product_description)
-        self.availability_zone = ec2_instance.availability_zone || '(region-based)'
+        self.availability_zone = ec2_instance.availability_zone
         self.instance_type = ec2_instance.instance_type
         self.count = count
         self.stack_name = nil
@@ -75,7 +75,7 @@ module SportNginAwsAuditor
         self.id = ec2_instance.instance_id
         self.name = ec2_instance.key_name
         self.platform = platform_helper((ec2_instance.platform || ''), ec2_instance.vpc_id)
-        self.availability_zone = ec2_instance.placement.availability_zone ||'(region-based)'
+        self.availability_zone = ec2_instance.placement.availability_zone
         self.instance_type = ec2_instance.instance_type
         self.count = count
         self.stack_name = nil
