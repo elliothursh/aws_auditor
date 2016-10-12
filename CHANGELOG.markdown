@@ -1,3 +1,8 @@
+#### v3.8.2
+* Fixing bugs so that counts are accurate again
+
+  > Emma Sax: : https://github.com/sportngin/sport_ngin_aws_auditor/pull/20
+
 #### v3.8.1
 #### v3.8.0
 * Clarifying printout of audit command
