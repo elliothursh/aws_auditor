@@ -48,7 +48,11 @@ module SportNginAwsAuditor
       instances_with_tag = filter_instances_with_tags(instances)
       instances_without_tag = filter_instance_without_tags(instances)
       instance_hash = instance_count_hash(instances_without_tag)
-      ris = instance_count_hash(get_reserved_instances)
+
+      ris = get_reserved_instances
+      ris_availability = filter_ris_availability_zone(ris)
+      ris_region = filter_ris_region_based(ris)
+      ris = instance_count_hash(ris_availability)
       
       instance_hash.keys.concat(ris.keys).uniq.each do |key|
         instance_count = instance_hash.has_key?(key) ? instance_hash[key][0] : 0
@@ -81,6 +85,18 @@ module SportNginAwsAuditor
       instances.select do |instance|
         value = gather_instance_tag_date(instance)
         value.nil? || (Date.today.to_s >= value.to_s)
+      end
+    end
+
+    def filter_ris_availability_zone(ris)
+      ris.select do |ri|
+        ri.scope == 'Availability Zone'
+      end
+    end
+
+    def filter_ris_region_based(ris)
+      ris.select do |ri|
+        ri.scope == 'Region'
       end
     end
 

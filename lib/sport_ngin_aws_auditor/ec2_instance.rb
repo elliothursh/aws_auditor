@@ -23,6 +23,9 @@ module SportNginAwsAuditor
         return @reserved_instances if @reserved_instances
         @reserved_instances = ec2.describe_reserved_instances.reserved_instances.map do |instance|
           next unless instance.state == 'active'
+          # if instance.scope == 'Region'
+          #   puts "availability_zone: #{instance.availability_zone}"
+          # end
           new(instance, nil, instance.instance_count)
         end.compact
       end
@@ -60,13 +63,14 @@ module SportNginAwsAuditor
       private :get_more_info
     end
 
-    attr_accessor :id, :name, :platform, :availability_zone, :instance_type, :count, :stack_name, :tag_value, :tag_reason, :expiration_date
+    attr_accessor :id, :name, :platform, :availability_zone, :scope, :instance_type, :count, :stack_name, :tag_value, :tag_reason, :expiration_date
     def initialize(ec2_instance, tag_name, count=1)
       if ec2_instance.class.to_s == "Aws::EC2::Types::ReservedInstances"
         self.id = ec2_instance.reserved_instances_id
         self.name = nil
         self.platform = platform_helper(ec2_instance.product_description)
-        self.availability_zone = ec2_instance.availability_zone
+        self.scope = ec2_instance.scope
+        self.availability_zone = self.scope == 'Region' ? nil : ec2_instance.availability_zone
         self.instance_type = ec2_instance.instance_type
         self.count = count
         self.stack_name = nil
@@ -75,6 +79,7 @@ module SportNginAwsAuditor
         self.id = ec2_instance.instance_id
         self.name = ec2_instance.key_name
         self.platform = platform_helper((ec2_instance.platform || ''), ec2_instance.vpc_id)
+        self.scope = nil
         self.availability_zone = ec2_instance.placement.availability_zone
         self.instance_type = ec2_instance.instance_type
         self.count = count

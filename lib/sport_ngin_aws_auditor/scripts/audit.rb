@@ -25,6 +25,8 @@ module SportNginAwsAuditor
           tag_name = options[:tag]
         end
 
+        zone_output = options[:zone_output]
+
         cycle = [["EC2Instance", options[:ec2]],
                  ["RDSInstance", options[:rds]],
                  ["CacheInstance", options[:cache]]]
@@ -38,15 +40,15 @@ module SportNginAwsAuditor
         cycle.each do |c|
           audit_results = AuditData.new(options[:instances], options[:reserved], c.first, tag_name)
           audit_results.gather_data
-          print_data(slack, audit_results, c.first, environment) if (c.last || no_selection)
+          print_data(slack, audit_results, c.first, environment, zone_output) if (c.last || no_selection)
         end
       end
 
-      def self.print_data(slack, audit_results, class_type, environment)
+      def self.print_data(slack, audit_results, class_type, environment, zone_output)
         audit_results.data.sort_by! { |instance| [instance.category, instance.type] }
 
         if slack
-          print_to_slack(audit_results, class_type, environment)
+          print_to_slack(audit_results, class_type, environment, zone_output)
         elsif options[:reserved] || options[:instances]
           puts header(class_type)
           audit_results.data.each{ |instance| say "<%= color('#{instance.type}: #{instance.count}', :white) %>" }
@@ -55,7 +57,7 @@ module SportNginAwsAuditor
           retired_tags = audit_results.retired_tags
 
           puts header(class_type)
-          audit_results.data.each{ |instance| colorize(instance) }
+          audit_results.data.each{ |instance| colorize(instance, zone_output) }
 
           say_retired_ris(retired_ris, class_type, environment) unless retired_ris.empty?
           say_retired_tags(retired_tags, class_type, environment) unless retired_tags.empty?
@@ -78,8 +80,13 @@ module SportNginAwsAuditor
         end
       end
 
-      def self.colorize(instance)
-        name = instance.type
+      def self.colorize(instance, zone_output=nil)
+        if !zone_output && (instance.tagged? || instance.reserved?)
+          name = instance.type.sub(/(-\d\w)/, '')
+        else
+          name = instance.type
+        end
+
         count = instance.count
         color, rgb, prefix = color_chooser(instance)
         if instance.tagged?
@@ -93,7 +100,7 @@ module SportNginAwsAuditor
         end
       end
 
-      def self.print_to_slack(audit_results, class_type, environment)
+      def self.print_to_slack(audit_results, class_type, environment, zone_output)
         discrepancy_array = []
         tagged_array = []
 
@@ -104,7 +111,7 @@ module SportNginAwsAuditor
         end
 
         unless discrepancy_array.empty?
-          print_discrepancies(discrepancy_array, audit_results, class_type, environment)
+          print_discrepancies(discrepancy_array, class_type, environment, zone_output)
         end
 
         audit_results.data.each do |instance|
@@ -114,7 +121,7 @@ module SportNginAwsAuditor
         end
 
         unless tagged_array.empty?
-          print_tagged(tagged_array, audit_results, class_type, environment)
+          print_tagged(tagged_array, class_type, environment, zone_output)
         end
 
         retired_ris = audit_results.retired_ris
@@ -124,12 +131,17 @@ module SportNginAwsAuditor
         print_retired_tags(retired_tags, class_type, environment) unless retired_tags.empty?
       end
 
-      def self.print_discrepancies(discrepancy_array, audit_results, class_type, environment)
+      def self.print_discrepancies(discrepancy_array, class_type, environment, zone_output)
         title = "Some #{class_type} discrepancies for #{environment} exist:\n"
         slack_instances = NotifySlack.new(title)
 
         discrepancy_array.each do |discrepancy|
-          type = discrepancy.type
+          if !zone_output && discrepancy.reserved?
+            type = discrepancy.type.sub(/(-\d\w)/, '')
+          else
+            type = discrepancy.type
+          end
+
           count = discrepancy.count
           color, rgb, prefix = color_chooser(discrepancy)
 
@@ -142,12 +154,17 @@ module SportNginAwsAuditor
         slack_instances.perform        
       end
 
-      def self.print_tagged(tagged_array, audit_results, class_type, environment)
+      def self.print_tagged(tagged_array, class_type, environment, zone_output)
         title = "There are currently some tagged #{class_type}s in #{environment}:\n"
         slack_instances = NotifySlack.new(title)
 
         tagged_array.each do |tagged|
-          type = tagged.type
+          if zone_output
+            type = tagged.type
+          else
+            type = tagged.type.sub(/(-\d\w)/, '')
+          end
+
           count = tagged.count
           color, rgb, prefix = color_chooser(tagged)
           
