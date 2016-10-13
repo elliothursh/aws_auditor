@@ -23,9 +23,6 @@ module SportNginAwsAuditor
         return @reserved_instances if @reserved_instances
         @reserved_instances = ec2.describe_reserved_instances.reserved_instances.map do |instance|
           next unless instance.state == 'active'
-          # if instance.scope == 'Region'
-          #   puts "availability_zone: #{instance.availability_zone}"
-          # end
           new(instance, nil, instance.instance_count)
         end.compact
       end

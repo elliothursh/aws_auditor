@@ -4,7 +4,7 @@ module SportNginAwsAuditor
   describe AuditData do
     before :each do
       @instance = double('instance')
-      @instance1 = double('ec2_instance1')
+      @instance1 = double('ec2_instance1', availability_zone: 'us-east-1b')
       @instance2 = double('ec2_instance2')
       @instance3 = double('ec2_instance3')
       @instance4 = double('ec2_instance4')

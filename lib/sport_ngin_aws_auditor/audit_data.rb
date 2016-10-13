@@ -3,7 +3,7 @@ require_relative './instance_helper'
 module SportNginAwsAuditor
   class AuditData
 
-    attr_accessor :data, :retired_tags, :retired_ris, :selected_audit_type, :klass, :tag_name
+    attr_accessor :data, :retired_tags, :retired_ris, :selected_audit_type, :klass, :tag_name, :region
     def initialize(instances, reserved, class_type, tag_name)
       self.selected_audit_type = (!instances && !reserved) ? "all" : (instances ? "instances" : "reserved")
       self.klass = SportNginAwsAuditor.const_get(class_type)
@@ -43,6 +43,7 @@ module SportNginAwsAuditor
 
     def gather_instances_data
       instances = self.klass.get_instances(tag_name)
+      gather_region(instances)
       retired_tags = self.klass.get_retired_tags(instances)
       instances_with_tag = self.klass.filter_instances_with_tags(instances)
       instances_without_tag = self.klass.filter_instance_without_tags(instances)
@@ -54,11 +55,19 @@ module SportNginAwsAuditor
 
     def gather_all_data
       instances = self.klass.get_instances(tag_name)
+      gather_region(instances)
       retired_tags = self.klass.get_retired_tags(instances)
       instance_hash = self.klass.compare(instances)
       retired_ris = self.klass.get_recent_retired_reserved_instances
 
       return instance_hash, retired_tags, retired_ris
+    end
+
+    def gather_region(instances)
+      if self.klass == SportNginAwsAuditor.const_get('EC2Instance')
+        match = instances.first.availability_zone.match(/(\w{2}-\w{4,})/)
+        self.region = match[0] unless match.nil?
+      end
     end
   end
 end
