@@ -59,6 +59,8 @@ module SportNginAwsAuditor
             end
           end
         end
+      end
+      ris_region.each do |ri|
         differences[ri.to_s] = [ri.count, true]
       end
     end
