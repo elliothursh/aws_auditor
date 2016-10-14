@@ -137,5 +137,13 @@ module SportNginAwsAuditor
         expect(result3).to eq(@retired_ris)
       end
     end
+
+    context '#gather_region' do
+      it 'should gather the region from an instance' do
+        audit_results = AuditData.new(false, false, "EC2Instance", "no-reserved-instance")
+        audit_results.gather_region(@ec2_instances)
+        expect(audit_results.region).to eq('us-east')
+      end
+    end
   end
 end
