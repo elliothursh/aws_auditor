@@ -33,7 +33,7 @@ module SportNginAwsAuditor
 
       compared_array = []
       instance_hash.each do |key, value|
-        compared_array.push(Instance.new(key, value))
+        compared_array.push(Instance.new(key, value, self.region))
       end
 
       self.data = compared_array

@@ -81,7 +81,7 @@ module SportNginAwsAuditor
       end
 
       def self.colorize(instance, zone_output=nil)
-        if !zone_output && (instance.tagged? || instance.reserved?)
+        if !zone_output && (instance.tagged? || instance.running?)
           name = instance.type.sub(/(-\d\w)/, '')
         else
           name = instance.type
@@ -136,7 +136,7 @@ module SportNginAwsAuditor
         slack_instances = NotifySlack.new(title)
 
         discrepancy_array.each do |discrepancy|
-          if !zone_output && discrepancy.reserved?
+          if !zone_output && discrepancy.running?
             type = discrepancy.type.sub(/(-\d\w)/, '')
           else
             type = discrepancy.type

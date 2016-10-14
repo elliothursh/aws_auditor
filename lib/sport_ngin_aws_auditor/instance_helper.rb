@@ -20,7 +20,7 @@ module SportNginAwsAuditor
       end if instances
 
       instance_hash.each do |key, value|
-        instance_hash[key] = [instance_hash[key]]
+        instance_hash[key] = [instance_hash[key], false]
       end
       instance_hash
     end
@@ -43,6 +43,26 @@ module SportNginAwsAuditor
       instance_hash
     end
 
+    def consider_region_ris(ris_region, differences)
+      ris_region.each do |ri|
+        differences.each do |key, value|
+          my_match = key.match(/(\w*\s*\w*\s*)\w{2}-\w{2,}-\w{2}(\s*\S*)/)
+          platform = my_match[1] if my_match
+          platform[platform.length - 1] = ''
+          type = my_match[2] if my_match
+          type[0] = ''
+
+          if (platform == ri.platform) && (type == ri.instance_type) && (value[0] < 0)
+            until (ri.count == 0) || (value[0] == 0)
+              value[0] = value[0] + 1
+              ri.count = ri.count - 1
+            end
+          end
+        end
+        differences[ri.to_s] = [ri.count, true]
+      end
+    end
+
     def compare(instances)
       differences = Hash.new()
       instances_with_tag = filter_instances_with_tags(instances)
@@ -60,6 +80,7 @@ module SportNginAwsAuditor
         differences[key] = [ris_count - instance_count]
       end
       
+      consider_region_ris(ris_region, differences)
       add_instances_with_tag_to_hash(instances_with_tag, differences)
       differences
     end
@@ -88,12 +109,14 @@ module SportNginAwsAuditor
       end
     end
 
+    # this gathers all RIs except the region-based RIs
     def filter_ris_availability_zone(ris)
-      ris.select do |ri|
-        ri.scope == 'Availability Zone'
+      ris.reject do |ri|
+        ri.scope == 'Region'
       end
     end
 
+    # this filters all of the region-based RIs
     def filter_ris_region_based(ris)
       ris.select do |ri|
         ri.scope == 'Region'
