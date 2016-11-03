@@ -65,7 +65,10 @@ module SportNginAwsAuditor
 
     def gather_region(instances)
       if self.klass == SportNginAwsAuditor.const_get('EC2Instance')
+        # if instances.first.availability_zone = 'us-east-1a'...
         match = instances.first.availability_zone.match(/(\w{2}-\w{4,})/)
+
+        # then region = 'us-east'
         self.region = match[0] unless match.nil?
       end
     end

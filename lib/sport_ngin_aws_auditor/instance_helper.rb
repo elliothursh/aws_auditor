@@ -20,7 +20,7 @@ module SportNginAwsAuditor
       end if instances
 
       instance_hash.each do |key, value|
-        instance_hash[key] = [instance_hash[key], false]
+        instance_hash[key] = {:count => instance_hash[key], :region_based => false}
       end
       instance_hash
     end
@@ -29,15 +29,14 @@ module SportNginAwsAuditor
       instances_to_add.each do |instance|
         next if instance.nil?
         key = instance.to_s << " with tag"
-        instance_result = []
+        instance_result = {}
         if instance_hash.has_key?(key)
-          instance_result << instance_hash[key][0] + instance.count
+          instance_result[:count] = instance_hash[:count] + instance.count
         else
-          instance_result << instance.count
+          instance_result[:count] = instance.count
         end
-        instance_result << instance.name
-        instance_result << instance.tag_reason
-        instance_result << instance.tag_value
+        instance_result.merge!({:name => instance.name, :tag_reason => instance.tag_reason,
+                               :tag_value => instance.tag_value, :region_based => false})
         instance_hash[key] = instance_result
       end if instances_to_add
       instance_hash
@@ -46,22 +45,28 @@ module SportNginAwsAuditor
     def consider_region_ris(ris_region, differences)
       ris_region.each do |ri|
         differences.each do |key, value|
+          # if key = 'Linux VPC us-east-1a t2.medium'...
           my_match = key.match(/(\w*\s*\w*\s*)\w{2}-\w{2,}-\w{2}(\s*\S*)/)
+
+          # then platform = 'Linux VPC'...
           platform = my_match[1] if my_match
           platform[platform.length - 1] = ''
-          type = my_match[2] if my_match
-          type[0] = ''
 
-          if (platform == ri.platform) && (type == ri.instance_type) && (value[0] < 0)
-            until (ri.count == 0) || (value[0] == 0)
-              value[0] = value[0] + 1
+          # and size = 't2.medium'
+          size = my_match[2] if my_match
+          size[0] = ''
+
+          if (platform == ri.platform) && (size == ri.instance_type) && (value[:count] < 0)
+            until (ri.count == 0) || (value[:count] == 0)
+              value[:count] = value[:count] + 1
               ri.count = ri.count - 1
             end
           end
         end
       end
+
       ris_region.each do |ri|
-        differences[ri.to_s] = [ri.count, true]
+        differences[ri.to_s] = {:count => ri.count, :region_based => true}
       end
     end
 
@@ -77,9 +82,9 @@ module SportNginAwsAuditor
       ris = instance_count_hash(ris_availability)
       
       instance_hash.keys.concat(ris.keys).uniq.each do |key|
-        instance_count = instance_hash.has_key?(key) ? instance_hash[key][0] : 0
-        ris_count = ris.has_key?(key) ? ris[key][0] : 0
-        differences[key] = [ris_count - instance_count]
+        instance_count = instance_hash.has_key?(key) ? instance_hash[key][:count] : 0
+        ris_count = ris.has_key?(key) ? ris[key][:count] : 0
+        differences[key] = {:count => ris_count - instance_count, :region_based => false}
       end
       
       consider_region_ris(ris_region, differences)
@@ -113,16 +118,12 @@ module SportNginAwsAuditor
 
     # this gathers all RIs except the region-based RIs
     def filter_ris_availability_zone(ris)
-      ris.reject do |ri|
-        ri.scope == 'Region'
-      end
+      ris.reject { |ri| ri.scope == 'Region' }
     end
 
     # this filters all of the region-based RIs
     def filter_ris_region_based(ris)
-      ris.select do |ri|
-        ri.scope == 'Region'
-      end
+      ris.select { |ri| ri.scope == 'Region' }
     end
 
     # this returns a hash of all instances that have retired between 1 week ago and today
