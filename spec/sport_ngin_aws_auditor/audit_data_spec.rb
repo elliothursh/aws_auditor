@@ -14,10 +14,10 @@ module SportNginAwsAuditor
       allow(SportNginAwsAuditor::EC2Instance).to receive(:get_reserved_instances).and_return(@ec2_instances)
       allow(SportNginAwsAuditor::EC2Instance).to receive(:get_retired_tags).and_return([])
       allow(SportNginAwsAuditor::EC2Instance).to receive(:filter_instances_with_tags).and_return([])
-      allow(SportNginAwsAuditor::EC2Instance).to receive(:filter_instance_without_tags).and_return(@ec2_instances)
+      allow(SportNginAwsAuditor::EC2Instance).to receive(:filter_instances_without_tags).and_return(@ec2_instances)
       allow(SportNginAwsAuditor::EC2Instance).to receive(:instance_count_hash).and_return({'instance1' => 1,
                                                                                            'instance2' => 1})
-      allow(SportNginAwsAuditor::EC2Instance).to receive(:add_instances_with_tag_to_hash).and_return({'instance1' => 1,
+      allow(SportNginAwsAuditor::EC2Instance).to receive(:apply_tagged_instances).and_return({'instance1' => 1,
                                                                                                       'instance2' => 1})
       allow(SportNginAwsAuditor::EC2Instance).to receive(:compare).and_return({'instance1' => 1,
                                                                                'instance2' => 1})

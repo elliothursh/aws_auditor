@@ -88,24 +88,24 @@ module SportNginAwsAuditor
 
     context '#instance_count_hash' do
       it 'should add the instances to the hash of differences' do
-        klass = SportNginAwsAuditor.const_get('EC2Instance')
+        klass = SportNginAwsAuditor::EC2Instance
         result = klass.instance_count_hash(@ec2_instances)
         expect(result).to eq({'Linux VPC us-east-1b t2.small' => {count: 1, region_based: false}, 'Windows us-east-1b t2.medium' => {count: 1, region_based: false}})
       end
     end
 
-    context '#add_instances_with_tag_to_hash' do
+    context '#apply_tagged_instances' do
       it 'should add the instances to the hash of differences' do
-        klass = SportNginAwsAuditor.const_get('EC2Instance')
-        result = klass.add_instances_with_tag_to_hash(@ec2_instances, {})
+        klass = SportNginAwsAuditor::EC2Instance
+        result = klass.apply_tagged_instances(@ec2_instances, {})
         expect(result).to eq({'Linux VPC us-east-1b t2.small with tag' => {count: 1, name: @ec2_instance1.key_name, tag_reason: nil, tag_value: nil, region_based: false},
                               'Windows us-east-1b t2.medium with tag' => {count: 1, name: @ec2_instance2.key_name, tag_reason: nil, tag_value: nil, region_based: false}})
       end
     end
 
-    context '#consider_region_ris' do
+    context '#apply_region_ris' do
       it 'should factor in the region based RIs into the counting when there is a mixture of region based and non region based' do
-        klass = SportNginAwsAuditor.const_get('EC2Instance')
+        klass = SportNginAwsAuditor::EC2Instance
         allow(@ec2_instance1).to receive(:count).and_return(5)
         allow(@ec2_instance2).to receive(:count).and_return(5)
         allow(@region_reserved_ec2_instance1).to receive(:count=)
@@ -118,19 +118,19 @@ module SportNginAwsAuditor
           ris_count = ris.has_key?(key) ? ris[key][:count] : 0
           differences[key] = {count: ris_count - instance_count, region_based: false}
         end
-        result = klass.consider_region_ris(@region_reserved_instances, differences)
+        result = klass.apply_region_ris(@region_reserved_instances, differences)
         expect(differences).to eq({"Linux VPC us-east-1b t2.small"=>{count: 0, region_based: false}, "Windows us-east-1b t2.medium"=>{count: 0, region_based: false},
                                    "Linux VPC  t2.small" => {count: 2, region_based: true}, "Windows  t2.medium" => {count: 4, region_based: true}})
       end
 
       it 'should factor in the region based RIs into the counting when there are no zone specific RIs' do
-        klass = SportNginAwsAuditor.const_get('EC2Instance')
+        klass = SportNginAwsAuditor::EC2Instance
         allow(@ec2_instance1).to receive(:count).and_return(-2)
         allow(@ec2_instance2).to receive(:count).and_return(5)
         allow(@region_reserved_ec2_instance1).to receive(:count=)
         allow(@region_reserved_ec2_instance2).to receive(:count=)
         instance_hash = klass.instance_count_hash(@ec2_instances)
-        result = klass.consider_region_ris(@region_reserved_instances, instance_hash)
+        result = klass.apply_region_ris(@region_reserved_instances, instance_hash)
         expect(instance_hash).to eq({"Linux VPC us-east-1b t2.small"=>{count: 0, region_based: false}, "Windows us-east-1b t2.medium"=>{count: 5, region_based: false},
                                      "Linux VPC  t2.small" => {count: 2, region_based: true}, "Windows  t2.medium" => {count: 4, region_based: true}})
       end
@@ -138,7 +138,7 @@ module SportNginAwsAuditor
 
     context '#filter_ris_region_based' do
       it 'should filter all of the region based RIs out of the entire RI list' do
-        klass = SportNginAwsAuditor.const_get('EC2Instance')
+        klass = SportNginAwsAuditor::EC2Instance
         result = klass.filter_ris_region_based(@all_reserved_instances)
         expect(result).to eq(@region_reserved_instances)
       end
@@ -146,7 +146,7 @@ module SportNginAwsAuditor
 
     context '#filter_ris_availability_zone' do
       it 'should remove all of the region based RIs out of the entire RI list' do
-        klass = SportNginAwsAuditor.const_get('EC2Instance')
+        klass = SportNginAwsAuditor::EC2Instance
         result = klass.filter_ris_availability_zone(@all_reserved_instances)
         expect(result).to eq(@reserved_instances)
       end
@@ -154,7 +154,7 @@ module SportNginAwsAuditor
 
     context '#gather_instance_tag_date' do
       it 'should remove all of the region based RIs out of the entire RI list' do
-        klass = SportNginAwsAuditor.const_get('EC2Instance')
+        klass = SportNginAwsAuditor::EC2Instance
         allow(@ec2_instance1).to receive(:no_reserved_instance_tag_value).and_return('08/29/1995')
         result = klass.gather_instance_tag_date(@ec2_instance1)
         date_hash = Date._strptime('08/29/1995', '%m/%d/%Y')

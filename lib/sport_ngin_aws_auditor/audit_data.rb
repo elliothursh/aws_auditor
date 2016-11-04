@@ -25,8 +25,10 @@ module SportNginAwsAuditor
     def gather_data
       if instances?
         instance_hash, retired_tags = gather_instances_data
+        retired_ris = nil
       elsif reserved?
         instance_hash = self.klass.instance_count_hash(self.klass.get_reserved_instances)
+        retired_tags, retired_ris = nil
       elsif all?
         instance_hash, retired_tags, retired_ris = gather_all_data
       end
@@ -46,9 +48,9 @@ module SportNginAwsAuditor
       gather_region(instances)
       retired_tags = self.klass.get_retired_tags(instances)
       instances_with_tag = self.klass.filter_instances_with_tags(instances)
-      instances_without_tag = self.klass.filter_instance_without_tags(instances)
+      instances_without_tag = self.klass.filter_instances_without_tags(instances)
       instance_hash = self.klass.instance_count_hash(instances_without_tag)
-      self.klass.add_instances_with_tag_to_hash(instances_with_tag, instance_hash)
+      self.klass.apply_tagged_instances(instances_with_tag, instance_hash)
 
       return instance_hash, retired_tags
     end
@@ -64,7 +66,7 @@ module SportNginAwsAuditor
     end
 
     def gather_region(instances)
-      if self.klass == SportNginAwsAuditor.const_get('EC2Instance')
+      if self.klass == SportNginAwsAuditor::EC2Instance
         # if instances.first.availability_zone = 'us-east-1a'...
         match = instances.first.availability_zone.match(/(\w{2}-\w{4,})/)
 

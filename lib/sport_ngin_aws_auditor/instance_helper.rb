@@ -25,16 +25,18 @@ module SportNginAwsAuditor
       instance_hash
     end
 
-    def add_instances_with_tag_to_hash(instances_to_add, instance_hash)
+    def apply_tagged_instances(instances_to_add, instance_hash)
       instances_to_add.each do |instance|
         next if instance.nil?
         key = instance.to_s << " with tag"
         instance_result = {}
+        
         if instance_hash.has_key?(key)
           instance_result[:count] = instance_hash[:count] + instance.count
         else
           instance_result[:count] = instance.count
         end
+
         instance_result.merge!({:name => instance.name, :tag_reason => instance.tag_reason,
                                 :tag_value => instance.tag_value, :region_based => false})
         instance_hash[key] = instance_result
@@ -42,7 +44,7 @@ module SportNginAwsAuditor
       instance_hash
     end
 
-    def consider_region_ris(ris_region, differences)
+    def apply_region_ris(ris_region, differences)
       ris_region.each do |ri|
         differences.each do |key, value|
           # if key = 'Linux VPC us-east-1a t2.medium'...
@@ -70,25 +72,29 @@ module SportNginAwsAuditor
       end
     end
 
-    def compare(instances)
+    def measure_differences(instance_hash, ris_hash)
       differences = Hash.new()
+      instance_hash.keys.concat(ris_hash.keys).uniq.each do |key|
+        instance_count = instance_hash.has_key?(key) ? instance_hash[key][:count] : 0
+        ris_count = ris_hash.has_key?(key) ? ris_hash[key][:count] : 0
+        differences[key] = {:count => ris_count - instance_count, :region_based => false}
+      end
+      differences
+    end
+
+    def compare(instances)
       instances_with_tag = filter_instances_with_tags(instances)
-      instances_without_tag = filter_instance_without_tags(instances)
+      instances_without_tag = filter_instances_without_tags(instances)
       instance_hash = instance_count_hash(instances_without_tag)
 
       ris = get_reserved_instances
       ris_availability = filter_ris_availability_zone(ris)
       ris_region = filter_ris_region_based(ris)
-      ris = instance_count_hash(ris_availability)
+      ris_hash = instance_count_hash(ris_availability)
       
-      instance_hash.keys.concat(ris.keys).uniq.each do |key|
-        instance_count = instance_hash.has_key?(key) ? instance_hash[key][:count] : 0
-        ris_count = ris.has_key?(key) ? ris[key][:count] : 0
-        differences[key] = {:count => ris_count - instance_count, :region_based => false}
-      end
-      
-      consider_region_ris(ris_region, differences)
-      add_instances_with_tag_to_hash(instances_with_tag, differences)
+      differences = measure_differences(instance_hash, ris_hash)
+      apply_region_ris(ris_region, differences)
+      apply_tagged_instances(instances_with_tag, differences)
       differences
     end
 
@@ -109,7 +115,7 @@ module SportNginAwsAuditor
     end
 
     # assuming the value of the tag is in the form: 01/01/2000 like a date
-    def filter_instance_without_tags(instances)
+    def filter_instances_without_tags(instances)
       instances.select do |instance|
         value = gather_instance_tag_date(instance)
         value.nil? || (Date.today.to_s >= value.to_s)
