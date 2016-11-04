@@ -90,7 +90,7 @@ module SportNginAwsAuditor
       it 'should add the instances to the hash of differences' do
         klass = SportNginAwsAuditor.const_get('EC2Instance')
         result = klass.instance_count_hash(@ec2_instances)
-        expect(result).to eq({'Linux VPC us-east-1b t2.small' => [1, false], 'Windows us-east-1b t2.medium' => [1, false]})
+        expect(result).to eq({'Linux VPC us-east-1b t2.small' => {count: 1, region_based: false}, 'Windows us-east-1b t2.medium' => {count: 1, region_based: false}})
       end
     end
 
@@ -98,8 +98,8 @@ module SportNginAwsAuditor
       it 'should add the instances to the hash of differences' do
         klass = SportNginAwsAuditor.const_get('EC2Instance')
         result = klass.add_instances_with_tag_to_hash(@ec2_instances, {})
-        expect(result).to eq({'Linux VPC us-east-1b t2.small with tag' => [1, @ec2_instance1.key_name, nil, nil],
-                              'Windows us-east-1b t2.medium with tag' => [1, @ec2_instance2.key_name, nil, nil]})
+        expect(result).to eq({'Linux VPC us-east-1b t2.small with tag' => {count: 1, name: @ec2_instance1.key_name, tag_reason: nil, tag_value: nil, region_based: false},
+                              'Windows us-east-1b t2.medium with tag' => {count: 1, name: @ec2_instance2.key_name, tag_reason: nil, tag_value: nil, region_based: false}})
       end
     end
 
@@ -114,13 +114,13 @@ module SportNginAwsAuditor
         ris = klass.instance_count_hash(@reserved_instances)
         differences = Hash.new()
         instance_hash.keys.concat(ris.keys).uniq.each do |key|
-          instance_count = instance_hash.has_key?(key) ? instance_hash[key][0] : 0
-          ris_count = ris.has_key?(key) ? ris[key][0] : 0
-          differences[key] = [ris_count - instance_count, false]
+          instance_count = instance_hash.has_key?(key) ? instance_hash[key][:count] : 0
+          ris_count = ris.has_key?(key) ? ris[key][:count] : 0
+          differences[key] = {count: ris_count - instance_count, region_based: false}
         end
         result = klass.consider_region_ris(@region_reserved_instances, differences)
-        expect(differences).to eq({"Linux VPC us-east-1b t2.small"=>[0, false], "Windows us-east-1b t2.medium"=>[0, false],
-                                   "Linux VPC  t2.small" => [2, true], "Windows  t2.medium" => [4, true]})
+        expect(differences).to eq({"Linux VPC us-east-1b t2.small"=>{count: 0, region_based: false}, "Windows us-east-1b t2.medium"=>{count: 0, region_based: false},
+                                   "Linux VPC  t2.small" => {count: 2, region_based: true}, "Windows  t2.medium" => {count: 4, region_based: true}})
       end
 
       it 'should factor in the region based RIs into the counting when there are no zone specific RIs' do
@@ -131,8 +131,8 @@ module SportNginAwsAuditor
         allow(@region_reserved_ec2_instance2).to receive(:count=)
         instance_hash = klass.instance_count_hash(@ec2_instances)
         result = klass.consider_region_ris(@region_reserved_instances, instance_hash)
-        expect(instance_hash).to eq({"Linux VPC us-east-1b t2.small"=>[0, false], "Windows us-east-1b t2.medium"=>[5, false],
-                                     "Linux VPC  t2.small" => [2, true], "Windows  t2.medium" => [4, true]})
+        expect(instance_hash).to eq({"Linux VPC us-east-1b t2.small"=>{count: 0, region_based: false}, "Windows us-east-1b t2.medium"=>{count: 5, region_based: false},
+                                     "Linux VPC  t2.small" => {count: 2, region_based: true}, "Windows  t2.medium" => {count: 4, region_based: true}})
       end
     end
 

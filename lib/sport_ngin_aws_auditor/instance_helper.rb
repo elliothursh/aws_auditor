@@ -36,7 +36,7 @@ module SportNginAwsAuditor
           instance_result[:count] = instance.count
         end
         instance_result.merge!({:name => instance.name, :tag_reason => instance.tag_reason,
-                               :tag_value => instance.tag_value, :region_based => false})
+                                :tag_value => instance.tag_value, :region_based => false})
         instance_hash[key] = instance_result
       end if instances_to_add
       instance_hash
