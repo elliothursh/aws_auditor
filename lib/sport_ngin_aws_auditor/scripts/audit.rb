@@ -66,7 +66,23 @@ module SportNginAwsAuditor
       def self.say_retired_ris(audit_results, output_options)
         retired_ris = audit_results.retired_ris
         say "The following reserved #{output_options[:class_type]}Instances have recently expired in #{output_options[:environment]}:"
-        retired_ris.each { |ri| say "#{ri.to_s} (#{ri.count}) on #{ri.expiration_date}" }
+        retired_ris.each do |ri|
+          if ri.availability_zone.nil?
+            # if ri.to_s = 'Linux VPC  t2.small'...
+            my_match = ri.to_s.match(/(\w*\s*\w*\s{1})\s*(\s*\S*)/)
+
+            # then platform = 'Linux VPC '...
+            platform = my_match[1] if my_match
+
+            # and size = 't2.small'
+            size = my_match[2] if my_match
+
+            n = platform << audit_results.region << ' ' << size
+            say "#{n} (#{ri.count}) on #{ri.expiration_date}"
+          else
+            say "#{ri.to_s} (#{ri.count}) on #{ri.expiration_date}"
+          end
+        end
       end
 
       def self.say_retired_tags(audit_results, output_options)
@@ -169,7 +185,21 @@ module SportNginAwsAuditor
         message = "The following reserved #{output_options[:class_type]}s have recently expired in #{output_options[:environment]}:\n"
 
         retired_ris.each do |ri|
-          name = ri.to_s
+          if ri.availability_zone.nil?
+            # if ri.to_s = 'Linux VPC  t2.small'...
+            my_match = ri.to_s.match(/(\w*\s*\w*\s{1})\s*(\s*\S*)/)
+
+            # then platform = 'Linux VPC '...
+            platform = my_match[1] if my_match
+
+            # and size = 't2.small'
+            size = my_match[2] if my_match
+
+            name = platform << audit_results.region << ' ' << size
+          else
+            name = ri.to_s
+          end
+          
           count = ri.count
           expiration_date = ri.expiration_date
           message << "*#{name}* (#{count}) on *#{expiration_date}*\n"

@@ -32,7 +32,7 @@ module SportNginAwsAuditor
         instance_result = {}
         
         if instance_hash.has_key?(key)
-          instance_result[:count] = instance_hash[:key][:count] + instance.count
+          instance_result[:count] = instance_hash[key][:count] + instance.count
         else
           instance_result[:count] = instance.count
         end
