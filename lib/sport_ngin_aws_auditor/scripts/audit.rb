@@ -16,6 +16,7 @@ module SportNginAwsAuditor
       def self.execute(environment, options=nil, global_options=nil)
         aws(environment, global_options[:aws_roles])
         @options = options
+        puts "!!!! #{options[:config_hash]}"
         slack = options[:slack]
         no_selection = !(options[:ec2] || options[:rds] || options[:cache])
 
