@@ -4,11 +4,11 @@ module SportNginAwsAuditor
   class NotifySlack
     attr_accessor :text, :channel, :webhook, :username, :icon_url, :icon_emoji, :attachments
 
-    def initialize(text)
+    def initialize(text, channel)
       self.text = text
       self.attachments = []
       if SportNginAwsAuditor::Config.slack
-        self.channel = SportNginAwsAuditor::Config.slack[:channel]
+        self.channel = channel || SportNginAwsAuditor::Config.slack[:channel]
         self.username = SportNginAwsAuditor::Config.slack[:username]
         self.webhook = SportNginAwsAuditor::Config.slack[:webhook]
         self.icon_url = SportNginAwsAuditor::Config.slack[:icon_url]
