@@ -24,7 +24,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'highline', '~> 1.6'
   spec.add_dependency 'google_drive', '~> 1.0.0.pre2'
   spec.add_dependency 'google-api-client', '~> 0.8.6'
-  spec.add_dependency 'rack', '~> 1.3.0'
+  spec.add_dependency 'rack', '>= 1.3.0'
   spec.add_dependency 'activesupport', '>= 3.2'
   spec.add_dependency 'httparty'
   spec.add_dependency 'colorize'
