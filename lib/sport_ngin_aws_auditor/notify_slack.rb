@@ -41,4 +41,6 @@ module SportNginAwsAuditor
   end
 end
 
-# GLI_DEBUG=true bin/sport-ngin-aws-auditor audit --config_hash='{:slack_token =>["S5msluvHPL9Y7k558yFgFvF8"],:slack=>{:username=>"AWS Auditor",:icon_url=>"http://i.imgur.com/86x8PSg.jpg",:channel=>"#ops-firehose",:webhook=>"https://hooks.slack.com/services/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"}}' -s staging
+# GLI_DEBUG=true bin/sport-ngin-aws-auditor audit --config_hash="{:slack_token=>{\"token\"=>\"S5msluvHPL9Y7k558yFgFvF8\"}, :slack=>{:username=>\"AWS Auditor\", :icon_url=>\"http://i.imgur.com/86x8PSg.jpg\", :channel=>\"#test-webhook-channel\", :webhook=>\"https://hooks.slack.com/services/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\"}}" -s staging
+
+
