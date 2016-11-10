@@ -34,7 +34,7 @@ module SportNginAwsAuditor
       config_hash = "{:slack=>{:username=>\"AWS Auditor\",
                                :icon_url=>\"http://i.imgur.com/86x8PSg.jpg\",
                                :channel=>\"#test-webhook-channel\",
-                               :webhook=>\"https://hooks.slack.com/services/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\"
+                               :webhook=>\"https://hooks.slack.com/services/thisisafake\"
                              }
                     }"
       config_file = nil
