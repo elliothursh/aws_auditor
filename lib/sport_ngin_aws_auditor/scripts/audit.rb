@@ -29,8 +29,6 @@ module SportNginAwsAuditor
                  ["RDSInstance", options[:rds]],
                  ["CacheInstance", options[:cache]]]
 
-        puts "!*!*!*!*!*!*!*!*!*!*!*!*!*!*!!*!*!*!*"
-
         if !slack
           print "Gathering info, please wait..."; print "\r"
         else

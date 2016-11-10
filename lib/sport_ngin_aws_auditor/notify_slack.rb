@@ -7,8 +7,6 @@ module SportNginAwsAuditor
     def initialize(text, config_hash)
       self.text = text
       self.attachments = []
-      puts "Config_Hash: #{config_hash}"
-      puts "congig hash type: #{config_hash.class}"
 
       if SportNginAwsAuditor::Config.slack
         self.channel = SportNginAwsAuditor::Config.slack[:channel]
@@ -18,9 +16,13 @@ module SportNginAwsAuditor
       elsif config_hash
         hs = eval(config_hash)
         self.channel = hs[:slack][:channel]
+        puts "self.channel: #{self.channel}"
         self.username = hs[:slack][:username]
+        puts "self.username: #{self.username}"
         self.webhook = hs[:slack][:webhook]
+        puts "self.webhook: #{self.webhook}"
         self.icon_url = hs[:slack][:icon_url]
+        puts "self.icon_url: #{self.icon_url}"
       else
         puts "To use Slack, you must provide either a separate config file or a hash of config data. See the README for more information."
       end
