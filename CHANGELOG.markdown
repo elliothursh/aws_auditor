@@ -1,3 +1,8 @@
+#### v3.8.3
+* Fixing bugs with outputs and counts
+
+  > Emma Sax: Tim Sandquist, Unknown User: https://github.com/sportngin/sport_ngin_aws_auditor/pull/23
+
 #### v3.8.2
 * Fixing bugs so that counts are accurate again
 
