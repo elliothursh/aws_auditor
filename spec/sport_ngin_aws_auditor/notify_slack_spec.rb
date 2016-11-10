@@ -1,4 +1,5 @@
 require "sport_ngin_aws_auditor"
+require 'json'
 
 module SportNginAwsAuditor
   describe NotifySlack do
@@ -31,13 +32,11 @@ module SportNginAwsAuditor
 
     it 'should ping Slack Notifier even when passing in config as a hash' do
       notifier = double('notifier')
-      config_hash = "{:slack=>{:username=>\"AWS Auditor\",
-                               :icon_url=>\"http://i.imgur.com/86x8PSg.jpg\",
-                               :channel=>\"#test-webhook-channel\",
-                               :webhook=>\"https://hooks.slack.com/services/thisisafake\"
-                             }
-                    }"
-      config_file = nil
+      config_hash = {:username=>"AWS Auditor",
+                     :icon_url=>"http://i.imgur.com/86x8PSg.jpg",
+                     :channel=>"#test-webhook-channel",
+                     :webhook=>"https://hooks.slack.com/services/thisisafake"
+                    }.to_json
       expect(HTTParty).to receive(:post)
       message = NotifySlack.new("Test message", config_hash)
       message.perform

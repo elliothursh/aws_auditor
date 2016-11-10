@@ -8,14 +8,14 @@ module SportNginAwsAuditor
     def initialize(text, config_params)
       self.text = text
       self.attachments = []
-      config_file = SportNginAwsAuditor::Config.slack || {}
-      self.config = config_params ? config_file.merge(JSON.parse(config_params)).symbolize_keys : config_file
-
+      config_file = SportNginAwsAuditor::Config.slack.to_h || {}
+      self.config = config_params ? config_file.merge(JSON.parse(config_params)) : config_file
+      
       if self.config
-        self.channel = self.config[:channel]
-        self.username = self.config[:username]
-        self.webhook = self.config[:webhook]
-        self.icon_url = self.config[:icon_url]
+        self.channel = self.config['channel']
+        self.username = self.config['username']
+        self.webhook = self.config['webhook']
+        self.icon_url = self.config['icon_url']
       else
         puts "To use Slack, you must provide either a separate config file or a hash of config data. See the README for more information."
       end
