@@ -98,8 +98,8 @@ module SportNginAwsAuditor
       it 'should add the instances to the hash of differences' do
         klass = SportNginAwsAuditor::EC2Instance
         result = klass.apply_tagged_instances(@ec2_instances, {})
-        expect(result).to eq({'Linux VPC us-east-1b t2.small with tag' => {count: 1, name: @ec2_instance1.key_name, tag_reason: nil, tag_value: nil, region_based: false},
-                              'Windows us-east-1b t2.medium with tag' => {count: 1, name: @ec2_instance2.key_name, tag_reason: nil, tag_value: nil, region_based: false}})
+        expect(result).to eq({'Linux VPC us-east-1b t2.small with tag (Example-instance-01)' => {count: 1, name: @ec2_instance1.key_name, tag_reason: nil, tag_value: nil, region_based: false},
+                              'Windows us-east-1b t2.medium with tag (Example-instance-02)' => {count: 1, name: @ec2_instance2.key_name, tag_reason: nil, tag_value: nil, region_based: false}})
       end
     end
 
