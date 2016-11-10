@@ -7,6 +7,8 @@ module SportNginAwsAuditor
     def initialize(text, config_hash)
       self.text = text
       self.attachments = []
+      puts "Config_Hash: #{config_hash}"
+      puts "congig hash type: #{config_hash.class}"
 
       if SportNginAwsAuditor::Config.slack
         self.channel = SportNginAwsAuditor::Config.slack[:channel]
