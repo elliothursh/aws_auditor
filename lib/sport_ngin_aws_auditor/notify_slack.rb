@@ -7,9 +7,8 @@ module SportNginAwsAuditor
     def initialize(text, config_params)
       self.text = text
       self.attachments = []
-      self.config = SportNginAwsAuditor::Config.slack.merge(eval(config_params)) if config_params
-      # config_file = SportNginAwsAuditor::Config.slack || {}
-      # self.config = config_params ? config_file.merge(eval(config_params)) : config_file
+      config_file = SportNginAwsAuditor::Config.slack || {}
+      self.config = config_params ? config_file.merge(JSON.parse(config_params)).symbolize_keys : config_file
 
       if self.config
         self.channel = self.config[:channel]
