@@ -2,30 +2,26 @@ require 'httparty'
 
 module SportNginAwsAuditor
   class NotifySlack
-    attr_accessor :text, :channel, :webhook, :username, :icon_url, :icon_emoji, :attachments, :config_hash
+    attr_accessor :text, :channel, :webhook, :username, :icon_url, :icon_emoji, :attachments, :config
 
-    def initialize(text, config)
+    def initialize(text, config_params)
       self.text = text
       self.attachments = []
-      self.config_hash = eval(config) if config
+      config_file = SportNginAwsAuditor::Config.slack || {}
+      self.config = config_params ? config_file.merge(eval(config_params)) : config_file
 
-      if SportNginAwsAuditor::Config.slack
-        self.channel = SportNginAwsAuditor::Config.slack[:channel]
-        self.username = SportNginAwsAuditor::Config.slack[:username]
-        self.webhook = SportNginAwsAuditor::Config.slack[:webhook]
-        self.icon_url = SportNginAwsAuditor::Config.slack[:icon_url]
-      elsif self.config_hash
-        self.channel = self.config_hash[:slack][:channel]
-        self.username = self.config_hash[:slack][:username]
-        self.webhook = self.config_hash[:slack][:webhook]
-        self.icon_url = self.config_hash[:slack][:icon_url]
+      if self.config
+        self.channel = self.config[:channel]
+        self.username = self.config[:username]
+        self.webhook = self.config[:webhook]
+        self.icon_url = self.config[:icon_url]
       else
         puts "To use Slack, you must provide either a separate config file or a hash of config data. See the README for more information."
       end
     end
 
     def perform
-      if SportNginAwsAuditor::Config.slack || config_hash
+      if config
         options = {text: text,
                    webhook: webhook,
                    channel: channel,
