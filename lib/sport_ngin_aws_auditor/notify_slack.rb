@@ -1,24 +1,28 @@
 require 'httparty'
+require 'json'
 
 module SportNginAwsAuditor
   class NotifySlack
-    attr_accessor :text, :channel, :webhook, :username, :icon_url, :icon_emoji, :attachments
+    attr_accessor :text, :channel, :webhook, :username, :icon_url, :icon_emoji, :attachments, :config
 
-    def initialize(text)
+    def initialize(text, config_params)
       self.text = text
       self.attachments = []
-      if SportNginAwsAuditor::Config.slack
-        self.channel = SportNginAwsAuditor::Config.slack[:channel]
-        self.username = SportNginAwsAuditor::Config.slack[:username]
-        self.webhook = SportNginAwsAuditor::Config.slack[:webhook]
-        self.icon_url = SportNginAwsAuditor::Config.slack[:icon_url]
+      config_file = SportNginAwsAuditor::Config.slack.to_h || {}
+      self.config = config_params ? config_file.merge(JSON.parse(config_params)) : config_file
+      
+      if self.config
+        self.channel = self.config['channel']
+        self.username = self.config['username']
+        self.webhook = self.config['webhook']
+        self.icon_url = self.config['icon_url']
       else
-        puts "To use Slack, you must provide a separate config file. See the README for more information."
+        puts "To use Slack, you must provide either a separate config file or a hash of config data. See the README for more information."
       end
     end
 
     def perform
-      if SportNginAwsAuditor::Config.slack
+      if config
         options = {text: text,
                    webhook: webhook,
                    channel: channel,
