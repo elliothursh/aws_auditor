@@ -7,7 +7,7 @@ command 'audit' do |c|
   c.switch [:r, :reserved], :desc => "Shows reserved instance counts"
   c.switch [:i, :instances], :desc => "Shows current instance counts"
   c.flag [:t, :tag], :default_value => "no-reserved-instance", :desc => "Read a tag and group separately during audit"
-  c.flag [:h, :config_hash], :default_value => nil, :desc => "Print the audit according to this config hash instead of to config file"
+  c.flag [:h, :config_json], :default_value => nil, :desc => "Print the audit according to this config json object instead of to config file"
   c.switch [:n, :no_tag], :desc => "Ignore all tags during audit"
   c.switch [:s, :slack], :desc => "Will print condensed version of audit to a Slack channel"
   c.action do |global_options, options, args|
