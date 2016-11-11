@@ -1,3 +1,8 @@
+#### v3.9.0
+* Add the ability to pass config data in as a flag
+
+  > Emma Sax: Andy Fleener, Unknown User: https://github.com/sportngin/sport_ngin_aws_auditor/pull/24
+
 #### v3.8.3
 * Fixing bugs with outputs and counts
 
