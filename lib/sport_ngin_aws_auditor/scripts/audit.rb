@@ -143,7 +143,7 @@ module SportNginAwsAuditor
 
       def self.print_discrepancies(discrepancy_array, output_options)
         title = "Some #{output_options[:class_type]} discrepancies for #{output_options[:environment]} exist:\n"
-        slack_instances = NotifySlack.new(title)
+        slack_instances = NotifySlack.new(title, options[:config_json])
 
         discrepancy_array.each do |discrepancy|
           type = !output_options[:zone_output] && discrepancy.running? ? print_without_zone(discrepancy.type) : discrepancy.type
@@ -161,7 +161,7 @@ module SportNginAwsAuditor
 
       def self.print_tagged(tagged_array, output_options)
         title = "There are currently some tagged #{output_options[:class_type]}s in #{output_options[:environment]}:\n"
-        slack_instances = NotifySlack.new(title)
+        slack_instances = NotifySlack.new(title, options[:config_json])
 
         tagged_array.each do |tagged|
           type = output_options[:zone_output] ? tagged.type : print_without_zone(tagged.type)
@@ -205,7 +205,7 @@ module SportNginAwsAuditor
           message << "*#{name}* (#{count}) on *#{expiration_date}*\n"
         end
           
-        slack_retired_ris = NotifySlack.new(message)
+        slack_retired_ris = NotifySlack.new(message, options[:config_json])
         slack_retired_ris.perform
       end
 
@@ -221,7 +221,7 @@ module SportNginAwsAuditor
           end
         end
 
-        slack_retired_tags = NotifySlack.new(message)
+        slack_retired_tags = NotifySlack.new(message, options[:config_json])
         slack_retired_tags.perform
       end
 
