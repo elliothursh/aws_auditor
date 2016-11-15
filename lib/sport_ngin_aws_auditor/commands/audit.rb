@@ -10,6 +10,7 @@ command 'audit' do |c|
   c.flag [:h, :config_json], :default_value => nil, :desc => "Print the audit according to this config json object instead of to config file"
   c.switch [:n, :no_tag], :desc => "Ignore all tags during audit"
   c.switch [:s, :slack], :desc => "Will print condensed version of audit to a Slack channel"
+  c.switch [:z, :zone_output], :desc => "Will print the Missing RIs and Tagged instances with zones"
   c.action do |global_options, options, args|
     require_relative '../scripts/audit'
     raise ArgumentError, 'You must specify an AWS account' unless args.first
