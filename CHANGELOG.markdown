@@ -1,3 +1,8 @@
+#### v3.10.0
+* Handling region-based RIs
+
+  > Emma Sax: Andy Fleener, Luke Ludwig, Tim Sandquist, Unknown User: https://github.com/sportngin/sport_ngin_aws_auditor/pull/21
+
 #### v3.9.0
 * Add the ability to pass config data in as a flag
 
