@@ -55,7 +55,7 @@ module SportNginAwsAuditor
 
     def apply_region_ris(ris_region, differences)
       ris_region.each do |ri|
-        ri.mutable_count = ri.count
+        ri.mutable_count_remaining = ri.count
 
         differences.each do |key, value|
           # if key = 'Linux VPC us-east-1a t2.medium'...
@@ -70,17 +70,17 @@ module SportNginAwsAuditor
           size[0] = ''
 
           if (platform == ri.platform) && (size == ri.instance_type) && (value[:count] < 0)
-            until (ri.mutable_count == 0) || (value[:count] == 0)
+            until (ri.mutable_count_remaining == 0) || (value[:count] == 0)
               value[:count] = value[:count] + 1
-              ri.mutable_count = ri.mutable_count - 1
+              ri.mutable_count_remaining = ri.mutable_count_remaining - 1
             end
           end
         end
       end
 
       ris_region.each do |ri|
-        differences[ri.to_s] = {:count => ri.mutable_count, :region_based => true}
-        ri.mutable_count = nil
+        differences[ri.to_s] = {:count => ri.mutable_count_remaining, :region_based => true}
+        ri.mutable_count_remaining = nil
       end
     end
 

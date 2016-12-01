@@ -13,7 +13,7 @@ module SportNginAwsAuditor
                                                class: "Aws::EC2::Types::Instance",
                                                key_name: 'Example-instance-01',
                                                availability_zone: 'us-east-1b',
-                                               mutable_count: nil)
+                                               mutable_count_remaining: nil)
       @ec2_instance2 = double('ec2_instance', instance_id: "i-thisisfake",
                                                instance_type: "t2.medium",
                                                vpc_id: "vpc-alsofake",
@@ -24,7 +24,7 @@ module SportNginAwsAuditor
                                                class: "Aws::EC2::Types::Instance",
                                                key_name: 'Example-instance-02',
                                                availability_zone: 'us-east-1b',
-                                               mutable_count: nil)
+                                               mutable_count_remaining: nil)
       @reserved_ec2_instance1 = double('reserved_ec2_instance', reserved_instances_id: "12345-dfas-1234-asdf-thisisalsofake",
                                                                 instance_type: "t2.small",
                                                                 product_description: "Linux/UNIX (Amazon VPC)",
@@ -33,7 +33,7 @@ module SportNginAwsAuditor
                                                                 instance_count: 2,
                                                                 scope: 'Availability Zone',
                                                                 class: "Aws::EC2::Types::ReservedInstances",
-                                                                mutable_count: nil)
+                                                                mutable_count_remaining: nil)
       @reserved_ec2_instance2 = double('reserved_ec2_instance', reserved_instances_id: "12345-dfas-1234-asdf-thisisfake!!",
                                                                 instance_type: "t2.medium",
                                                                 product_description: "Windows",
@@ -42,7 +42,7 @@ module SportNginAwsAuditor
                                                                 instance_count: 4,
                                                                 scope: 'Availability Zone',
                                                                 class: "Aws::EC2::Types::ReservedInstances",
-                                                                mutable_count: nil)
+                                                                mutable_count_remaining: nil)
       @region_reserved_ec2_instance1 = double('reserved_ec2_instance', reserved_instances_id: "12345-dfas-1234-asdf-thisisalsofake",
                                                                 instance_type: "t2.small",
                                                                 product_description: "Linux/UNIX (Amazon VPC)",
@@ -51,7 +51,7 @@ module SportNginAwsAuditor
                                                                 instance_count: 2,
                                                                 scope: 'Region',
                                                                 class: "Aws::EC2::Types::ReservedInstances",
-                                                                mutable_count: nil)
+                                                                mutable_count_remaining: nil)
       @region_reserved_ec2_instance2 = double('reserved_ec2_instance', reserved_instances_id: "12345-dfas-1234-asdf-thisisfake!!",
                                                                 instance_type: "t2.medium",
                                                                 product_description: "Windows",
@@ -60,7 +60,7 @@ module SportNginAwsAuditor
                                                                 instance_count: 4,
                                                                 scope: 'Region',
                                                                 class: "Aws::EC2::Types::ReservedInstances",
-                                                                mutable_count: nil)
+                                                                mutable_count_remaining: nil)
       @ec2_instances = [@ec2_instance1, @ec2_instance2]
       @reserved_instances = [@reserved_ec2_instance2, @reserved_ec2_instance1]
       @region_reserved_instances = [@region_reserved_ec2_instance2, @region_reserved_ec2_instance1]
@@ -90,10 +90,10 @@ module SportNginAwsAuditor
       allow(@region_reserved_ec2_instance2).to receive(:count).and_return(4)
       allow(@region_reserved_ec2_instance1).to receive(:to_s).and_return('Linux VPC  t2.small')
       allow(@region_reserved_ec2_instance2).to receive(:to_s).and_return('Windows  t2.medium')
-      allow(@region_reserved_ec2_instance1).to receive(:mutable_count).and_return(2)
-      allow(@region_reserved_ec2_instance2).to receive(:mutable_count).and_return(2)
-      allow(@region_reserved_ec2_instance1).to receive(:mutable_count=).and_return(2)
-      allow(@region_reserved_ec2_instance2).to receive(:mutable_count=).and_return(2)
+      allow(@region_reserved_ec2_instance1).to receive(:mutable_count_remaining).and_return(2)
+      allow(@region_reserved_ec2_instance2).to receive(:mutable_count_remaining).and_return(2)
+      allow(@region_reserved_ec2_instance1).to receive(:mutable_count_remaining=).and_return(2)
+      allow(@region_reserved_ec2_instance2).to receive(:mutable_count_remaining=).and_return(2)
     end
 
     context '#instance_count_hash' do
