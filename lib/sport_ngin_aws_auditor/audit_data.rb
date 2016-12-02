@@ -50,7 +50,7 @@ module SportNginAwsAuditor
       instances_with_tag = self.klass.filter_instances_with_tags(instances)
       instances_without_tag = self.klass.filter_instances_without_tags(instances)
       instance_hash = self.klass.instance_count_hash(instances_without_tag)
-      self.klass.apply_tagged_instances(instances_with_tag, instance_hash)
+      self.klass.add_additional_instances_to_hash(instances_with_tag, instance_hash, " with tag (")
 
       return instance_hash, retired_tags
     end

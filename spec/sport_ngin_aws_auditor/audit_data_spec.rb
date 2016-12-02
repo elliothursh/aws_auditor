@@ -17,8 +17,8 @@ module SportNginAwsAuditor
       allow(SportNginAwsAuditor::EC2Instance).to receive(:filter_instances_without_tags).and_return(@ec2_instances)
       allow(SportNginAwsAuditor::EC2Instance).to receive(:instance_count_hash).and_return({'instance1' => 1,
                                                                                            'instance2' => 1})
-      allow(SportNginAwsAuditor::EC2Instance).to receive(:apply_tagged_instances).and_return({'instance1' => 1,
-                                                                                                      'instance2' => 1})
+      allow(SportNginAwsAuditor::EC2Instance).to receive(:add_additional_instances_to_hash).and_return({'instance1' => 1,
+                                                                                                        'instance2' => 1})
       allow(SportNginAwsAuditor::EC2Instance).to receive(:compare).and_return({'instance1' => 1,
                                                                                'instance2' => 1})
       allow(SportNginAwsAuditor::EC2Instance).to receive(:get_recent_retired_reserved_instances).and_return(@retired_ris)
