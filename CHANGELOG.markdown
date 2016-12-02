@@ -1,3 +1,8 @@
+#### v3.10.1
+* Caching should not affect RI counts between runs
+
+  > Emma Sax: Andy Fleener, Unknown User: https://github.com/sportngin/sport_ngin_aws_auditor/pull/25
+
 #### v3.10.0
 * Handling region-based RIs
 
