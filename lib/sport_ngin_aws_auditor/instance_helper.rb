@@ -163,6 +163,7 @@ module SportNginAwsAuditor
       ris.select { |ri| ri.scope == 'Region' }
     end
 
+    # this breaks up the instances array into instances with 'auto' or 'kitchen' in the name and instances without
     def filter_ignored_instances(instances)
       instances.partition { |instance| instance.name.include?("auto") || instance.name.include?("kitchen") }
     end
