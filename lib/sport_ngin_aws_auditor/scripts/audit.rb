@@ -47,6 +47,11 @@ module SportNginAwsAuditor
       end
 
       def self.print_data(audit_results, output_options)
+        audit_results.data.each do |instance|
+          instance.type = !output_options[:zone_output] && (instance.tagged? || instance.running?) ? print_without_zone(instance.type) : instance.type
+        end
+
+        audit_results.data = merge_similar_keys(audit_results.data)
         audit_results.data.sort_by! { |instance| [instance.category, instance.type] }
 
         if output_options[:slack]
@@ -98,7 +103,7 @@ module SportNginAwsAuditor
       end
 
       def self.colorize(instance, zone_output=nil)
-        name = !zone_output && (instance.tagged? || instance.running?) ? print_without_zone(instance.type) : instance.type
+        name = instance.type
         count = instance.count
         color, rgb, prefix = color_chooser(instance)
         
@@ -148,7 +153,7 @@ module SportNginAwsAuditor
         slack_instances = NotifySlack.new(title, options[:config_json])
 
         discrepancy_array.each do |discrepancy|
-          type = !output_options[:zone_output] && discrepancy.running? ? print_without_zone(discrepancy.type) : discrepancy.type
+          type = discrepancy.type
           count = discrepancy.count
           color, rgb, prefix = color_chooser(discrepancy)
 
@@ -166,7 +171,7 @@ module SportNginAwsAuditor
         slack_instances = NotifySlack.new(title, options[:config_json])
 
         tagged_ignored_array.each do |tagged_or_ignored|
-          type = output_options[:zone_output] ? tagged_or_ignored.type : print_without_zone(tagged_or_ignored.type)
+          type = tagged_or_ignored.type
           count = tagged_or_ignored.count
           color, rgb, prefix = color_chooser(tagged_or_ignored)
           
@@ -233,6 +238,36 @@ module SportNginAwsAuditor
 
       def self.print_without_zone(type)
         type.sub(/(-\d\w)/, '')
+      end
+
+      def self.merge_similar_keys(data)
+        merged_array = []
+
+        data.each_with_index do |instance, index|
+          new_count = instance.count
+
+          if instance.replaced
+            data.delete(instance)
+            next
+          else
+            for i in index+1..data.length-1
+              if (data[i].type == instance.type) && 
+                 ((data[i].running? && instance.running?) || 
+                  (data[i].reserved? && instance.reserved?) || 
+                  (data[i].matched? && instance.matched?))
+                new_count = new_count + data[i].count
+                data[i].replaced = true
+              end
+            end
+
+            if new_count != instance.count
+              merged_array.push(Instance.new(instance.type, nil, nil, instance.category, new_count))
+              data.delete(instance)
+            end
+          end
+        end
+
+        data.concat(merged_array)
       end
 
       def self.color_chooser(instance)
