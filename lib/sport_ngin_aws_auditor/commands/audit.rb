@@ -11,6 +11,9 @@ command 'audit' do |c|
   c.switch [:n, :no_tag], :desc => "Ignore all tags during audit"
   c.switch [:s, :slack], :desc => "Will print condensed version of audit to a Slack channel"
   c.switch [:z, :zone_output], :desc => "Will print the Missing RIs and Tagged instances with zones"
+  c.flag [:g, :ignore_instances_patterns], :default_value => "kitchen, auto", :desc => "Ignore instances if an instance contains
+                                                                                one of these strings in the name,
+                                                                                pass in like: string1, string2, string3"
   c.action do |global_options, options, args|
     require_relative '../scripts/audit'
     raise ArgumentError, 'You must specify an AWS account' unless args.first
