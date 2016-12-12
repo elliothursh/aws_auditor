@@ -25,9 +25,9 @@ module SportNginAwsAuditor
           tag_name = options[:tag]
         end
 
-        ignore_instances_strings = options[:ignore_instances_strings].split(', ') if options[:ignore_instances_strings]
+        ignore_instances_patterns = options[:ignore_instances_patterns].split(', ') if options[:ignore_instances_patterns]
         ignore_instances_regexes = []
-        ignore_instances_strings.each do |r|
+        ignore_instances_patterns.each do |r|
           ignore_instances_regexes << Regexp.new(r)
         end
         zone_output = options[:zone_output]
