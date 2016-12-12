@@ -25,11 +25,16 @@ module SportNginAwsAuditor
           tag_name = options[:tag]
         end
 
+        ignore_instances_patterns = options[:ignore_instances_patterns].split(', ') if options[:ignore_instances_patterns]
+        ignore_instances_regexes = []
+        ignore_instances_patterns.each do |r|
+          ignore_instances_regexes << Regexp.new(r)
+        end
         zone_output = options[:zone_output]
 
-        cycle = [["EC2Instance", options[:ec2]]]#,
-                # ["RDSInstance", options[:rds]],
-                # ["CacheInstance", options[:cache]]]
+        cycle = [["EC2Instance", options[:ec2]],
+                ["RDSInstance", options[:rds]],
+                ["CacheInstance", options[:cache]]]
 
         if !slack
           print "Gathering info, please wait..."; print "\r"
@@ -38,7 +43,7 @@ module SportNginAwsAuditor
         end
 
         cycle.each do |c|
-          audit_results = AuditData.new(options[:instances], options[:reserved], c.first, tag_name)
+          audit_results = AuditData.new(options[:instances], options[:reserved], c.first, tag_name, ignore_instances_regexes)
           audit_results.gather_data
           output_options = {:slack => slack, :class_type => c.first,
                             :environment => environment, :zone_output => zone_output}

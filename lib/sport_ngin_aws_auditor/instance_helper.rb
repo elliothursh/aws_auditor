@@ -94,8 +94,8 @@ module SportNginAwsAuditor
 
     #################### PARSING AND COMPARING DATA ####################
 
-    def sort_through_instances(instances)
-      ignored_instances, not_ignored_instances = filter_ignored_instances(instances)
+    def sort_through_instances(instances, ignore_instances_regexes)
+      ignored_instances, not_ignored_instances = filter_ignored_instances(instances, ignore_instances_regexes)
       instances_with_tag = filter_instances_with_tags(not_ignored_instances)
       instances_without_tag = filter_instances_without_tags(not_ignored_instances)
       instance_hash = instance_count_hash(instances_without_tag)
@@ -127,8 +127,8 @@ module SportNginAwsAuditor
       return differences
     end
 
-    def compare(instances)
-      ignored_instances, instances_with_tag, instance_hash = sort_through_instances(instances)
+    def compare(instances, ignore_instances_regexes)
+      ignored_instances, instances_with_tag, instance_hash = sort_through_instances(instances, ignore_instances_regexes)
       ris_region, ris_hash = sort_through_RIs
       differences = measure_differences(instance_hash, ris_hash)
       add_additional_data(ris_region, instances_with_tag, ignored_instances, differences)
@@ -163,9 +163,14 @@ module SportNginAwsAuditor
       ris.select { |ri| ri.scope == 'Region' }
     end
 
-    # this breaks up the instances array into instances with 'auto' or 'kitchen' in the name and instances without
-    def filter_ignored_instances(instances)
-      instances.partition { |instance| instance.name.include?("auto") || instance.name.include?("kitchen") }
+    # this breaks up the instances array into instances with any of the strings in the ignore_instances_regexes and
+    # instances without
+    def filter_ignored_instances(instances, ignore_instances_regexes)
+      instances.partition { |instance|
+        ignore_instances_regexes.any? { |regex|
+          instance.name ? instance.name.match(regex) != nil : false
+        }
+      }
     end
 
     #################### GATHERING RETIRED DATA ####################
