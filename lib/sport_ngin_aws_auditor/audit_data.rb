@@ -3,11 +3,12 @@ require_relative './instance_helper'
 module SportNginAwsAuditor
   class AuditData
 
-    attr_accessor :data, :retired_tags, :retired_ris, :selected_audit_type, :klass, :tag_name, :region
-    def initialize(instances, reserved, class_type, tag_name)
+    attr_accessor :data, :retired_tags, :retired_ris, :selected_audit_type, :klass, :tag_name, :region, :ignore_instances_regexes
+    def initialize(instances, reserved, class_type, tag_name, ignore_instances_regexes)
       self.selected_audit_type = (!instances && !reserved) ? "all" : (instances ? "instances" : "reserved")
       self.klass = SportNginAwsAuditor.const_get(class_type)
       self.tag_name = tag_name
+      self.ignore_instances_regexes = ignore_instances_regexes
     end
 
     def instances?
@@ -50,7 +51,7 @@ module SportNginAwsAuditor
       instances_with_tag = self.klass.filter_instances_with_tags(instances)
       instances_without_tag = self.klass.filter_instances_without_tags(instances)
       instance_hash = self.klass.instance_count_hash(instances_without_tag)
-      self.klass.apply_tagged_instances(instances_with_tag, instance_hash)
+      self.klass.add_additional_instances_to_hash(instances_with_tag, instance_hash, " with tag (")
 
       return instance_hash, retired_tags
     end
@@ -59,7 +60,7 @@ module SportNginAwsAuditor
       instances = self.klass.get_instances(tag_name)
       gather_region(instances)
       retired_tags = self.klass.get_retired_tags(instances)
-      instance_hash = self.klass.compare(instances)
+      instance_hash = self.klass.compare(instances, ignore_instances_regexes)
       retired_ris = self.klass.get_recent_retired_reserved_instances
 
       return instance_hash, retired_tags, retired_ris

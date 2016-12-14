@@ -12,6 +12,8 @@ module SportNginAwsAuditor
       Hash[get_reserved_instances.map { |instance| instance.nil? ? next : [instance.id, instance]}.compact]
     end
 
+    #################### ADDING DATA TO HASH ####################
+
     def instance_count_hash(instances)
       instance_hash = Hash.new()
       instances.each do |instance|
@@ -25,35 +27,7 @@ module SportNginAwsAuditor
       instance_hash
     end
 
-    def apply_tagged_instances(instances_to_add, instance_hash)
-      instances_to_add.each do |instance|
-        next if instance.nil?
-        key = instance.to_s.dup << " with tag (" << instance.name << ")"
-        instance_result = {}
-        
-        if instance_hash.has_key?(instance.to_s) && instance_hash[instance.to_s][:count] > 0
-          current_val = instance_hash[instance.to_s][:count]
-          val = current_val - instance.count
-          new_val = val >= 0 ? val : 0
-          instance_hash[instance.to_s][:count] = new_val
-
-          val = instance.count - current_val
-          new_val = val >= 0 ? val : 0
-          instance_result[:count] = new_val
-        else
-          instance_result[:count] = instance.count
-        end
-
-        instance_result.merge!({:name => instance.name, :tag_reason => instance.tag_reason,
-                                :tag_value => instance.tag_value, :region_based => false})
-
-        instance_hash[key] = instance_result
-      end if instances_to_add
-
-      instance_hash
-    end
-
-    def apply_region_ris(ris_region, differences)
+    def add_region_ris_to_hash(ris_region, differences)
       ris_region.each do |ri|
         differences.each do |key, value|
           # if key = 'Linux VPC us-east-1a t2.medium'...
@@ -81,6 +55,61 @@ module SportNginAwsAuditor
       end
     end
 
+    def add_additional_instances_to_hash(instances_to_add, instance_hash, extra_string)
+      instances_to_add.each do |instance|
+        next if instance.nil?
+        key = instance.to_s.dup << extra_string << instance.name << ")"
+        instance_result = {}
+        
+        if instance_hash.has_key?(instance.to_s) && instance_hash[instance.to_s][:count] > 0
+          current_val = instance_hash[instance.to_s][:count]
+          val = current_val - instance.count
+          new_val = val >= 0 ? val : 0
+          instance_hash[instance.to_s][:count] = new_val
+
+          val = instance.count - current_val
+          new_val = val >= 0 ? val : 0
+          instance_result[:count] = new_val
+        else
+          instance_result[:count] = instance.count
+        end
+
+        merged_hash = gather_hash(extra_string, instance)
+        instance_result.merge!(merged_hash)
+
+        instance_hash[key] = instance_result
+      end if instances_to_add
+
+      instance_hash
+    end
+
+    def gather_hash(extra_string, instance)
+      if extra_string.include?("tag")
+        {:name => instance.name, :tag_reason => instance.tag_reason,
+         :tag_value => instance.tag_value, :region_based => false}
+      elsif extra_string.include?("ignore")
+        {:name => instance.name, :region_based => false}
+      end
+    end
+
+    #################### PARSING AND COMPARING DATA ####################
+
+    def sort_through_instances(instances, ignore_instances_regexes)
+      ignored_instances, not_ignored_instances = filter_ignored_instances(instances, ignore_instances_regexes)
+      instances_with_tag = filter_instances_with_tags(not_ignored_instances)
+      instances_without_tag = filter_instances_without_tags(not_ignored_instances)
+      instance_hash = instance_count_hash(instances_without_tag)
+      return ignored_instances, instances_with_tag, instance_hash
+    end
+
+    def sort_through_RIs
+      ris = get_reserved_instances
+      ris_availability = filter_ris_availability_zone(ris)
+      ris_region = filter_ris_region_based(ris)
+      ris_hash = instance_count_hash(ris_availability)
+      return ris_region, ris_hash
+    end
+
     def measure_differences(instance_hash, ris_hash)
       differences = Hash.new()
       instance_hash.keys.concat(ris_hash.keys).uniq.each do |key|
@@ -91,29 +120,22 @@ module SportNginAwsAuditor
       differences
     end
 
-    def compare(instances)
-      instances_with_tag = filter_instances_with_tags(instances)
-      instances_without_tag = filter_instances_without_tags(instances)
-      instance_hash = instance_count_hash(instances_without_tag)
+    def add_additional_data(ris_region, instances_with_tag, ignored_instances, differences)
+      add_region_ris_to_hash(ris_region, differences)
+      add_additional_instances_to_hash(instances_with_tag, differences, " with tag (")
+      add_additional_instances_to_hash(ignored_instances, differences, " ignored (")
+      return differences
+    end
 
-      ris = get_reserved_instances
-      ris_availability = filter_ris_availability_zone(ris)
-      ris_region = filter_ris_region_based(ris)
-      ris_hash = instance_count_hash(ris_availability)
-      
+    def compare(instances, ignore_instances_regexes)
+      ignored_instances, instances_with_tag, instance_hash = sort_through_instances(instances, ignore_instances_regexes)
+      ris_region, ris_hash = sort_through_RIs
       differences = measure_differences(instance_hash, ris_hash)
-      apply_region_ris(ris_region, differences)
-      apply_tagged_instances(instances_with_tag, differences)
+      add_additional_data(ris_region, instances_with_tag, ignored_instances, differences)
       differences
     end
 
-    # this gets all retired reserved instances and filters out only the ones that have expired
-    # within the past week
-    def get_recent_retired_reserved_instances
-      get_retired_reserved_instances.select do |ri|
-        ri.expiration_date > (Time.now - 604800)
-      end
-    end
+    #################### FILTERING ACTIVE DATA ####################
 
     # assuming the value of the tag is in the form: 01/01/2000 like a date
     def filter_instances_with_tags(instances)
@@ -139,6 +161,26 @@ module SportNginAwsAuditor
     # this filters all of the region-based RIs
     def filter_ris_region_based(ris)
       ris.select { |ri| ri.scope == 'Region' }
+    end
+
+    # this breaks up the instances array into instances with any of the strings in the ignore_instances_regexes and
+    # instances without
+    def filter_ignored_instances(instances, ignore_instances_regexes)
+      instances.partition { |instance|
+        ignore_instances_regexes.any? { |regex|
+          instance.name ? instance.name.match(regex) != nil : false
+        }
+      }
+    end
+
+    #################### GATHERING RETIRED DATA ####################
+
+    # this gets all retired reserved instances and filters out only the ones that have expired
+    # within the past week
+    def get_recent_retired_reserved_instances
+      get_retired_reserved_instances.select do |ri|
+        ri.expiration_date > (Time.now - 604800)
+      end
     end
 
     # this returns a hash of all instances that have retired between 1 week ago and today

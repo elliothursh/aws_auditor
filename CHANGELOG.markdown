@@ -1,3 +1,13 @@
+#### v3.11.0
+* Automatically ignore instances based on a regex string
+
+  > Emma Sax: Unknown User: https://github.com/sportngin/sport_ngin_aws_auditor/pull/26
+
+#### v3.10.1
+* Caching should not affect RI counts between runs
+
+  > Emma Sax: Andy Fleener, Unknown User: https://github.com/sportngin/sport_ngin_aws_auditor/pull/25
+
 #### v3.10.0
 * Handling region-based RIs
 

@@ -12,7 +12,8 @@ module SportNginAwsAuditor
                                                tags: nil,
                                                class: "Aws::EC2::Types::Instance",
                                                key_name: 'Example-instance-01',
-                                               availability_zone: 'us-east-1b')
+                                               availability_zone: 'us-east-1b',
+                                               count_remaining: nil)
       @ec2_instance2 = double('ec2_instance', instance_id: "i-thisisfake",
                                                instance_type: "t2.medium",
                                                vpc_id: "vpc-alsofake",
@@ -22,7 +23,8 @@ module SportNginAwsAuditor
                                                tags: nil,
                                                class: "Aws::EC2::Types::Instance",
                                                key_name: 'Example-instance-02',
-                                               availability_zone: 'us-east-1b')
+                                               availability_zone: 'us-east-1b',
+                                               count_remaining: nil)
       @reserved_ec2_instance1 = double('reserved_ec2_instance', reserved_instances_id: "12345-dfas-1234-asdf-thisisalsofake",
                                                                 instance_type: "t2.small",
                                                                 product_description: "Linux/UNIX (Amazon VPC)",
@@ -30,7 +32,8 @@ module SportNginAwsAuditor
                                                                 availability_zone: "us-east-1b",
                                                                 instance_count: 2,
                                                                 scope: 'Availability Zone',
-                                                                class: "Aws::EC2::Types::ReservedInstances")
+                                                                class: "Aws::EC2::Types::ReservedInstances",
+                                                                count_remaining: nil)
       @reserved_ec2_instance2 = double('reserved_ec2_instance', reserved_instances_id: "12345-dfas-1234-asdf-thisisfake!!",
                                                                 instance_type: "t2.medium",
                                                                 product_description: "Windows",
@@ -38,7 +41,8 @@ module SportNginAwsAuditor
                                                                 availability_zone: "us-east-1b",
                                                                 instance_count: 4,
                                                                 scope: 'Availability Zone',
-                                                                class: "Aws::EC2::Types::ReservedInstances")
+                                                                class: "Aws::EC2::Types::ReservedInstances",
+                                                                count_remaining: nil)
       @region_reserved_ec2_instance1 = double('reserved_ec2_instance', reserved_instances_id: "12345-dfas-1234-asdf-thisisalsofake",
                                                                 instance_type: "t2.small",
                                                                 product_description: "Linux/UNIX (Amazon VPC)",
@@ -46,7 +50,8 @@ module SportNginAwsAuditor
                                                                 availability_zone: nil,
                                                                 instance_count: 2,
                                                                 scope: 'Region',
-                                                                class: "Aws::EC2::Types::ReservedInstances")
+                                                                class: "Aws::EC2::Types::ReservedInstances",
+                                                                count_remaining: nil)
       @region_reserved_ec2_instance2 = double('reserved_ec2_instance', reserved_instances_id: "12345-dfas-1234-asdf-thisisfake!!",
                                                                 instance_type: "t2.medium",
                                                                 product_description: "Windows",
@@ -54,7 +59,8 @@ module SportNginAwsAuditor
                                                                 availability_zone: nil,
                                                                 instance_count: 4,
                                                                 scope: 'Region',
-                                                                class: "Aws::EC2::Types::ReservedInstances")
+                                                                class: "Aws::EC2::Types::ReservedInstances",
+                                                                count_remaining: nil)
       @ec2_instances = [@ec2_instance1, @ec2_instance2]
       @reserved_instances = [@reserved_ec2_instance2, @reserved_ec2_instance1]
       @region_reserved_instances = [@region_reserved_ec2_instance2, @region_reserved_ec2_instance1]
@@ -84,6 +90,10 @@ module SportNginAwsAuditor
       allow(@region_reserved_ec2_instance2).to receive(:count).and_return(4)
       allow(@region_reserved_ec2_instance1).to receive(:to_s).and_return('Linux VPC  t2.small')
       allow(@region_reserved_ec2_instance2).to receive(:to_s).and_return('Windows  t2.medium')
+      allow(@region_reserved_ec2_instance1).to receive(:count_remaining).and_return(2)
+      allow(@region_reserved_ec2_instance2).to receive(:count_remaining).and_return(2)
+      allow(@region_reserved_ec2_instance1).to receive(:count_remaining=).and_return(2)
+      allow(@region_reserved_ec2_instance2).to receive(:count_remaining=).and_return(2)
     end
 
     context '#instance_count_hash' do
@@ -94,16 +104,23 @@ module SportNginAwsAuditor
       end
     end
 
-    context '#apply_tagged_instances' do
+    context '#add_additional_instances_to_hash' do
       it 'should add the instances to the hash of differences' do
         klass = SportNginAwsAuditor::EC2Instance
-        result = klass.apply_tagged_instances(@ec2_instances, {})
+        result = klass.add_additional_instances_to_hash(@ec2_instances, {}, " with tag (")
         expect(result).to eq({'Linux VPC us-east-1b t2.small with tag (Example-instance-01)' => {count: 1, name: @ec2_instance1.key_name, tag_reason: nil, tag_value: nil, region_based: false},
                               'Windows us-east-1b t2.medium with tag (Example-instance-02)' => {count: 1, name: @ec2_instance2.key_name, tag_reason: nil, tag_value: nil, region_based: false}})
       end
+
+      it 'should add the ignored instances to the hash of differences' do
+        klass = SportNginAwsAuditor::EC2Instance
+        result = klass.add_additional_instances_to_hash(@ec2_instances, {}, " ignored (")
+        expect(result).to eq({'Linux VPC us-east-1b t2.small ignored (Example-instance-01)' => {count: 1, name: @ec2_instance1.key_name, region_based: false},
+                              'Windows us-east-1b t2.medium ignored (Example-instance-02)' => {count: 1, name: @ec2_instance2.key_name, region_based: false}})
+      end
     end
 
-    context '#apply_region_ris' do
+    context '#add_region_ris_to_hash' do
       it 'should factor in the region based RIs into the counting when there is a mixture of region based and non region based' do
         klass = SportNginAwsAuditor::EC2Instance
         allow(@ec2_instance1).to receive(:count).and_return(5)
@@ -118,7 +135,7 @@ module SportNginAwsAuditor
           ris_count = ris.has_key?(key) ? ris[key][:count] : 0
           differences[key] = {count: ris_count - instance_count, region_based: false}
         end
-        result = klass.apply_region_ris(@region_reserved_instances, differences)
+        result = klass.add_region_ris_to_hash(@region_reserved_instances, differences)
         expect(differences).to eq({"Linux VPC us-east-1b t2.small"=>{count: 0, region_based: false}, "Windows us-east-1b t2.medium"=>{count: 0, region_based: false},
                                    "Linux VPC  t2.small" => {count: 2, region_based: true}, "Windows  t2.medium" => {count: 4, region_based: true}})
       end
@@ -130,7 +147,7 @@ module SportNginAwsAuditor
         allow(@region_reserved_ec2_instance1).to receive(:count=)
         allow(@region_reserved_ec2_instance2).to receive(:count=)
         instance_hash = klass.instance_count_hash(@ec2_instances)
-        result = klass.apply_region_ris(@region_reserved_instances, instance_hash)
+        result = klass.add_region_ris_to_hash(@region_reserved_instances, instance_hash)
         expect(instance_hash).to eq({"Linux VPC us-east-1b t2.small"=>{count: 0, region_based: false}, "Windows us-east-1b t2.medium"=>{count: 5, region_based: false},
                                      "Linux VPC  t2.small" => {count: 2, region_based: true}, "Windows  t2.medium" => {count: 4, region_based: true}})
       end
