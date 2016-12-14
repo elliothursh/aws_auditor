@@ -7,28 +7,23 @@ module SportNginAwsAuditor
     extend AWSWrapper
 
     class << self
-      attr_accessor :instances, :reserved_instances, :retired_reserved_instances
-
       def get_instances(tag_name=nil)
-        return @instances if @instances
         account_id = get_account_id
-        @instances = cache.describe_cache_clusters.cache_clusters.map do |instance|
+        cache.describe_cache_clusters.cache_clusters.map do |instance|
           next unless instance.cache_cluster_status.to_s == 'available'
           new(instance, account_id, tag_name, cache)
         end.compact
       end
 
       def get_reserved_instances
-        return @reserved_instances if @reserved_instances
-        @reserved_instances = cache.describe_reserved_cache_nodes.reserved_cache_nodes.map do |instance|
+        cache.describe_reserved_cache_nodes.reserved_cache_nodes.map do |instance|
           next unless instance.state.to_s == 'active'
           new(instance)
         end.compact
       end
 
       def get_retired_reserved_instances
-        return @retired_reserved_instances if @retired_reserved_instances
-        @retired_reserved_instances = cache.describe_reserved_cache_nodes.reserved_cache_nodes.map do |instance|
+        cache.describe_reserved_cache_nodes.reserved_cache_nodes.map do |instance|
           next unless instance.state == 'retired'
           new(instance)
         end.compact
