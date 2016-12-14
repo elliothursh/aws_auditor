@@ -32,10 +32,12 @@ module SportNginAwsAuditor
             ignore_instances_regexes << Regexp.new(r)
           end
         end
+        
+        zone_output = options[:zone_output]
 
         cycle = [["EC2Instance", options[:ec2]],
-                ["RDSInstance", options[:rds]],
-                ["CacheInstance", options[:cache]]]
+                 ["RDSInstance", options[:rds]],
+                 ["CacheInstance", options[:cache]]]
 
         if !slack
           print "Gathering info, please wait..."; print "\r"
