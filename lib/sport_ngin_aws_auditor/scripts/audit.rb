@@ -96,7 +96,7 @@ module SportNginAwsAuditor
         say "The following #{output_options[:class_type]}Instance tags have recently expired in #{output_options[:environment]}:"
         retired_tags.each do |tag|
           if tag.reason
-            say "#{tag.instance_name} (#{tag.instance_type}) retired on #{tag.value} because of #{tag.reason}"
+            say "#{tag.instance_name} (#{tag.instance_type}) retired on #{tag.value} because #{tag.reason}"
           else
             say "#{tag.instance_name} (#{tag.instance_type}) retired on #{tag.value}"
           end
@@ -110,7 +110,7 @@ module SportNginAwsAuditor
         
         if instance.tagged?
           if instance.reason
-            puts "#{prefix} #{name}: (expiring on #{instance.tag_value} because of #{instance.reason})".blue
+            puts "#{prefix} #{name}: (expiring on #{instance.tag_value} because #{instance.reason})".blue
           else
             say "<%= color('#{prefix} #{name}: (expiring on #{instance.tag_value})', :#{color}) %>"
           end
@@ -168,7 +168,7 @@ module SportNginAwsAuditor
       end
 
       def self.print_tagged(tagged_ignored_array, output_options)
-        title = "There are currently some tagged #{output_options[:class_type]}s in #{output_options[:environment]}:\n"
+        title = "There are currently some tagged or ignored #{output_options[:class_type]}s in #{output_options[:environment]}:\n"
         slack_instances = NotifySlack.new(title, options[:config_json])
 
         tagged_ignored_array.each do |tagged_or_ignored|
@@ -178,7 +178,7 @@ module SportNginAwsAuditor
           
           if tagged_or_ignored.tagged?
             if tagged_or_ignored.reason
-              text = "#{prefix} #{tagged_or_ignored.name}: (expiring on #{tagged_or_ignored.tag_value} because of #{tagged_or_ignored.reason})"
+              text = "#{prefix} #{tagged_or_ignored.name}: (expiring on #{tagged_or_ignored.tag_value} because #{tagged_or_ignored.reason})"
             else
               text = "#{prefix} #{tagged_or_ignored.name}: (expiring on #{tagged_or_ignored.tag_value})"
             end
@@ -227,7 +227,7 @@ module SportNginAwsAuditor
 
         retired_tags.each do |tag|
           if tag.reason
-            message << "*#{tag.instance_name}* (#{tag.instance_type}) retired on *#{tag.value}* because of #{tag.reason}\n"
+            message << "*#{tag.instance_name}* (#{tag.instance_type}) retired on *#{tag.value}* because #{tag.reason}\n"
           else
             message << "*#{tag.instance_name}* (#{tag.instance_type}) retired on *#{tag.value}*\n"
           end
