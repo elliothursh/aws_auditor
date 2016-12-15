@@ -26,17 +26,11 @@ module SportNginAwsAuditor
         end
 
         ignore_instances_regexes = []
-<<<<<<< HEAD
-        puts ignore_instances_patterns
-        ignore_instances_patterns.each do |r|
-          ignore_instances_regexes << Regexp.new(r)
-=======
         if options[:ignore_instances_patterns]
           ignore_instances_patterns = options[:ignore_instances_patterns].split(', ')
           ignore_instances_patterns.each do |r|
             ignore_instances_regexes << Regexp.new(r)
           end
->>>>>>> origin/master
         end
         
         zone_output = options[:zone_output]
