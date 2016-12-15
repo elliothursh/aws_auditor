@@ -1,3 +1,8 @@
+#### v3.11.1
+* Must merge this PR in to run the audit command correctly
+
+  > Emma Sax: Unknown User: https://github.com/sportngin/sport_ngin_aws_auditor/pull/28
+
 #### v3.11.0
 * Automatically ignore instances based on a regex string
 
