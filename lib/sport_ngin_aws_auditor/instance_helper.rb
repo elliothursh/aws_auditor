@@ -58,8 +58,7 @@ module SportNginAwsAuditor
     def add_additional_instances_to_hash(instances_to_add, instance_hash, extra_string)
       instances_to_add.each do |instance|
         next if instance.nil?
-        n = instance.name || ""
-        key = instance.to_s.dup << extra_string << n << ")"
+        key = instance.to_s.dup << extra_string << (instance.name || "") << ")"
         instance_result = {}
         
         if instance_hash.has_key?(instance.to_s) && instance_hash[instance.to_s][:count] > 0
