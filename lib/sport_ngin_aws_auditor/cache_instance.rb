@@ -7,40 +7,36 @@ module SportNginAwsAuditor
     extend AWSWrapper
 
     class << self
-      attr_accessor :instances, :reserved_instances, :retired_reserved_instances
-
       def get_instances(tag_name=nil)
-        return @instances if @instances
         account_id = get_account_id
-        @instances = cache.describe_cache_clusters.cache_clusters.map do |instance|
+        cache.describe_cache_clusters.cache_clusters.map do |instance|
           next unless instance.cache_cluster_status.to_s == 'available'
           new(instance, account_id, tag_name, cache)
         end.compact
       end
 
       def get_reserved_instances
-        return @reserved_instances if @reserved_instances
-        @reserved_instances = cache.describe_reserved_cache_nodes.reserved_cache_nodes.map do |instance|
+        cache.describe_reserved_cache_nodes.reserved_cache_nodes.map do |instance|
           next unless instance.state.to_s == 'active'
           new(instance)
         end.compact
       end
 
       def get_retired_reserved_instances
-        return @retired_reserved_instances if @retired_reserved_instances
-        @retired_reserved_instances = cache.describe_reserved_cache_nodes.reserved_cache_nodes.map do |instance|
+        cache.describe_reserved_cache_nodes.reserved_cache_nodes.map do |instance|
           next unless instance.state == 'retired'
           new(instance)
         end.compact
       end
     end
 
-    attr_accessor :id, :name, :instance_type, :scope, :engine, :count, :tag_value, :tag_reason, :expiration_date
+    attr_accessor :id, :name, :instance_type, :scope, :engine, :count, :tag_value, :tag_reason, :expiration_date, :availability_zone
     def initialize(cache_instance, account_id=nil, tag_name=nil, cache=nil)
       if cache_instance.class.to_s == "Aws::ElastiCache::Types::ReservedCacheNode"
         self.id = cache_instance.reserved_cache_node_id
         self.name = cache_instance.reserved_cache_node_id
         self.scope = nil
+        self.availability_zone = nil
         self.instance_type = cache_instance.cache_node_type
         self.engine = cache_instance.product_description
         self.count = cache_instance.cache_node_count
@@ -49,6 +45,7 @@ module SportNginAwsAuditor
         self.id = cache_instance.cache_cluster_id
         self.name = cache_instance.cache_cluster_id
         self.scope = nil
+        self.availability_zone = nil
         self.instance_type = cache_instance.cache_node_type
         self.engine = cache_instance.engine
         self.count = cache_instance.num_cache_nodes
