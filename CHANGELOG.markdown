@@ -1,3 +1,8 @@
+#### v3.11.3
+* Missed this bug because I did not test previous bug's fix in Slack
+
+  > Emma Sax: Unknown User: https://github.com/sportngin/sport_ngin_aws_auditor/pull/30
+
 #### v3.11.2
 * We actually do not want to cache the counts of instances and reserved instances between multiple runs
 
