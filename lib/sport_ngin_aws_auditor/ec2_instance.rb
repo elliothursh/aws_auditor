@@ -6,30 +6,25 @@ module SportNginAwsAuditor
     extend EC2Wrapper
 
     class << self
-      attr_accessor :instances, :reserved_instances, :retired_reserved_instances
-
       def get_instances(tag_name=nil)
-        return @instances if @instances
-        @instances = ec2.describe_instances.reservations.map do |reservation|
+        instances = ec2.describe_instances.reservations.map do |reservation|
           reservation.instances.map do |instance|
             next unless instance.state.name == 'running'
             new(instance, tag_name)
           end.compact
         end.flatten.compact
-        get_more_info
+        get_more_info(instances)
       end
 
       def get_reserved_instances
-        return @reserved_instances if @reserved_instances
-        @reserved_instances = ec2.describe_reserved_instances.reserved_instances.map do |instance|
+        ec2.describe_reserved_instances.reserved_instances.map do |instance|
           next unless instance.state == 'active'
           new(instance, nil, instance.instance_count)
         end.compact
       end
 
       def get_retired_reserved_instances
-        return @retired_reserved_instances if @retired_reserved_instances
-        @retired_reserved_instances = ec2.describe_reserved_instances.reserved_instances.map do |instance|
+        ec2.describe_reserved_instances.reserved_instances.map do |instance|
           next unless instance.state == 'retired'
           new(instance, nil, instance.instance_count)
         end.compact
@@ -49,8 +44,8 @@ module SportNginAwsAuditor
         buckets.sort_by{|k,v| k }
       end
 
-      def get_more_info
-        get_instances.each do |instance|
+      def get_more_info(instances)
+        instances.each do |instance|
           tags = ec2.describe_tags(:filters => [{:name => "resource-id", :values => [instance.id]}]).tags
           tags = Hash[tags.map { |tag| [tag[:key], tag[:value]]}.compact]
           instance.name = tags["Name"]

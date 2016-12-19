@@ -1,3 +1,13 @@
+#### v3.11.2
+* We actually do not want to cache the counts of instances and reserved instances between multiple runs
+
+  > Emma Sax: Unknown User: https://github.com/sportngin/sport_ngin_aws_auditor/pull/29
+
+#### v3.11.1
+* Must merge this PR in to run the audit command correctly
+
+  > Emma Sax: Unknown User: https://github.com/sportngin/sport_ngin_aws_auditor/pull/28
+
 #### v3.11.0
 * Automatically ignore instances based on a regex string
 
