@@ -209,7 +209,7 @@ module SportNginAwsAuditor
             # and size = 't2.small'
             size = my_match[2] if my_match
 
-            name = platform << audit_results.region << ' ' << size
+            name = (platform || "") << (audit_results.region || "") << ' ' << size
           else
             name = ri.to_s
           end
