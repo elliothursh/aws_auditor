@@ -59,7 +59,6 @@ module SportNginAwsAuditor
       instances_to_add.each do |instance|
         next if instance.nil?
         key = "#{instance.to_s.dup}#{extra_string}#{instance.name})"
-        # key = instance.to_s.dup << extra_string << (instance.name || "") << ")"
         instance_result = {}
         
         if instance_hash.has_key?(instance.to_s) && instance_hash[instance.to_s][:count] > 0
