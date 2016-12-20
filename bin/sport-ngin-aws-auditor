@@ -11,7 +11,14 @@ version SportNginAwsAuditor::VERSION
 wrap_help_text :verbatim
 
 flag [:config], :desc => 'SportNginAwsAuditor config file path', :default_value => SportNginAwsAuditor::DefaultPaths.config
+flag [:display], :desc => 'The name that should be printed in the output'
 switch [:aws_roles], :desc => 'Use AWS roles instead of an ~/.aws/credentials file'
+switch [:assume_roles], :desc => 'Assume roles to audit cross accounts; should have roles/policies already set up'
+flag [:role_name], :desc => 'The name of the role that is giving cross account access', :default_value => 'CrossAccountAuditorAccess'
+flag [:arn_id], :desc => 'The identifying digits of the AWS arn if using assume_roles;
+                            should be the numerical part of the example:
+                            arn:aws:iam::999999999999:role/#{role_name}'
+flag [:region], :desc => 'The region the audit should occur in', :default_value => 'us-east-1'
 
 program_long_desc """
 DOCUMENTATION

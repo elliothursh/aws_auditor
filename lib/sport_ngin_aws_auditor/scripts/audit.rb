@@ -13,9 +13,10 @@ module SportNginAwsAuditor
         attr_accessor :options
       end
 
-      def self.execute(environment, options=nil, global_options=nil)
-        aws(environment, global_options[:aws_roles])
+      def self.execute(environment, options, global_options)
+        aws(environment, global_options)
         @options = options
+        display_name = global_options[:display] || environment
         slack = options[:slack]
         no_selection = !(options[:ec2] || options[:rds] || options[:cache])
 
@@ -49,7 +50,7 @@ module SportNginAwsAuditor
           audit_results = AuditData.new(options[:instances], options[:reserved], c.first, tag_name, ignore_instances_regexes)
           audit_results.gather_data
           output_options = {:slack => slack, :class_type => c.first,
-                            :environment => environment, :zone_output => zone_output}
+                            :environment => display_name, :zone_output => zone_output}
           print_data(audit_results, output_options) if (c.last || no_selection)
         end
       end
