@@ -8,14 +8,14 @@ module SportNginAwsAuditor
   end
 
   class AWSSDK
-    def self.authenticate(environment, region)
+    def self.authenticate_with_iam(environment, region)
       shared_credentials = Aws::SharedCredentials.new(profile_name: environment)
-      Aws.config.update({region: region, credentials: shared_credentials})
+      update_aws_config({region: region, credentials: shared_credentials})
 
       iam = Aws::IAM::Client.new
 
-       # this will be an array of 0 or 1 because iam.list_mfa_devices.mfa_devices will only return 0 or 1 device per user;
-       # if user doesn't have MFA enabled, then this loop won't even execute
+      # this will be an array of 0 or 1 because iam.list_mfa_devices.mfa_devices will only return 0 or 1 device per user;
+      # if user doesn't have MFA enabled, then this loop won't even execute
       iam.list_mfa_devices.mfa_devices.each do |mfadevice|
         mfa_serial_number = mfadevice.serial_number
         mfa_token = Output.ask("Enter MFA token: "){ |q|  q.validate = /^\d{6}$/ }
@@ -28,7 +28,7 @@ module SportNginAwsAuditor
         session_credentials = Aws::Credentials.new(session_credentials_hash.access_key_id,
                                                    session_credentials_hash.secret_access_key,
                                                    session_credentials_hash.session_token)
-        Aws.config.update({region: region, credentials: session_credentials})
+        update_aws_config({region: region, credentials: session_credentials})
       end
     end
 
@@ -42,15 +42,18 @@ module SportNginAwsAuditor
                                        token_code: mfa_token)
     end
 
-    def self.authenticate_with_roles(environment, region)
-        Aws.config.update({region: region})
+    def self.update_aws_config(options)
+        Aws.config.update(options)
     end
 
-    def self.authenticate_for_multiple_accounts(environment, arn_id, role_name, region)
-      sts = Aws::STS::Client.new(:profile => environment, :region => region)
-      creds = Aws::AssumeRoleCredentials.new(:client => sts, :role_arn => "arn:aws:iam::#{arn_id}:role/#{role_name}", :role_session_name => 'auditor')
-      Aws.config.update({region: region, credentials: creds})
-      return creds
+    def self.authenticate_with_assumed_roles(environment, arn_id, role_name, region)
+      sts = Aws::STS::Client.new(profile: environment, region: region)
+      role_arn = "arn:aws:iam::#{arn_id}:role/#{role_name}"
+      assumed_role_credentials = Aws::AssumeRoleCredentials.new(client: sts,
+                                                                role_arn: role_arn,
+                                                                role_session_name: 'auditor')
+      update_aws_config({region: region, credentials: assumed_role_credentials})
+      return assumed_role_credentials
     end
   end
 end

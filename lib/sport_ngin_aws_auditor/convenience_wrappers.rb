@@ -9,14 +9,14 @@ module SportNginAwsAuditor
 
     def aws(environment, global_options)
       if global_options[:aws_roles]
-        SportNginAwsAuditor::AWSSDK.authenticate_with_roles(environment, global_options[:region])
+        SportNginAwsAuditor::AWSSDK.update_aws_config({region: global_options[:region]})
       elsif global_options[:assume_roles]
-        @assume_role_creds = SportNginAwsAuditor::AWSSDK.authenticate_for_multiple_accounts(environment,
-                                                                                            global_options[:arn_id],
-                                                                                            global_options[:role_name],
-                                                                                            global_options[:region])
+        @assume_role_creds = SportNginAwsAuditor::AWSSDK.authenticate_with_assumed_roles(environment,
+                                                                                         global_options[:arn_id],
+                                                                                         global_options[:role_name],
+                                                                                         global_options[:region])
       else
-        SportNginAwsAuditor::AWSSDK.authenticate(environment, global_options[:region])
+        SportNginAwsAuditor::AWSSDK.authenticate_with_iam(environment, global_options[:region])
       end
     end
 
