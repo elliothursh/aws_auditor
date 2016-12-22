@@ -44,7 +44,7 @@ module SportNginAwsAuditor
           print "Gathering info, please wait..."; print "\r"
         else
           puts "Condensed results from this audit will print into Slack instead of directly to an output."
-          NotifySlack.new("AWS AUDIT FOR #{display_name} IN REGION *_#{global_options[:region]}_*\n\n\n\n", options[:config_json]).perform
+          NotifySlack.new("_AWS AUDIT FOR #{display_name} IN REGION *_#{global_options[:region]}_*_", options[:config_json]).perform
         end
 
         cycle.each do |c|
