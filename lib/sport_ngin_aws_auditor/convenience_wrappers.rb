@@ -8,6 +8,7 @@ module SportNginAwsAuditor
     attr_accessor :aws, :account_id
 
     def aws(environment, global_options)
+      return @aws if @aws
       if global_options[:aws_roles]
         SportNginAwsAuditor::AWSSDK.update_aws_config({region: global_options[:region]})
       elsif global_options[:assume_roles]
