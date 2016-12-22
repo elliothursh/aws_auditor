@@ -4,11 +4,12 @@ module SportNginAwsAuditor
   class AuditData
 
     attr_accessor :data, :retired_tags, :retired_ris, :selected_audit_type, :klass, :tag_name, :region, :ignore_instances_regexes
-    def initialize(instances, reserved, class_type, tag_name, ignore_instances_regexes)
-      self.selected_audit_type = (!instances && !reserved) ? "all" : (instances ? "instances" : "reserved")
-      self.klass = SportNginAwsAuditor.const_get(class_type)
-      self.tag_name = tag_name
-      self.ignore_instances_regexes = ignore_instances_regexes
+    def initialize(info)
+      self.selected_audit_type = (!info[:instances] && !info[:reserved]) ? "all" : (info[:instances] ? "instances" : "reserved")
+      self.klass = SportNginAwsAuditor.const_get(info[:class])
+      self.tag_name = info[:tag_name]
+      self.ignore_instances_regexes = info[:regexes]
+      self.region = info[:region].match(/(\w{2}-\w{4,})/)[0] if info[:region].match(/(\w{2}-\w{4,})/)
     end
 
     def instances?
@@ -46,7 +47,6 @@ module SportNginAwsAuditor
 
     def gather_instances_data
       instances = self.klass.get_instances(tag_name)
-      gather_region(instances)
       retired_tags = self.klass.get_retired_tags(instances)
       instances_with_tag = self.klass.filter_instances_with_tags(instances)
       instances_without_tag = self.klass.filter_instances_without_tags(instances)
@@ -58,22 +58,11 @@ module SportNginAwsAuditor
 
     def gather_all_data
       instances = self.klass.get_instances(tag_name)
-      gather_region(instances)
       retired_tags = self.klass.get_retired_tags(instances)
       instance_hash = self.klass.compare(instances, ignore_instances_regexes)
       retired_ris = self.klass.get_recent_retired_reserved_instances
 
       return instance_hash, retired_tags, retired_ris
-    end
-
-    def gather_region(instances)
-      if self.klass == SportNginAwsAuditor::EC2Instance
-        # if instances.first.availability_zone = 'us-east-1a'...
-        match = instances.first.availability_zone.match(/(\w{2}-\w{4,})/)
-
-        # then region = 'us-east'
-        self.region = match[0] unless match.nil?
-      end
     end
   end
 end

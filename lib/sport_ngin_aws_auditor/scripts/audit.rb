@@ -48,7 +48,9 @@ module SportNginAwsAuditor
         end
 
         cycle.each do |c|
-          audit_results = AuditData.new(options[:instances], options[:reserved], c.first, tag_name, ignore_instances_regexes)
+          audit_results = AuditData.new({:instances => options[:instances], :reserved => options[:reserved],
+                                         :class => c.first, :tag_name => tag_name,
+                                         :regexes => ignore_instances_regexes, :region => global_options[:region]})
           audit_results.gather_data
           output_options = {:slack => slack, :class_type => c.first,
                             :display_name => display_name, :zone_output => zone_output}
@@ -57,6 +59,7 @@ module SportNginAwsAuditor
       end
 
       def self.print_data(audit_results, output_options)
+        return if audit_results.data.empty?
         audit_results.data.sort_by! { |instance| [instance.category, instance.type] }
 
         if output_options[:slack]
