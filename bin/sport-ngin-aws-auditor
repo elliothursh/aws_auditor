@@ -18,7 +18,8 @@ flag [:role_name], :desc => 'The name of the role that is giving cross account a
 flag [:arn_id], :desc => 'The identifying digits of the AWS arn if using assume_roles;
                           should be the numerical part of the example:
                           arn:aws:iam::999999999999:role/#{role_name}'
-flag [:region], :desc => 'The region the audit should occur in', :default_value => 'us-east-1'
+flag [:region], :desc => 'The region(s) the audit should occur in; if no region is specified, then the auditor will be run in every
+                          U.S. region. To run multiple regions, the input should be a string like: us-east-1, us-east-2'
 
 program_long_desc """
 DOCUMENTATION

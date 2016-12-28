@@ -1,5 +1,6 @@
 require 'highline/import'
 require 'colorize'
+require 'aws-sdk'
 require_relative "../notify_slack"
 require_relative "../instance"
 require_relative "../audit_data"
@@ -40,35 +41,48 @@ module SportNginAwsAuditor
                  ["RDSInstance", options[:rds]],
                  ["CacheInstance", options[:cache]]]
 
+        regions = (global_options[:region].split(', ') if global_options[:region]) || gather_regions
+
         if !slack
           print "Gathering info, please wait..."; print "\r"
         else
           puts "Condensed results from this audit will print into Slack instead of directly to an output."
-          NotifySlack.new("_AWS AUDIT FOR #{display_name} IN REGION *_#{global_options[:region]}_*_", options[:config_json]).perform
         end
 
-        cycle.each do |c|
-          audit_results = AuditData.new({:instances => options[:instances], :reserved => options[:reserved],
-                                         :class => c.first, :tag_name => tag_name,
-                                         :regexes => ignore_instances_regexes, :region => global_options[:region]})
-          audit_results.gather_data
-          output_options = {:slack => slack, :class_type => c.first,
-                            :display_name => display_name, :zone_output => zone_output}
-          print_data(audit_results, output_options) if (c.last || no_selection)
+        regions.each do |r|
+          cycle.each do |c|
+            audit_results = AuditData.new({:instances => options[:instances], :reserved => options[:reserved],
+                                           :class => c.first, :tag_name => tag_name,
+                                           :regexes => ignore_instances_regexes, :region => r})
+            audit_results.gather_data
+
+            unless audit_results.data.empty?
+              puts "AWS AUDIT FOR #{display_name} IN REGION #{r} for #{c.first}s".colorize(:white).on_blue.underline if !slack
+              NotifySlack.new("_AWS AUDIT FOR #{display_name} IN REGION *_#{r}_* for *_#{c.first}s_*_", options[:config_json]).perform if slack
+
+              output_options = {:slack => slack, :class => c.first,
+                                :display_name => display_name, :zone_output => zone_output}
+              print_data(audit_results, output_options) if (c.last || no_selection)
+            end
+          end
         end
       end
 
+      def self.gather_regions
+        ec2 = Aws::EC2::Client.new(region: 'us-east-1')
+        regions = ec2.describe_regions[:regions]
+        us_regions = regions.select { |region| region.region_name.include?("us") }
+        us_regions.collect { |r| r.region_name }
+      end
+
       def self.print_data(audit_results, output_options)
-        return if audit_results.data.empty?
         audit_results.data.sort_by! { |instance| [instance.category, instance.type] }
 
         if output_options[:slack]
           print_to_slack(audit_results, output_options)
         elsif options[:reserved] || options[:instances]
-          puts header(output_options[:class_type])
           audit_results.data.each{ |instance| say "<%= color('#{instance.type}: #{instance.count}', :white) %>" }
         else
-          puts header(output_options[:class_type])
           audit_results.data.each{ |instance| colorize(instance, output_options[:zone_output]) }
 
           say_retired_ris(audit_results, output_options) unless audit_results.retired_ris.empty?
@@ -78,7 +92,7 @@ module SportNginAwsAuditor
 
       def self.say_retired_ris(audit_results, output_options)
         retired_ris = audit_results.retired_ris
-        say "The following reserved #{output_options[:class_type]}Instances have recently expired in #{output_options[:display_name]}:"
+        say "The following reserved #{output_options[:class]}Instances have recently expired in #{output_options[:display_name]}:"
         retired_ris.each do |ri|
           if ri.availability_zone.nil?
             # if ri.to_s = 'Linux VPC  t2.small'...
@@ -100,7 +114,7 @@ module SportNginAwsAuditor
 
       def self.say_retired_tags(audit_results, output_options)
         retired_tags = audit_results.retired_tags
-        say "The following #{output_options[:class_type]}Instance tags have recently expired in #{output_options[:display_name]}:"
+        say "The following #{output_options[:class]}Instance tags have recently expired in #{output_options[:display_name]}:"
         retired_tags.each do |tag|
           if tag.reason
             say "#{tag.instance_name} (#{tag.instance_type}) retired on #{tag.value} because #{tag.reason}"
@@ -157,7 +171,7 @@ module SportNginAwsAuditor
       end
 
       def self.print_discrepancies(discrepancy_array, output_options)
-        title = "Some #{output_options[:class_type]} discrepancies for #{output_options[:display_name]} exist:\n"
+        title = "Some #{output_options[:class]} discrepancies for #{output_options[:display_name]} exist:\n"
         slack_instances = NotifySlack.new(title, options[:config_json])
 
         discrepancy_array.each do |discrepancy|
@@ -175,7 +189,7 @@ module SportNginAwsAuditor
       end
 
       def self.print_tagged(tagged_ignored_array, output_options)
-        title = "There are currently some tagged or ignored #{output_options[:class_type]}s in #{output_options[:display_name]}:\n"
+        title = "There are currently some tagged or ignored #{output_options[:class]}s in #{output_options[:display_name]}:\n"
         slack_instances = NotifySlack.new(title, options[:config_json])
 
         tagged_ignored_array.each do |tagged_or_ignored|
@@ -201,7 +215,7 @@ module SportNginAwsAuditor
 
       def self.print_retired_ris(audit_results, output_options)
         retired_ris = audit_results.retired_ris
-        message = "The following reserved #{output_options[:class_type]}s have recently expired in #{output_options[:display_name]}:\n"
+        message = "The following reserved #{output_options[:class]}s have recently expired in #{output_options[:display_name]}:\n"
 
         retired_ris.each do |ri|
           if ri.availability_zone.nil?
@@ -230,7 +244,7 @@ module SportNginAwsAuditor
 
       def self.print_retired_tags(audit_results, output_options)
         retired_tags = audit_results.retired_tags
-        message = "The following #{output_options[:class_type]} tags have recently expired in #{output_options[:display_name]}:\n"
+        message = "The following #{output_options[:class]} tags have recently expired in #{output_options[:display_name]}:\n"
 
         retired_tags.each do |tag|
           if tag.reason
@@ -261,17 +275,6 @@ module SportNginAwsAuditor
           return "red", "#BF1616", "UNUSED RI -"
         end
       end
-
-      def self.header(type, length = 50)
-        type.upcase!.slice! "INSTANCE"
-        half_length = (length - type.length)/2.0 - 1
-        [
-          "*" * length,
-          "*" * half_length.floor + " #{type} " + "*" * half_length.ceil,
-          "*" * length
-        ].join("\n")
-      end
-
     end
   end
 end
