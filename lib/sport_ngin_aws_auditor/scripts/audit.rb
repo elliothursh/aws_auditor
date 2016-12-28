@@ -37,9 +37,9 @@ module SportNginAwsAuditor
         
         zone_output = options[:zone_output]
 
-        cycle = [["EC2Instance", options[:ec2]],
-                 ["RDSInstance", options[:rds]],
-                 ["CacheInstance", options[:cache]]]
+        instance_types = [["EC2Instance", options[:ec2]],
+                          ["RDSInstance", options[:rds]],
+                          ["CacheInstance", options[:cache]]]
 
         regions = (global_options[:region].split(', ') if global_options[:region]) || gather_regions
 
@@ -50,19 +50,19 @@ module SportNginAwsAuditor
         end
 
         regions.each do |r|
-          cycle.each do |c|
+          instance_types.each do |t|
             audit_results = AuditData.new({:instances => options[:instances], :reserved => options[:reserved],
-                                           :class => c.first, :tag_name => tag_name,
+                                           :class => t.first, :tag_name => tag_name,
                                            :regexes => ignore_instances_regexes, :region => r})
             audit_results.gather_data
 
             unless audit_results.data.empty?
-              puts "AWS AUDIT FOR #{display_name} IN REGION #{r} for #{c.first}s".colorize(:white).on_blue.underline if !slack
-              NotifySlack.new("_AWS AUDIT FOR #{display_name} IN REGION *_#{r}_* for *_#{c.first}s_*_", options[:config_json]).perform if slack
+              puts "AWS AUDIT FOR #{display_name} IN REGION #{r} for #{t.first}s".colorize(:white).on_blue.underline if !slack
+              NotifySlack.new("_AWS AUDIT FOR #{display_name} IN REGION *_#{r}_* for *_#{t.first}s_*_", options[:config_json]).perform if slack
 
-              output_options = {:slack => slack, :class => c.first,
+              output_options = {:slack => slack, :class => t.first,
                                 :display_name => display_name, :zone_output => zone_output}
-              print_data(audit_results, output_options) if (c.last || no_selection)
+              print_data(audit_results, output_options) if (t.last || no_selection)
             end
           end
         end
