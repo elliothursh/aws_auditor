@@ -30,9 +30,9 @@ module SportNginAwsAuditor
         end.compact
       end
 
-      def bucketize
+      def bucketize(client)
         buckets = {}
-        get_instances.map do |instance|
+        get_instances(client).map do |instance|
           name = instance.stack_name || instance.name
           if name
             buckets[name] = [] unless buckets.has_key? name

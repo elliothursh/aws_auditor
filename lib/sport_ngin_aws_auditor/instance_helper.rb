@@ -4,11 +4,11 @@ require_relative './audit_data'
 module SportNginAwsAuditor
   module InstanceHelper
 
-    def instance_hash
+    def instance_hash(client)
       Hash[get_instances(client).map { |instance| instance.nil? ? next : [instance.id, instance]}.compact]
     end
 
-    def reserved_instance_hash
+    def reserved_instance_hash(client)
       Hash[get_reserved_instances(client).map { |instance| instance.nil? ? next : [instance.id, instance]}.compact]
     end
 
