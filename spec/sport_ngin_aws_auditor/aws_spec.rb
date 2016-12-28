@@ -11,14 +11,14 @@ module SportNginAwsAuditor
 
       it "should receive new Aws::SharedCredentials" do
         expect(Aws::SharedCredentials).to receive(:new).with(profile_name: 'staging')
-        AWSSDK::authenticate_with_iam('staging', 'us-east-1')
+        AWSSDK::authenticate_with_iam('staging')
       end
 
       it "should update configs" do
         coffee_types = {:coffee => "cappuccino", :beans => "arabica"}
         allow(Aws::SharedCredentials).to receive(:new).and_return(coffee_types)
         expect(Aws.config).to receive(:update).with({region: 'us-east-1', credentials: coffee_types})
-        AWSSDK::authenticate_with_iam('staging', 'us-east-1')
+        AWSSDK::authenticate_with_iam('staging')
       end
     end
 
@@ -41,7 +41,7 @@ module SportNginAwsAuditor
 
         expect(Aws::Credentials).to receive(:new).and_return(cred_double).at_least(:once)
         expect(Aws::SharedCredentials).to receive(:new).and_return(shared_creds)
-        AWSSDK::authenticate_with_iam('staging', 'us-east-1')
+        AWSSDK::authenticate_with_iam('staging')
       end
     end
 
@@ -65,17 +65,17 @@ module SportNginAwsAuditor
 
       it "should update config" do
         expect(Aws.config).to receive(:update)
-        AWSSDK::authenticate_with_assumed_roles('staging', '999999999999', 'CrossAccountAuditorAccess', 'us-east-1')
+        AWSSDK::authenticate_with_assumed_roles('staging', '999999999999', 'CrossAccountAuditorAccess')
       end
 
       it "should call for an STS client" do
         expect(Aws::STS::Client).to receive(:new)
-        AWSSDK::authenticate_with_assumed_roles('staging', '999999999999', 'CrossAccountAuditorAccess', 'us-east-1')
+        AWSSDK::authenticate_with_assumed_roles('staging', '999999999999', 'CrossAccountAuditorAccess')
       end
 
       it "should call for some credentials" do
         expect(Aws::AssumeRoleCredentials).to receive(:new)
-        AWSSDK::authenticate_with_assumed_roles('staging', '999999999999', 'CrossAccountAuditorAccess', 'us-east-1')
+        AWSSDK::authenticate_with_assumed_roles('staging', '999999999999', 'CrossAccountAuditorAccess')
       end
     end
   end
