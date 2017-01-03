@@ -34,11 +34,10 @@ module SportNginAwsAuditor
       update_aws_config({region: 'us-east-1', credentials: session_credentials})
     end
 
-    def self.authenticate_with_assumed_roles(environment, arn_id, role_name)
-      sts = Aws::STS::Client.new(profile: environment, region: 'us-east-1')
+    def self.authenticate_with_assumed_roles(environment, arn_id, role_name, sts_client)
       role_arn = "arn:aws:iam::#{arn_id}:role/#{role_name}"
       session_name = "auditor#{Time.now.to_i}"
-      assumed_role_credentials = Aws::AssumeRoleCredentials.new(client: sts,
+      assumed_role_credentials = Aws::AssumeRoleCredentials.new(client: sts_client,
                                                                 role_arn: role_arn,
                                                                 role_session_name: session_name)
       update_aws_config({region: 'us-east-1', credentials: assumed_role_credentials})
@@ -53,7 +52,7 @@ module SportNginAwsAuditor
       @session = sts.get_session_token(duration_seconds: 3600,
                                        serial_number: mfa_serial_number,
                                        token_code: mfa_token)
-    end
+    end    
 
     def self.update_aws_config(options)
         Aws.config.update(options)

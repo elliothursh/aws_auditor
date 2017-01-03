@@ -11,7 +11,8 @@ module SportNginAwsAuditor
       elsif global_options[:assume_roles]
         @assume_role_creds = SportNginAwsAuditor::AWSSDK.authenticate_with_assumed_roles(environment,
                                                                                          global_options[:arn_id],
-                                                                                         global_options[:role_name])
+                                                                                         global_options[:role_name],
+                                                                                         get_sts_client)
       else
         SportNginAwsAuditor::AWSSDK.authenticate_with_iam(environment)
       end
@@ -19,6 +20,10 @@ module SportNginAwsAuditor
 
     def get_account_id
       Aws::STS::Client.new.get_caller_identity.account
+    end
+
+    def get_sts_client
+      @sts_client ||= Aws::STS::Client.new(profile: environment, region: 'us-east-1')
     end
   end
 

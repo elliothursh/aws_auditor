@@ -49,7 +49,7 @@ module SportNginAwsAuditor
         puts "======================================="
         puts "#{title}"
         puts "======================================="
-        body.each{ |key, value| say "<%= color('#{key}: #{value}', :white) %>" }
+        body.each{ |key, value| say "<%= color('#{key}: #{value[:count]}', :white) %>" }
         puts "\n"
       end
     end
