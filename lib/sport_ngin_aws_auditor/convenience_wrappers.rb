@@ -5,8 +5,6 @@ module SportNginAwsAuditor
   attr_accessor :assume_role_creds
 
   module AWSWrapper
-    attr_accessor :aws, :account_id
-
     def aws(environment, global_options)
       if global_options[:aws_roles]
         SportNginAwsAuditor::AWSSDK.update_aws_config({region: 'us-east-1'})
@@ -20,7 +18,7 @@ module SportNginAwsAuditor
     end
 
     def get_account_id
-      @account_id ||= Aws::STS::Client.new.get_caller_identity.account
+      Aws::STS::Client.new.get_caller_identity.account
     end
   end
 
