@@ -11,88 +11,80 @@ module SportNginAwsAuditor
       extend AWSWrapper
 
       class << self
-        attr_accessor :options
+        attr_accessor :options, :audit_results
       end
+
+      #################### EXECUTION ####################
 
       def self.execute(environment, options, global_options)
         aws(environment, global_options)
-        @options = options
-        display_name = global_options[:display] || environment
-        slack = options[:slack]
-        no_selection = !(options[:ec2] || options[:rds] || options[:cache])
+        collect_options(options, global_options)
+        print_title
+        @regions.each { |region| audit_region(region) }
+      end
 
-        if options[:no_tag]
-          tag_name = nil
-        else
-          tag_name = options[:tag]
-        end
+      def self.audit_region(region)
+        print_region(region)
+        @instance_types.each { |type| audit_instance_type(type, region) }
+      end
 
-        ignore_instances_regexes = []
-        if options[:ignore_instances_patterns]
-          ignore_instances_patterns = options[:ignore_instances_patterns].split(', ')
-          ignore_instances_patterns.each do |r|
-            ignore_instances_regexes << Regexp.new(r)
-          end
-        end
-        
-        zone_output = options[:zone_output]
+      def self.audit_instance_type(type, region)
+        @class = type.first
+        @audit_results = AuditData.new({:instances => options[:instances], :reserved => options[:reserved],
+                                        :class => type.first.to_s, :tag_name => @tag_name,
+                                        :regexes => @ignore_instances_regexes, :region => region})
+        @audit_results.gather_data
 
-        instance_types = [["EC2Instance", options[:ec2]],
-                          ["RDSInstance", options[:rds]],
-                          ["CacheInstance", options[:cache]]]
-
-        regions = (global_options[:region].split(', ') if global_options[:region]) || gather_regions
-
-        if !slack
-          print "Gathering info, please wait..."; print "\r"
-        else
-          puts "Condensed results from this audit will print into Slack instead of directly to an output."
-        end
-
-        regions.each do |r|
-          instance_types.each do |t|
-            audit_results = AuditData.new({:instances => options[:instances], :reserved => options[:reserved],
-                                           :class => t.first, :tag_name => tag_name,
-                                           :regexes => ignore_instances_regexes, :region => r})
-            audit_results.gather_data
-
-            unless audit_results.data.empty?
-              puts "AWS AUDIT FOR #{display_name} IN REGION #{r} for #{t.first}s".colorize(:white).on_blue.underline if !slack
-              NotifySlack.new("_AWS AUDIT FOR #{display_name} IN REGION *_#{r}_* for *_#{t.first}s_*_", options[:config_json]).perform if slack
-
-              output_options = {:slack => slack, :class => t.first,
-                                :display_name => display_name, :zone_output => zone_output}
-              print_data(audit_results, output_options) if (t.last || no_selection)
-            end
-          end
+        unless @audit_results.data.empty?
+          print_instance_type(type)
+          print_audit_results if (type.last || @no_selection)
         end
       end
 
-      def self.gather_regions
-        ec2 = Aws::EC2::Client.new(region: 'us-east-1')
-        regions = ec2.describe_regions[:regions]
-        us_regions = regions.select { |region| region.region_name.include?("us") }
-        us_regions.collect { |r| r.region_name }
-      end
+      def self.print_audit_results
+        @audit_results.data.sort_by! { |instance| [instance.category, instance.type] }
 
-      def self.print_data(audit_results, output_options)
-        audit_results.data.sort_by! { |instance| [instance.category, instance.type] }
-
-        if output_options[:slack]
-          print_to_slack(audit_results, output_options)
+        if @slack
+          print_to_slack
         elsif options[:reserved] || options[:instances]
-          audit_results.data.each{ |instance| say "<%= color('#{instance.type}: #{instance.count}', :white) %>" }
+          @audit_results.data.each{ |instance| say "<%= color('#{instance.type}: #{instance.count}', :white) %>" }
         else
-          audit_results.data.each{ |instance| colorize(instance, output_options[:zone_output]) }
-
-          say_retired_ris(audit_results, output_options) unless audit_results.retired_ris.empty?
-          say_retired_tags(audit_results, output_options) unless audit_results.retired_tags.empty?
+          print_to_terminal
         end
       end
 
-      def self.say_retired_ris(audit_results, output_options)
-        retired_ris = audit_results.retired_ris
-        say "The following reserved #{output_options[:class]}Instances have recently expired in #{output_options[:display_name]}:"
+      #################### PRINTING DATA TO TERMINAL ####################
+
+      def self.print_to_terminal
+        say_instances
+        say_retired_ris unless @audit_results.retired_ris.empty?
+        say_retired_tags unless @audit_results.retired_tags.empty?
+      end
+
+      def self.say_instances
+        @audit_results.data.each do |instance|
+          name = !@zone_output && (instance.tagged? || instance.running?) ? print_without_zone(instance.type) : instance.type
+          count = instance.count
+          color, rgb, prefix = color_chooser(instance)
+          
+          if instance.tagged?
+            if instance.reason
+              say "<%= color('#{prefix} #{name}: (expiring on #{instance.tag_value} because #{instance.reason})', :#{color}) %>"
+            else
+              say "<%= color('#{prefix} #{name}: (expiring on #{instance.tag_value})', :#{color}) %>"
+            end
+          elsif instance.ignored?
+            say "<%= color('#{prefix} #{name}', :#{color}) %>"
+          else
+            say "<%= color('#{prefix} #{name}: #{count}', :#{color}) %>"
+          end
+        end
+      end
+
+      def self.say_retired_ris
+        retired_ris = @audit_results.retired_ris
+        say "The following reserved #{@class}Instances have recently expired in #{@display_name}:"
+
         retired_ris.each do |ri|
           if ri.availability_zone.nil?
             # if ri.to_s = 'Linux VPC  t2.small'...
@@ -104,7 +96,7 @@ module SportNginAwsAuditor
             # and size = 't2.small'
             size = my_match[2] if my_match
 
-            n = "#{platform}#{audit_results.region} #{size}"
+            n = "#{platform}#{@audit_results.region} #{size}"
             say "#{n} (#{ri.count}) on #{ri.expiration_date}"
           else
             say "#{ri.to_s} (#{ri.count}) on #{ri.expiration_date}"
@@ -112,9 +104,10 @@ module SportNginAwsAuditor
         end
       end
 
-      def self.say_retired_tags(audit_results, output_options)
-        retired_tags = audit_results.retired_tags
-        say "The following #{output_options[:class]}Instance tags have recently expired in #{output_options[:display_name]}:"
+      def self.say_retired_tags
+        retired_tags = @audit_results.retired_tags
+        say "The following #{@class}Instance tags have recently expired in #{@display_name}:"
+
         retired_tags.each do |tag|
           if tag.reason
             say "#{tag.instance_name} (#{tag.instance_type}) retired on #{tag.value} because #{tag.reason}"
@@ -124,87 +117,33 @@ module SportNginAwsAuditor
         end
       end
 
-      def self.colorize(instance, zone_output=nil)
-        name = !zone_output && (instance.tagged? || instance.running?) ? print_without_zone(instance.type) : instance.type
-        count = instance.count
-        color, rgb, prefix = color_chooser(instance)
-        
-        if instance.tagged?
-          if instance.reason
-            puts "#{prefix} #{name}: (expiring on #{instance.tag_value} because #{instance.reason})".blue
-          else
-            say "<%= color('#{prefix} #{name}: (expiring on #{instance.tag_value})', :#{color}) %>"
-          end
-        elsif instance.ignored?
-          say "<%= color('#{prefix} #{name}', :#{color}) %>"
-        else
-          say "<%= color('#{prefix} #{name}: #{count}', :#{color}) %>"
-        end
+      #################### PRINTING DATA TO SLACK ####################
+
+      def self.print_to_slack
+        print_instances
+        print_retired_ris unless @audit_results.retired_ris.empty?
+        print_retired_tags unless @audit_results.retired_tags.empty?
       end
 
-      def self.print_to_slack(audit_results, output_options)
-        discrepancy_array = []
-        tagged_ignored_array = []
+      def self.print_instances
+        slack_instances = NotifySlack.new(nil, @options[:config_json])
+        data_array = @audit_results.data.reject { |data| data.matched? }
 
-        audit_results.data.each do |instance|
-          unless instance.matched? || instance.tagged? || instance.ignored?
-            discrepancy_array.push(instance)
-          end
-        end
+        data_array.each do |data|
+          type = !@zone_output && (data.tagged? || data.running?) ? print_without_zone(data.type) : data.type
+          count = data.count
+          color, rgb, prefix = color_chooser(data)
 
-        unless discrepancy_array.empty?
-          print_discrepancies(discrepancy_array, output_options)
-        end
-
-       audit_results.data.each do |instance|
-          if instance.tagged? || instance.ignored?
-            tagged_ignored_array.push(instance)
-          end
-        end
-
-        unless tagged_ignored_array.empty?
-          print_tagged(tagged_ignored_array, output_options)
-        end
-
-        print_retired_ris(audit_results, output_options) unless audit_results.retired_ris.empty?
-        print_retired_tags(audit_results, output_options) unless audit_results.retired_tags.empty?
-      end
-
-      def self.print_discrepancies(discrepancy_array, output_options)
-        title = "Some #{output_options[:class]} discrepancies for #{output_options[:display_name]} exist:\n"
-        slack_instances = NotifySlack.new(title, options[:config_json])
-
-        discrepancy_array.each do |discrepancy|
-          type = !output_options[:zone_output] && discrepancy.running? ? print_without_zone(discrepancy.type) : discrepancy.type
-          count = discrepancy.count
-          color, rgb, prefix = color_chooser(discrepancy)
-
-          unless discrepancy.tagged?
-            text = "#{prefix} #{type}: #{count}"
-            slack_instances.attachments.push({"color" => rgb, "text" => text, "mrkdwn_in" => ["text"]})
-          end
-        end
-
-        slack_instances.perform        
-      end
-
-      def self.print_tagged(tagged_ignored_array, output_options)
-        title = "There are currently some tagged or ignored #{output_options[:class]}s in #{output_options[:display_name]}:\n"
-        slack_instances = NotifySlack.new(title, options[:config_json])
-
-        tagged_ignored_array.each do |tagged_or_ignored|
-          type = output_options[:zone_output] ? tagged_or_ignored.type : print_without_zone(tagged_or_ignored.type)
-          count = tagged_or_ignored.count
-          color, rgb, prefix = color_chooser(tagged_or_ignored)
-          
-          if tagged_or_ignored.tagged?
-            if tagged_or_ignored.reason
-              text = "#{prefix} #{tagged_or_ignored.name}: (expiring on #{tagged_or_ignored.tag_value} because #{tagged_or_ignored.reason})"
+          if data.tagged?
+            if data.reason
+              text = "#{prefix} #{data.name}: (expiring on #{data.tag_value} because #{data.reason})"
             else
-              text = "#{prefix} #{tagged_or_ignored.name}: (expiring on #{tagged_or_ignored.tag_value})"
+              text = "#{prefix} #{data.name}: (expiring on #{data.tag_value})"
             end
-          elsif tagged_or_ignored.ignored?
-            text = "#{prefix} #{tagged_or_ignored.name}"
+          elsif data.ignored?
+            text = "#{prefix} #{data.name}"
+          else
+            text = "#{prefix} #{type}: #{count}"
           end
 
           slack_instances.attachments.push({"color" => rgb, "text" => text, "mrkdwn_in" => ["text"]})
@@ -213,9 +152,9 @@ module SportNginAwsAuditor
         slack_instances.perform
       end
 
-      def self.print_retired_ris(audit_results, output_options)
-        retired_ris = audit_results.retired_ris
-        message = "The following reserved #{output_options[:class]}s have recently expired in #{output_options[:display_name]}:\n"
+      def self.print_retired_ris
+        retired_ris = @audit_results.retired_ris
+        message = "The following reserved #{@class}s have recently expired in #{@display_name}:\n"
 
         retired_ris.each do |ri|
           if ri.availability_zone.nil?
@@ -228,7 +167,7 @@ module SportNginAwsAuditor
             # and size = 't2.small'
             size = my_match[2] if my_match
 
-            name = "#{platform}#{audit_results.region} #{size}"
+            name = "#{platform}#{@audit_results.region} #{size}"
           else
             name = ri.to_s
           end
@@ -238,13 +177,13 @@ module SportNginAwsAuditor
           message << "*#{name}* (#{count}) on *#{expiration_date}*\n"
         end
           
-        slack_retired_ris = NotifySlack.new(message, options[:config_json])
+        slack_retired_ris = NotifySlack.new(message, @options[:config_json])
         slack_retired_ris.perform
       end
 
-      def self.print_retired_tags(audit_results, output_options)
-        retired_tags = audit_results.retired_tags
-        message = "The following #{output_options[:class]} tags have recently expired in #{output_options[:display_name]}:\n"
+      def self.print_retired_tags
+        retired_tags = @audit_results.retired_tags
+        message = "The following #{@class} tags have recently expired in #{@display_name}:\n"
 
         retired_tags.each do |tag|
           if tag.reason
@@ -254,8 +193,68 @@ module SportNginAwsAuditor
           end
         end
 
-        slack_retired_tags = NotifySlack.new(message, options[:config_json])
+        slack_retired_tags = NotifySlack.new(message, @options[:config_json])
         slack_retired_tags.perform
+      end
+
+      #################### OTHER HELPFUL METHODS ####################
+
+      def self.gather_regions
+        ec2 = Aws::EC2::Client.new(region: 'us-east-1')
+        regions = ec2.describe_regions[:regions]
+        us_regions = regions.select { |region| region.region_name.include?("us") }
+        us_regions.collect { |r| r.region_name }
+      end
+
+      def self.collect_options(options, global_options)
+        @options = options
+        @display_name = global_options[:display] || environment
+        @slack = options[:slack]
+        @no_selection = !(options[:ec2] || options[:rds] || options[:cache])
+        @zone_output = options[:zone_output]
+        @regions = (global_options[:region].split(', ') if global_options[:region]) || gather_regions
+
+        if options[:no_tag]
+          @tag_name = nil
+        else
+          @tag_name = options[:tag]
+        end
+
+        @ignore_instances_regexes = []
+        if options[:ignore_instances_patterns]
+          options[:ignore_instances_patterns].split(', ').each do |r|
+            @ignore_instances_regexes << Regexp.new(r)
+          end
+        end
+
+        @instance_types = [["EC2Instance", options[:ec2]],
+                           ["RDSInstance", options[:rds]],
+                           ["CacheInstance", options[:cache]]]
+      end
+
+      def self.print_title
+        if @slack
+          puts "Condensed results from this audit will print into Slack instead of directly to an output."
+          NotifySlack.new("_AWS AUDIT FOR #{@display_name}_", @options[:config_json]).perform
+        else
+          puts "AWS AUDIT FOR #{@display_name}".colorize(:yellow).on_red.underline
+        end
+      end
+
+      def self.print_region(region)
+        if @slack
+          NotifySlack.new("_REGION: *_#{region}_*_", @options[:config_json]).perform
+        else
+          puts "REGION: #{region}".colorize(:white).on_blue.underline
+        end
+      end
+
+      def self.print_instance_type(type)
+        if @slack
+          NotifySlack.new("*#{type.first}s*", @options[:config_json]).perform
+        else
+          puts "#{type.first}s".underline
+        end
       end
 
       def self.print_without_zone(type)
