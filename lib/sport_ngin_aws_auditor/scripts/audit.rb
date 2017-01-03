@@ -18,7 +18,7 @@ module SportNginAwsAuditor
 
       def self.execute(environment, options, global_options)
         aws(environment, global_options)
-        collect_options(options, global_options)
+        collect_options(environment, options, global_options)
         print_title
         @regions.each { |region| audit_region(region) }
       end
@@ -26,6 +26,7 @@ module SportNginAwsAuditor
       def self.audit_region(region)
         print_region(region)
         @instance_types.each { |type| audit_instance_type(type, region) }
+        # add region to front of really long message....?
       end
 
       def self.audit_instance_type(type, region)
@@ -65,7 +66,7 @@ module SportNginAwsAuditor
         @audit_results.data.each do |instance|
           name = !@zone_output && (instance.tagged? || instance.running?) ? print_without_zone(instance.type) : instance.type
           count = instance.count
-          color, rgb, prefix = color_chooser(instance)
+          color, rgb, prefix = color_chooser({:instance => instance, :retired_ri => false, :retired_tag => false})
           
           if instance.tagged?
             if instance.reason
@@ -83,9 +84,9 @@ module SportNginAwsAuditor
 
       def self.say_retired_ris
         retired_ris = @audit_results.retired_ris
-        say "The following reserved #{@class}Instances have recently expired in #{@display_name}:"
 
         retired_ris.each do |ri|
+          color, rgb, prefix = color_chooser({:instance => ri, :retired_ri => true, :retired_tag => false})
           if ri.availability_zone.nil?
             # if ri.to_s = 'Linux VPC  t2.small'...
             my_match = ri.to_s.match(/(\w*\s*\w*\s{1})\s*(\s*\S*)/)
@@ -97,22 +98,23 @@ module SportNginAwsAuditor
             size = my_match[2] if my_match
 
             n = "#{platform}#{@audit_results.region} #{size}"
-            say "#{n} (#{ri.count}) on #{ri.expiration_date}"
+            say "<%= color('#{prefix} #{n} (#{ri.count}) on #{ri.expiration_date}', :#{color} %>"
           else
-            say "#{ri.to_s} (#{ri.count}) on #{ri.expiration_date}"
+            n = ri.to_s
+            say "<%= color('#{prefix} #{n} (#{ri.count}) on #{ri.expiration_date}', :#{color} %>"
           end
         end
       end
 
       def self.say_retired_tags
         retired_tags = @audit_results.retired_tags
-        say "The following #{@class}Instance tags have recently expired in #{@display_name}:"
 
         retired_tags.each do |tag|
+          color, rgb, prefix = color_chooser({:instance => tag, :retired_ri => false, :retired_tag => true})
           if tag.reason
-            say "#{tag.instance_name} (#{tag.instance_type}) retired on #{tag.value} because #{tag.reason}"
+            say "<%= color('#{prefix} #{tag.instance_name} (#{tag.instance_type}) retired on #{tag.value} because #{tag.reason}', :#{color} %>"
           else
-            say "#{tag.instance_name} (#{tag.instance_type}) retired on #{tag.value}"
+            say "<%= color('#{prefix} #{tag.instance_name} (#{tag.instance_type}) retired on #{tag.value}', :#{color} %>"
           end
         end
       end
@@ -126,27 +128,31 @@ module SportNginAwsAuditor
       end
 
       def self.print_instances
-        slack_instances = NotifySlack.new(nil, @options[:config_json])
         data_array = @audit_results.data.reject { |data| data.matched? }
+        slack_instances = NotifySlack.new(nil, @options[:config_json])
 
-        data_array.each do |data|
-          type = !@zone_output && (data.tagged? || data.running?) ? print_without_zone(data.type) : data.type
-          count = data.count
-          color, rgb, prefix = color_chooser(data)
+        if data_array.empty?
+          slack_instances.attachments.push({"color" => "#32CD32", "text" => "All RIs are properly matched here!", "mrkdwn_in" => ["text"]})
+        else
+          data_array.each do |data|
+            type = !@zone_output && (data.tagged? || data.running?) ? print_without_zone(data.type) : data.type
+            count = data.count
+            color, rgb, prefix = color_chooser({:instance => data, :retired_ri => false, :retired_tag => false})
 
-          if data.tagged?
-            if data.reason
-              text = "#{prefix} #{data.name}: (expiring on #{data.tag_value} because #{data.reason})"
+            if data.tagged?
+              if data.reason
+                text = "#{prefix} #{data.name}: (expiring on #{data.tag_value} because #{data.reason})"
+              else
+                text = "#{prefix} #{data.name}: (expiring on #{data.tag_value})"
+              end
+            elsif data.ignored?
+              text = "#{prefix} #{data.name}"
             else
-              text = "#{prefix} #{data.name}: (expiring on #{data.tag_value})"
+              text = "#{prefix} #{type}: #{count}"
             end
-          elsif data.ignored?
-            text = "#{prefix} #{data.name}"
-          else
-            text = "#{prefix} #{type}: #{count}"
-          end
 
-          slack_instances.attachments.push({"color" => rgb, "text" => text, "mrkdwn_in" => ["text"]})
+            slack_instances.attachments.push({"color" => rgb, "text" => text, "mrkdwn_in" => ["text"]})
+          end
         end
 
         slack_instances.perform
@@ -154,7 +160,7 @@ module SportNginAwsAuditor
 
       def self.print_retired_ris
         retired_ris = @audit_results.retired_ris
-        message = "The following reserved #{@class}s have recently expired in #{@display_name}:\n"
+        slack_retired_ris = NotifySlack.new(nil, @options[:config_json])
 
         retired_ris.each do |ri|
           if ri.availability_zone.nil?
@@ -173,27 +179,31 @@ module SportNginAwsAuditor
           end
           
           count = ri.count
+          color, rgb, prefix = color_chooser({:instance => ri, :retired_ri => true, :retired_tag => false})
           expiration_date = ri.expiration_date
-          message << "*#{name}* (#{count}) on *#{expiration_date}*\n"
+          text = "#{prefix} #{name} (#{count}) on #{expiration_date}"
+          slack_retired_ris.attachments.push({"color" => rgb, "text" => text, "mrkdwn_in" => ["text"]})
         end
-          
-        slack_retired_ris = NotifySlack.new(message, @options[:config_json])
+
         slack_retired_ris.perform
       end
 
       def self.print_retired_tags
         retired_tags = @audit_results.retired_tags
-        message = "The following #{@class} tags have recently expired in #{@display_name}:\n"
+        slack_retired_tags = NotifySlack.new(nil, @options[:config_json])
 
         retired_tags.each do |tag|
+          color, rgb, prefix = color_chooser({:instance => tag, :retired_ri => false, :retired_tag => true})
+
           if tag.reason
-            message << "*#{tag.instance_name}* (#{tag.instance_type}) retired on *#{tag.value}* because #{tag.reason}\n"
+            text = "#{prefix} #{tag.instance_name} (#{tag.instance_type}) retired on #{tag.value} because #{tag.reason}"
           else
-            message << "*#{tag.instance_name}* (#{tag.instance_type}) retired on *#{tag.value}*\n"
+            text = "#{prefix} #{tag.instance_name} (#{tag.instance_type}) retired on #{tag.value}"
           end
+
+          slack_retired_tags.attachments.push({"color" => rgb, "text" => text, "mrkdwn_in" => ["text"]})
         end
 
-        slack_retired_tags = NotifySlack.new(message, @options[:config_json])
         slack_retired_tags.perform
       end
 
@@ -206,7 +216,7 @@ module SportNginAwsAuditor
         us_regions.collect { |r| r.region_name }
       end
 
-      def self.collect_options(options, global_options)
+      def self.collect_options(environment, options, global_options)
         @options = options
         @display_name = global_options[:display] || environment
         @slack = options[:slack]
@@ -261,16 +271,20 @@ module SportNginAwsAuditor
         type.sub(/(-\d\w)/, '')
       end
 
-      def self.color_chooser(instance)
-        if instance.tagged?
+      def self.color_chooser(data)
+        if data[:retired_ri]
+          return "grey", "#595959", "RETIRED RI -"
+        elsif data[:retired_tag]
+          return "grey", "#595959", "RETIRED TAG -"
+        elsif data[:instance].tagged?
           return "blue", "#0000CC", "TAGGED -"
-        elsif instance.ignored?
+        elsif data[:instance].ignored?
           return "blue", "#0000CC", "IGNORED -"
-        elsif instance.running?
+        elsif data[:instance].running?
           return "yellow", "#FFD700", "MISSING RI -"
-        elsif instance.matched?
+        elsif data[:instance].matched?
           return "green", "#32CD32", "MATCHED RI -"
-        elsif instance.reserved?
+        elsif data[:instance].reserved?
           return "red", "#BF1616", "UNUSED RI -"
         end
       end
