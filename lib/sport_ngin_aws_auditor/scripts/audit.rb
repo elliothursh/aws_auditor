@@ -17,7 +17,9 @@ module SportNginAwsAuditor
       #################### EXECUTION ####################
 
       def self.execute(environment, options, global_options)
+        puts "About to  configure clients"
         aws(environment, global_options)
+        puts "Clients configured"
         collect_options(options, global_options)
         print_title
         @regions.each { |region| audit_region(region) }
