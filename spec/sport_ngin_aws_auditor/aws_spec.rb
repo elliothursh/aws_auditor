@@ -58,24 +58,19 @@ module SportNginAwsAuditor
                                           secret_access_key: 'secret_access_key',
                                           session_token: 'session_token')
         new_creds = double('new_creds', credentials: cred_double)
-        sts = double('sts', get_session_token: new_creds)
-        allow(Aws::STS::Client).to receive(:new).and_return(sts)
+        @sts = double('sts', get_session_token: new_creds)
+        allow(Aws::STS::Client).to receive(:new).and_return(@sts)
         allow(Aws::AssumeRoleCredentials).to receive(:new).and_return(cred_double)
       end
 
       it "should update config" do
         expect(Aws.config).to receive(:update)
-        AWSSDK::authenticate_with_assumed_roles('staging', '999999999999', 'CrossAccountAuditorAccess')
-      end
-
-      it "should call for an STS client" do
-        expect(Aws::STS::Client).to receive(:new)
-        AWSSDK::authenticate_with_assumed_roles('staging', '999999999999', 'CrossAccountAuditorAccess')
+        AWSSDK::authenticate_with_assumed_roles('staging', '999999999999', 'CrossAccountAuditorAccess', @sts)
       end
 
       it "should call for some credentials" do
         expect(Aws::AssumeRoleCredentials).to receive(:new)
-        AWSSDK::authenticate_with_assumed_roles('staging', '999999999999', 'CrossAccountAuditorAccess')
+        AWSSDK::authenticate_with_assumed_roles('staging', '999999999999', 'CrossAccountAuditorAccess', @sts)
       end
     end
   end

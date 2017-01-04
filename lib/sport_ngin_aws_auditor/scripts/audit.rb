@@ -24,9 +24,11 @@ module SportNginAwsAuditor
       end
 
       def self.audit_region(region)
-        print_region(region)
+        @region_previously_printed = false
+        @message = ""
         @instance_types.each { |type| audit_instance_type(type, region) }
-        # add region to front of really long message....?
+        add_region_to_message(region) unless @message == "" || @region_previously_printed || @slack
+        print_message unless @slack
       end
 
       def self.audit_instance_type(type, region)
@@ -37,18 +39,18 @@ module SportNginAwsAuditor
         @audit_results.gather_data
 
         unless @audit_results.data.empty?
-          print_instance_type(type)
-          print_audit_results if (type.last || @no_selection)
+          add_instance_type_to_message(type)
+          print_audit_results(region) if (type.last || @no_selection)
         end
       end
 
-      def self.print_audit_results
+      def self.print_audit_results(region)
         @audit_results.data.sort_by! { |instance| [instance.category, instance.type] }
 
         if @slack
-          print_to_slack
+          print_to_slack(region)
         elsif options[:reserved] || options[:instances]
-          @audit_results.data.each{ |instance| say "<%= color('#{instance.type}: #{instance.count}', :white) %>" }
+          @audit_results.data.each{ |instance| @message << "#{instance.type}: #{instance.count}\n".colorize(:color => :white) }
         else
           print_to_terminal
         end
@@ -70,15 +72,17 @@ module SportNginAwsAuditor
           
           if instance.tagged?
             if instance.reason
-              say "<%= color('#{prefix} #{name}: (expiring on #{instance.tag_value} because #{instance.reason})', :#{color}) %>"
+              description = "#{prefix} #{name}: (expiring on #{instance.tag_value} because #{instance.reason})\n"
             else
-              say "<%= color('#{prefix} #{name}: (expiring on #{instance.tag_value})', :#{color}) %>"
+              description = "#{prefix} #{name}: (expiring on #{instance.tag_value})\n"
             end
           elsif instance.ignored?
-            say "<%= color('#{prefix} #{name}', :#{color}) %>"
+            description = "#{prefix} #{name}\n"
           else
-            say "<%= color('#{prefix} #{name}: #{count}', :#{color}) %>"
+            description = "#{prefix} #{name}: #{count}\n"
           end
+
+          @message << description.colorize(:color => color)
         end
       end
 
@@ -98,11 +102,11 @@ module SportNginAwsAuditor
             size = my_match[2] if my_match
 
             n = "#{platform}#{@audit_results.region} #{size}"
-            say "<%= color('#{prefix} #{n} (#{ri.count}) on #{ri.expiration_date}', :#{color} %>"
           else
             n = ri.to_s
-            say "<%= color('#{prefix} #{n} (#{ri.count}) on #{ri.expiration_date}', :#{color} %>"
           end
+
+          @message << "#{prefix} #{n} (#{ri.count}) on #{ri.expiration_date}\n".colorize(:color => color)
         end
       end
 
@@ -112,27 +116,35 @@ module SportNginAwsAuditor
         retired_tags.each do |tag|
           color, rgb, prefix = color_chooser({:instance => tag, :retired_ri => false, :retired_tag => true})
           if tag.reason
-            say "<%= color('#{prefix} #{tag.instance_name} (#{tag.instance_type}) retired on #{tag.value} because #{tag.reason}', :#{color} %>"
+            description ="#{prefix} #{tag.instance_name} (#{tag.instance_type}) retired on #{tag.value} because #{tag.reason}\n"
           else
-            say "<%= color('#{prefix} #{tag.instance_name} (#{tag.instance_type}) retired on #{tag.value}', :#{color} %>"
+            description = "#{prefix} #{tag.instance_name} (#{tag.instance_type}) retired on #{tag.value}"
           end
+
+          @message << description.colorize(:color => color)
         end
       end
 
       #################### PRINTING DATA TO SLACK ####################
 
-      def self.print_to_slack
+      def self.print_to_slack(region)
+        @slack_message = NotifySlack.new(@message, @options[:config_json])
+
         print_instances
         print_retired_ris unless @audit_results.retired_ris.empty?
         print_retired_tags unless @audit_results.retired_tags.empty?
+
+        add_region_to_message(region) unless @region_previously_printed
+        print_message
+        @region_previously_printed = true
+        @message = ""
       end
 
       def self.print_instances
         data_array = @audit_results.data.reject { |data| data.matched? }
-        slack_instances = NotifySlack.new(nil, @options[:config_json])
 
         if data_array.empty?
-          slack_instances.attachments.push({"color" => "#32CD32", "text" => "All RIs are properly matched here!", "mrkdwn_in" => ["text"]})
+          @slack_message.attachments.push({"color" => "#32CD32", "text" => "All RIs are properly matched here!", "mrkdwn_in" => ["text"]})
         else
           data_array.each do |data|
             type = !@zone_output && (data.tagged? || data.running?) ? print_without_zone(data.type) : data.type
@@ -151,16 +163,13 @@ module SportNginAwsAuditor
               text = "#{prefix} #{type}: #{count}"
             end
 
-            slack_instances.attachments.push({"color" => rgb, "text" => text, "mrkdwn_in" => ["text"]})
+            @slack_message.attachments.push({"color" => rgb, "text" => text, "mrkdwn_in" => ["text"]})
           end
         end
-
-        slack_instances.perform
       end
 
       def self.print_retired_ris
         retired_ris = @audit_results.retired_ris
-        slack_retired_ris = NotifySlack.new(nil, @options[:config_json])
 
         retired_ris.each do |ri|
           if ri.availability_zone.nil?
@@ -182,15 +191,13 @@ module SportNginAwsAuditor
           color, rgb, prefix = color_chooser({:instance => ri, :retired_ri => true, :retired_tag => false})
           expiration_date = ri.expiration_date
           text = "#{prefix} #{name} (#{count}) on #{expiration_date}"
-          slack_retired_ris.attachments.push({"color" => rgb, "text" => text, "mrkdwn_in" => ["text"]})
-        end
 
-        slack_retired_ris.perform
+          @slack_message.attachments.push({"color" => rgb, "text" => text, "mrkdwn_in" => ["text"]})
+        end
       end
 
       def self.print_retired_tags
         retired_tags = @audit_results.retired_tags
-        slack_retired_tags = NotifySlack.new(nil, @options[:config_json])
 
         retired_tags.each do |tag|
           color, rgb, prefix = color_chooser({:instance => tag, :retired_ri => false, :retired_tag => true})
@@ -201,10 +208,8 @@ module SportNginAwsAuditor
             text = "#{prefix} #{tag.instance_name} (#{tag.instance_type}) retired on #{tag.value}"
           end
 
-          slack_retired_tags.attachments.push({"color" => rgb, "text" => text, "mrkdwn_in" => ["text"]})
+          @slack_message.attachments.push({"color" => rgb, "text" => text, "mrkdwn_in" => ["text"]})
         end
-
-        slack_retired_tags.perform
       end
 
       #################### OTHER HELPFUL METHODS ####################
@@ -247,23 +252,35 @@ module SportNginAwsAuditor
           puts "Condensed results from this audit will print into Slack instead of directly to an output."
           NotifySlack.new("_AWS AUDIT FOR #{@display_name}_", @options[:config_json]).perform
         else
-          puts "AWS AUDIT FOR #{@display_name}".colorize(:yellow).on_red.underline
+          puts "AWS AUDIT FOR #{@display_name}".colorize(:color => :yellow, :background => :red).underline
+          puts
         end
       end
 
-      def self.print_region(region)
-        if @slack
-          NotifySlack.new("_REGION: *_#{region}_*_", @options[:config_json]).perform
-        else
-          puts "REGION: #{region}".colorize(:white).on_blue.underline
+      def self.print_message
+        unless @message == ""
+          if @slack
+            @slack_message.perform
+          else
+            puts @message
+          end
         end
       end
 
-      def self.print_instance_type(type)
+      def self.add_region_to_message(region)
         if @slack
-          NotifySlack.new("*#{type.first}s*", @options[:config_json]).perform
+          @message.prepend("_REGION: *_#{region}_*_\n")
+          @slack_message.text = @message
         else
-          puts "#{type.first}s".underline
+          @message.prepend("REGION: #{region}\n".colorize(:color => :magenta).underline)
+        end
+      end
+
+      def self.add_instance_type_to_message(type)
+        if @slack
+          @message << "*#{type.first}s*\n"
+        else
+          @message << "#{type.first}s\n".underline
         end
       end
 
@@ -273,19 +290,19 @@ module SportNginAwsAuditor
 
       def self.color_chooser(data)
         if data[:retired_ri]
-          return "grey", "#595959", "RETIRED RI -"
+          return :light_black, "#595959", "RETIRED RI -"
         elsif data[:retired_tag]
-          return "grey", "#595959", "RETIRED TAG -"
+          return :light_black, "#595959", "RETIRED TAG -"
         elsif data[:instance].tagged?
-          return "blue", "#0000CC", "TAGGED -"
+          return :blue, "#0000CC", "TAGGED -"
         elsif data[:instance].ignored?
-          return "blue", "#0000CC", "IGNORED -"
+          return :blue, "#0000CC", "IGNORED -"
         elsif data[:instance].running?
-          return "yellow", "#FFD700", "MISSING RI -"
+          return :yellow, "#FFD700", "MISSING RI -"
         elsif data[:instance].matched?
-          return "green", "#32CD32", "MATCHED RI -"
+          return :green, "#32CD32", "MATCHED RI -"
         elsif data[:instance].reserved?
-          return "red", "#BF1616", "UNUSED RI -"
+          return :red, "#BF1616", "UNUSED RI -"
         end
       end
     end
