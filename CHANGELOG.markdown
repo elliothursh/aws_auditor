@@ -1,3 +1,8 @@
+#### v4.0.0
+* Adding abilities to audit cross account
+
+  > Emma Sax: Unknown User: https://github.com/sportngin/sport_ngin_aws_auditor/pull/31
+
 #### v3.11.3
 * Missed this bug because I did not test previous bug's fix in Slack
 
