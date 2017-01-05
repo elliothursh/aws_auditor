@@ -6,33 +6,33 @@ module SportNginAwsAuditor
     extend EC2Wrapper
 
     class << self
-      def get_instances(tag_name=nil)
-        instances = ec2.describe_instances.reservations.map do |reservation|
+      def get_instances(client, tag_name=nil)
+        instances = client.describe_instances.reservations.map do |reservation|
           reservation.instances.map do |instance|
             next unless instance.state.name == 'running'
             new(instance, tag_name)
           end.compact
         end.flatten.compact
-        get_more_info(instances)
+        get_more_info(instances, client)
       end
 
-      def get_reserved_instances
-        ec2.describe_reserved_instances.reserved_instances.map do |instance|
+      def get_reserved_instances(client)
+        client.describe_reserved_instances.reserved_instances.map do |instance|
           next unless instance.state == 'active'
           new(instance, nil, instance.instance_count)
         end.compact
       end
 
-      def get_retired_reserved_instances
-        ec2.describe_reserved_instances.reserved_instances.map do |instance|
+      def get_retired_reserved_instances(client)
+        client.describe_reserved_instances.reserved_instances.map do |instance|
           next unless instance.state == 'retired'
           new(instance, nil, instance.instance_count)
         end.compact
       end
 
-      def bucketize
+      def bucketize(client)
         buckets = {}
-        get_instances.map do |instance|
+        get_instances(client).map do |instance|
           name = instance.stack_name || instance.name
           if name
             buckets[name] = [] unless buckets.has_key? name
@@ -44,9 +44,9 @@ module SportNginAwsAuditor
         buckets.sort_by{|k,v| k }
       end
 
-      def get_more_info(instances)
+      def get_more_info(instances, client)
         instances.each do |instance|
-          tags = ec2.describe_tags(:filters => [{:name => "resource-id", :values => [instance.id]}]).tags
+          tags = client.describe_tags(:filters => [{:name => "resource-id", :values => [instance.id]}]).tags
           tags = Hash[tags.map { |tag| [tag[:key], tag[:value]]}.compact]
           instance.name = tags["Name"]
           instance.stack_name = tags["opsworks:stack"]

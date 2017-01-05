@@ -7,23 +7,23 @@ module SportNginAwsAuditor
     extend AWSWrapper
 
     class << self
-      def get_instances(tag_name=nil)
+      def get_instances(client, tag_name=nil)
         account_id = get_account_id
-        cache.describe_cache_clusters.cache_clusters.map do |instance|
+        client.describe_cache_clusters.cache_clusters.map do |instance|
           next unless instance.cache_cluster_status.to_s == 'available'
-          new(instance, account_id, tag_name, cache)
+          new(instance, account_id, tag_name, client)
         end.compact
       end
 
-      def get_reserved_instances
-        cache.describe_reserved_cache_nodes.reserved_cache_nodes.map do |instance|
+      def get_reserved_instances(client)
+        client.describe_reserved_cache_nodes.reserved_cache_nodes.map do |instance|
           next unless instance.state.to_s == 'active'
           new(instance)
         end.compact
       end
 
-      def get_retired_reserved_instances
-        cache.describe_reserved_cache_nodes.reserved_cache_nodes.map do |instance|
+      def get_retired_reserved_instances(client)
+        client.describe_reserved_cache_nodes.reserved_cache_nodes.map do |instance|
           next unless instance.state == 'retired'
           new(instance)
         end.compact
@@ -31,7 +31,7 @@ module SportNginAwsAuditor
     end
 
     attr_accessor :id, :name, :instance_type, :scope, :engine, :count, :tag_value, :tag_reason, :expiration_date, :availability_zone
-    def initialize(cache_instance, account_id=nil, tag_name=nil, cache=nil)
+    def initialize(cache_instance, account_id=nil, tag_name=nil, client=nil)
       if cache_instance.class.to_s == "Aws::ElastiCache::Types::ReservedCacheNode"
         self.id = cache_instance.reserved_cache_node_id
         self.name = cache_instance.reserved_cache_node_id
@@ -56,7 +56,7 @@ module SportNginAwsAuditor
           arn = "arn:aws:elasticache:#{region}:#{account_id}:cluster:#{self.id}"
 
           # go through to see if the tag we're looking for is one of them
-          cache.list_tags_for_resource(resource_name: arn).tag_list.each do |tag|
+          client.list_tags_for_resource(resource_name: arn).tag_list.each do |tag|
             if tag.key == tag_name
               self.tag_value = tag.value
             elsif tag.key == 'no-reserved-instance-reason'
