@@ -1,30 +1,48 @@
 require_relative './aws'
+require 'aws-sdk'
 require_relative './google'
 
 module SportNginAwsAuditor
-  attr_accessor :creds
+  attr_accessor :assume_role_creds
 
   module AWSWrapper
-    attr_accessor :aws, :account_id
-
-    def aws(environment, roles)
-      if roles
-        SportNginAwsAuditor::AWSSDK.authenticate_with_roles(environment)
+    def aws(environment, global_options)
+      if global_options[:aws_roles]
+        SportNginAwsAuditor::AWSSDK.update_aws_config({region: 'us-east-1'})
+      elsif global_options[:assume_roles]
+        @assume_role_creds = SportNginAwsAuditor::AWSSDK.authenticate_with_assumed_roles(environment,
+                                                                                         global_options[:arn_id],
+                                                                                         global_options[:role_name],
+                                                                                         get_sts_client(environment))
       else
-        SportNginAwsAuditor::AWSSDK.authenticate(environment)
+        SportNginAwsAuditor::AWSSDK.authenticate_with_iam(environment)
       end
     end
 
     def get_account_id
-      @account_id ||= Aws::STS::Client.new.get_caller_identity.account
+      Aws::STS::Client.new.get_caller_identity.account
+    end
+
+    def get_sts_client(environment)
+      @sts_client ||= Aws::STS::Client.new(profile: environment, region: 'us-east-1')
+    end
+
+    def reset_credentials
+      SportNginAwsAuditor::AWSSDK.update_aws_config({credentials: Aws::InstanceProfileCredentials.new})
     end
   end
 
   module EC2Wrapper
-    attr_accessor :ec2
-
-    def ec2
-      @ec2 ||= Aws::EC2::Client.new
+    def self.ec2(region=nil)
+      if @assume_role_creds && region 
+        @ec2 = Aws::EC2::Client.new(credentials: @assume_role_creds, region: region)
+      elsif @assume_role_creds && !region
+        @ec2 = Aws::EC2::Client.new(credentials: @assume_role_creds)
+      elsif @assume_role_creds.nil? && region
+        @ec2 = Aws::EC2::Client.new(region: region)
+      else
+        @ec2 = Aws::EC2::Client.new
+      end
     end
   end
 
@@ -32,23 +50,40 @@ module SportNginAwsAuditor
     attr_accessor :opsworks
 
     def opsworks
-      @opsworks ||= Aws::OpsWorks::Client.new
+      return @opsworks if @opsworks
+      if @assume_role_creds
+        @opsworks = Aws::Opsworks::Client.new(credentials: @assume_role_creds)
+      else
+        @opsworks = Aws::OpsWorks::Client.new
+      end
     end
   end
 
   module RDSWrapper
-    attr_accessor :rds
-
-    def rds
-      @rds ||= Aws::RDS::Client.new
+    def self.rds(region=nil)
+      if @assume_role_creds && region
+        @rds = Aws::RDS::Client.new(credentials: @assume_role_creds, region: region)
+      elsif @assume_role_creds && !region
+        @rds = Aws::RDS::Client.new(credentials: @assume_role_creds)
+      elsif @assume_role_creds.nil? && region
+        @rds = Aws::RDS::Client.new(region: region)
+      else
+        @rds = Aws::RDS::Client.new
+      end
     end
   end
     
   module CacheWrapper
-    attr_accessor :cache
-
-    def cache
-      @cache ||= Aws::ElastiCache::Client.new
+    def self.cache(region=nil)
+      if @assume_role_creds && region
+        @cache = Aws::ElastiCache::Client.new(credentials: @assume_role_creds, region: region)
+      elsif @assume_role_creds && !region
+        @cache = Aws::ElastiCache::Client.new(credentials: @assume_role_creds)
+      elsif @assume_role_creds.nil? && region
+        @cache = Aws::ElastiCache::Client.new(region: region)
+      else
+        @cache = Aws::ElastiCache::Client.new
+      end
     end
   end
 
