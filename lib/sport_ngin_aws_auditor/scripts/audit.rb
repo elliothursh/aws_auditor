@@ -21,6 +21,7 @@ module SportNginAwsAuditor
         collect_options(environment, options, global_options)
         print_title
         @regions.each { |region| audit_region(region) }
+        reset_credentials
       end
 
       def self.audit_region(region)

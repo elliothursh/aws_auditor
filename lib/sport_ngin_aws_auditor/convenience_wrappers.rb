@@ -26,6 +26,10 @@ module SportNginAwsAuditor
     def get_sts_client(environment)
       @sts_client ||= Aws::STS::Client.new(profile: environment, region: 'us-east-1')
     end
+
+    def reset_credentials
+      SportNginAwsAuditor::AWSSDK.update_aws_config({credentials: Aws::InstanceProfileCredentials.new})
+    end
   end
 
   module EC2Wrapper
