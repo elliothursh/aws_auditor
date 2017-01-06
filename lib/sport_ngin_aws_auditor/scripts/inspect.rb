@@ -3,19 +3,32 @@ module SportNginAwsAuditor
     class Inspect
       extend AWSWrapper
       extend OpsWorksWrapper
+      extend EC2Wrapper
+      extend RDSWrapper
+      extend CacheWrapper
 
       def self.execute(environment, options=nil, global_options=nil)
-        aws(environment, global_options[:aws_roles])
+        aws(environment, global_options)
+        region = (global_options[:region].split(', ') if global_options[:region]) || 'us-east-1'
         no_selection = options.values.uniq == [false]
-        output("EC2Instance") if options[:ec2] || no_selection
-        output("RDSInstance") if options[:rds] || no_selection 
-        output("CacheInstance") if options[:cache] || no_selection
+        output("EC2Instance", region) if options[:ec2] || no_selection
+        output("RDSInstance", region) if options[:rds] || no_selection
+        output("CacheInstance", region) if options[:cache] || no_selection
       end
 
-      def self.output(class_type)
+      def self.output(class_type, region)
         klass = SportNginAwsAuditor.const_get(class_type)
+
+        if class_type == "EC2Instance"
+          client = EC2Wrapper.ec2(region)
+        elsif class_type == "RDSInstance"
+          client = RDSWrapper.rds(region)
+        elsif class_type == "CacheInstance"
+          client = CacheWrapper.cache(region)
+        end
+
         print "Gathering info, please wait..."; print "\r"
-        instances = class_type == "EC2Instance" ? klass.bucketize : klass.instance_hash
+        instances = class_type == "EC2Instance" ? klass.bucketize(client) : klass.instance_hash(client)
         say "<%= color('#{header(class_type)}', :white) %>"
         instances.each do |key, value|
           pretty_print(key, klass.instance_count_hash(Array(value)))
@@ -36,7 +49,7 @@ module SportNginAwsAuditor
         puts "======================================="
         puts "#{title}"
         puts "======================================="
-        body.each{ |key, value| say "<%= color('#{key}: #{value}', :white) %>" }
+        body.each{ |key, value| say "<%= color('#{key}: #{value[:count]}', :white) %>" }
         puts "\n"
       end
     end

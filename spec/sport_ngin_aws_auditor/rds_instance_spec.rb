@@ -36,24 +36,23 @@ module SportNginAwsAuditor
         tag1 = double('tag', key: "cookie", value: "chocolate chip")
         tag2 = double('tag', key: "ice cream", value: "oreo")
         tags = double('tags', tag_list: [tag1, tag2])
-        rds_client = double('rds_client', describe_db_instances: db_instances, list_tags_for_resource: tags)
-        allow(RDSInstance).to receive(:rds).and_return(rds_client)
+        @rds_client = double('@rds_client', describe_db_instances: db_instances, list_tags_for_resource: tags)
       end
 
       it "should make a rds_instance for each instance" do
-        instances = RDSInstance.get_instances("tag_name")
+        instances = RDSInstance.get_instances(@rds_client, "tag_name")
         expect(instances.first).to be_an_instance_of(RDSInstance)
         expect(instances.last).to be_an_instance_of(RDSInstance)
       end
 
       it "should return an array of rds_instances" do
-        instances = RDSInstance.get_instances("tag_name")
+        instances = RDSInstance.get_instances(@rds_client, "tag_name")
         expect(instances).not_to be_empty
         expect(instances.length).to eq(2)
       end
 
       it "should have proper variables set" do
-        instances = RDSInstance.get_instances("tag_name")
+        instances = RDSInstance.get_instances(@rds_client, "tag_name")
         instance = instances.first
         expect(instance.id).to eq("our-service")
         expect(instance.multi_az).to eq("Single-AZ")
@@ -79,24 +78,23 @@ module SportNginAwsAuditor
                                                                  db_instance_count: 2,
                                                                  class: "Aws::RDS::Types::ReservedDBInstance")
         reserved_db_instances = double('db_instances', reserved_db_instances: [reserved_rds_instance1, reserved_rds_instance2])
-        rds_client = double('rds_client', describe_reserved_db_instances: reserved_db_instances)
-        allow(RDSInstance).to receive(:rds).and_return(rds_client)
+        @rds_client = double('@rds_client', describe_reserved_db_instances: reserved_db_instances)
       end
 
       it "should make a reserved_rds_instance for each instance" do
-        reserved_instances = RDSInstance.get_reserved_instances
+        reserved_instances = RDSInstance.get_reserved_instances(@rds_client)
         expect(reserved_instances.first).to be_an_instance_of(RDSInstance)
         expect(reserved_instances.last).to be_an_instance_of(RDSInstance)
       end
 
       it "should return an array of reserved_rds_instances" do
-        reserved_instances = RDSInstance.get_reserved_instances
+        reserved_instances = RDSInstance.get_reserved_instances(@rds_client)
         expect(reserved_instances).not_to be_empty
         expect(reserved_instances.length).to eq(2)
       end
 
       it "should have proper variables set" do
-        reserved_instances = RDSInstance.get_reserved_instances
+        reserved_instances = RDSInstance.get_reserved_instances(@rds_client)
         reserved_instance = reserved_instances.first
         expect(reserved_instance.id).to eq("555te4yy-1234-555c-5678-thisisafake!!")
         expect(reserved_instance.multi_az).to eq("Single-AZ")
@@ -127,24 +125,23 @@ module SportNginAwsAuditor
                                                                            duration: 31536000)
         reserved_db_instances = double('db_instances', reserved_db_instances: [retired_reserved_rds_instance1,
                                                                                retired_reserved_rds_instance2])
-        rds_client = double('rds_client', describe_reserved_db_instances: reserved_db_instances)
-        allow(RDSInstance).to receive(:rds).and_return(rds_client)
+        @rds_client = double('@rds_client', describe_reserved_db_instances: reserved_db_instances)
         end
 
         it "should make a retired_reserved_rds_instance for each instance" do
-          retired_reserved_instances = RDSInstance.get_retired_reserved_instances
+          retired_reserved_instances = RDSInstance.get_retired_reserved_instances(@rds_client)
           expect(retired_reserved_instances.first).to be_an_instance_of(RDSInstance)
           expect(retired_reserved_instances.last).to be_an_instance_of(RDSInstance)
         end
 
         it "should return an array of retired_reserved_rds_instances" do
-          retired_reserved_instances = RDSInstance.get_retired_reserved_instances
+          retired_reserved_instances = RDSInstance.get_retired_reserved_instances(@rds_client)
           expect(retired_reserved_instances).not_to be_empty
           expect(retired_reserved_instances.length).to eq(2)
         end
 
         it "should have proper variables set" do
-          retired_reserved_instances = RDSInstance.get_retired_reserved_instances
+          retired_reserved_instances = RDSInstance.get_retired_reserved_instances(@rds_client)
           retired_reserved_instance = retired_reserved_instances.first
           expect(retired_reserved_instance.id).to eq("555te4yy-1234-555c-5678-thisisafake!!")
           expect(retired_reserved_instance.multi_az).to eq("Single-AZ")
@@ -165,9 +162,8 @@ module SportNginAwsAuditor
                                                                 db_instance_count: 3,
                                                                 class: "Aws::RDS::Types::ReservedDBInstance")
         reserved_db_instances = double('db_instances', reserved_db_instances: [reserved_rds_instance])
-        rds_client = double('rds_client', describe_reserved_db_instances: reserved_db_instances)
-        allow(RDSInstance).to receive(:rds).and_return(rds_client)
-        reserved_instances = RDSInstance.get_reserved_instances
+        @rds_client = double('@rds_client', describe_reserved_db_instances: reserved_db_instances)
+        reserved_instances = RDSInstance.get_reserved_instances(@rds_client)
         reserved_instance = reserved_instances.first
         expect(reserved_instance.to_s).to eq("MySQL Single-AZ db.t2.small")
       end
@@ -185,9 +181,8 @@ module SportNginAwsAuditor
         tag1 = double('tag', key: "cookie", value: "chocolate chip")
         tag2 = double('tag', key: "ice cream", value: "oreo")
         tags = double('tags', tag_list: [tag1, tag2])
-        rds_client = double('rds_client', describe_db_instances: db_instances, list_tags_for_resource: tags)
-        allow(RDSInstance).to receive(:rds).and_return(rds_client)
-        instances = RDSInstance.get_instances("tag_name")
+        @rds_client = double('@rds_client', describe_db_instances: db_instances, list_tags_for_resource: tags)
+        instances = RDSInstance.get_instances(@rds_client, "tag_name")
         instance = instances.first
         expect(instance.to_s).to eq("PostgreSQL Single-AZ db.t2.small")
       end

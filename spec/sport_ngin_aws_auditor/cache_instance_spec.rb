@@ -7,6 +7,7 @@ module SportNginAwsAuditor
       identity = double('identity', account: 123456789)
       client = double('client', get_caller_identity: identity)
       allow(Aws::STS::Client).to receive(:new).and_return(client)
+      # @client = Aws::ElastiCache::Client.new(region: 'us-east-1')
     end
 
     after :each do
@@ -34,24 +35,23 @@ module SportNginAwsAuditor
         tag1 = double('tag', key: "cookie", value: "chocolate chip")
         tag2 = double('tag', key: "ice cream", value: "oreo")
         tags = double('tags', tag_list: [tag1, tag2])
-        cache_client = double('cache_client', describe_cache_clusters: cache_clusters, list_tags_for_resource: tags)
-        allow(CacheInstance).to receive(:cache).and_return(cache_client)
+        @cache_client = double('cache_client', describe_cache_clusters: cache_clusters, list_tags_for_resource: tags)
       end
 
       it "should make a cache_instance for each instance" do
-        instances = CacheInstance.get_instances("tag_name")
+        instances = CacheInstance.get_instances(@cache_client, "tag_name")
         expect(instances.first).to be_an_instance_of(CacheInstance)
         expect(instances.last).to be_an_instance_of(CacheInstance)
       end
 
       it "should return an array of cache_instances" do
-        instances = CacheInstance.get_instances("tag_name")
+        instances = CacheInstance.get_instances(@cache_client, "tag_name")
         expect(instances).not_to be_empty
         expect(instances.length).to eq(2)
       end
 
       it "should have proper variables set" do
-        instances = CacheInstance.get_instances("tag_name")
+        instances = CacheInstance.get_instances(@cache_client, "tag_name")
         instance = instances.first
         expect(instance.id).to eq("job-queue-cluster")
         expect(instance.name).to eq("job-queue-cluster")
@@ -75,24 +75,23 @@ module SportNginAwsAuditor
                                                                      cache_node_count: 1,
                                                                      class: "Aws::ElastiCache::Types::ReservedCacheNode")
         reserved_cache_nodes = double('cache_cluster', reserved_cache_nodes: [reserved_cache_instance1, reserved_cache_instance2])
-        cache_client = double('cache_client', describe_reserved_cache_nodes: reserved_cache_nodes)
-        allow(CacheInstance).to receive(:cache).and_return(cache_client)
+        @cache_client = double('cache_client', describe_reserved_cache_nodes: reserved_cache_nodes)
       end
 
       it "should make a reserved_cache_instance for each instance" do
-        reserved_instances = CacheInstance.get_reserved_instances
+        reserved_instances = CacheInstance.get_reserved_instances(@cache_client)
         expect(reserved_instances.first).to be_an_instance_of(CacheInstance)
         expect(reserved_instances.last).to be_an_instance_of(CacheInstance)
       end
 
       it "should return an array of reserved_cache_instances" do
-        reserved_instances = CacheInstance.get_reserved_instances
+        reserved_instances = CacheInstance.get_reserved_instances(@cache_client)
         expect(reserved_instances).not_to be_empty
         expect(reserved_instances.length).to eq(2)
       end
 
       it "should have proper variables set" do
-        reserved_instances = CacheInstance.get_reserved_instances
+        reserved_instances = CacheInstance.get_reserved_instances(@cache_client)
         reserved_instance = reserved_instances.first
         expect(reserved_instance.id).to eq("job-queue-cluster")
         expect(reserved_instance.name).to eq("job-queue-cluster")
@@ -121,24 +120,23 @@ module SportNginAwsAuditor
                                                                                duration: 31536000)
           reserved_cache_nodes = double('cache_cluster', reserved_cache_nodes: [retired_reserved_cache_instance1,
                                                                                 retired_reserved_cache_instance2])
-          cache_client = double('cache_client', describe_reserved_cache_nodes: reserved_cache_nodes)
-          allow(CacheInstance).to receive(:cache).and_return(cache_client)
+          @cache_client = double('cache_client', describe_reserved_cache_nodes: reserved_cache_nodes)
         end
 
         it "should make a retired_reserved_cache_instance for each instance" do
-          retired_reserved_instances = CacheInstance.get_retired_reserved_instances
+          retired_reserved_instances = CacheInstance.get_retired_reserved_instances(@cache_client)
           expect(retired_reserved_instances.first).to be_an_instance_of(CacheInstance)
           expect(retired_reserved_instances.last).to be_an_instance_of(CacheInstance)
         end
 
         it "should return an array of retired_reserved_cache_instances" do
-          retired_reserved_instances = CacheInstance.get_retired_reserved_instances
+          retired_reserved_instances = CacheInstance.get_retired_reserved_instances(@cache_client)
           expect(retired_reserved_instances).not_to be_empty
           expect(retired_reserved_instances.length).to eq(2)
         end
 
         it "should have proper variables set" do
-          retired_reserved_instances = CacheInstance.get_retired_reserved_instances
+          retired_reserved_instances = CacheInstance.get_retired_reserved_instances(@cache_client)
           retired_reserved_instance = retired_reserved_instances.first
           expect(retired_reserved_instance.id).to eq("job-queue-cluster")
           expect(retired_reserved_instance.name).to eq("job-queue-cluster")
@@ -162,9 +160,8 @@ module SportNginAwsAuditor
         tag1 = double('tag', key: "cookie", value: "chocolate chip")
         tag2 = double('tag', key: "ice cream", value: "oreo")
         tags = double('tags', tag_list: [tag1, tag2])
-        cache_client = double('cache_client', describe_cache_clusters: cache_clusters, list_tags_for_resource: tags)
-        allow(CacheInstance).to receive(:cache).and_return(cache_client)
-        instances = CacheInstance.get_instances("tag_name")
+        @cache_client = double('cache_client', describe_cache_clusters: cache_clusters, list_tags_for_resource: tags)
+        instances = CacheInstance.get_instances(@cache_client, "tag_name")
         instance = instances.first
         expect(instance.to_s).to eq("Redis cache.t2.small")
       end

@@ -11,14 +11,14 @@ module SportNginAwsAuditor
 
       it "should receive new Aws::SharedCredentials" do
         expect(Aws::SharedCredentials).to receive(:new).with(profile_name: 'staging')
-        AWSSDK::authenticate('staging')
+        AWSSDK::authenticate_with_iam('staging')
       end
 
       it "should update configs" do
         coffee_types = {:coffee => "cappuccino", :beans => "arabica"}
         allow(Aws::SharedCredentials).to receive(:new).and_return(coffee_types)
         expect(Aws.config).to receive(:update).with({region: 'us-east-1', credentials: coffee_types})
-        AWSSDK::authenticate('staging')
+        AWSSDK::authenticate_with_iam('staging')
       end
     end
 
@@ -41,14 +41,36 @@ module SportNginAwsAuditor
 
         expect(Aws::Credentials).to receive(:new).and_return(cred_double).at_least(:once)
         expect(Aws::SharedCredentials).to receive(:new).and_return(shared_creds)
-        AWSSDK::authenticate('staging')
+        AWSSDK::authenticate_with_iam('staging')
       end
     end
 
     context 'without mfa with roles' do
       it "should update configs" do
         expect(Aws.config).to receive(:update).with({region: 'us-east-1'})
-        AWSSDK::authenticate_with_roles('staging')
+        AWSSDK::update_aws_config({region: 'us-east-1'})
+      end
+    end
+
+    context 'without mfa with multiple accounts' do
+      before :each do
+        cred_double = double('cred_hash', access_key_id: 'access_key_id',
+                                          secret_access_key: 'secret_access_key',
+                                          session_token: 'session_token')
+        new_creds = double('new_creds', credentials: cred_double)
+        @sts = double('sts', get_session_token: new_creds)
+        allow(Aws::STS::Client).to receive(:new).and_return(@sts)
+        allow(Aws::AssumeRoleCredentials).to receive(:new).and_return(cred_double)
+      end
+
+      it "should update config" do
+        expect(Aws.config).to receive(:update)
+        AWSSDK::authenticate_with_assumed_roles('staging', '999999999999', 'CrossAccountAuditorAccess', @sts)
+      end
+
+      it "should call for some credentials" do
+        expect(Aws::AssumeRoleCredentials).to receive(:new)
+        AWSSDK::authenticate_with_assumed_roles('staging', '999999999999', 'CrossAccountAuditorAccess', @sts)
       end
     end
   end

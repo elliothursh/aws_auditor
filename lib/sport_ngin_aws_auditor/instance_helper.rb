@@ -4,12 +4,12 @@ require_relative './audit_data'
 module SportNginAwsAuditor
   module InstanceHelper
 
-    def instance_hash
-      Hash[get_instances.map { |instance| instance.nil? ? next : [instance.id, instance]}.compact]
+    def instance_hash(client)
+      Hash[get_instances(client).map { |instance| instance.nil? ? next : [instance.id, instance]}.compact]
     end
 
-    def reserved_instance_hash
-      Hash[get_reserved_instances.map { |instance| instance.nil? ? next : [instance.id, instance]}.compact]
+    def reserved_instance_hash(client)
+      Hash[get_reserved_instances(client).map { |instance| instance.nil? ? next : [instance.id, instance]}.compact]
     end
 
     #################### ADDING DATA TO HASH ####################
@@ -58,7 +58,7 @@ module SportNginAwsAuditor
     def add_additional_instances_to_hash(instances_to_add, instance_hash, extra_string)
       instances_to_add.each do |instance|
         next if instance.nil?
-        key = instance.to_s.dup << extra_string << instance.name << ")"
+        key = "#{instance.to_s.dup}#{extra_string}#{instance.name})"
         instance_result = {}
         
         if instance_hash.has_key?(instance.to_s) && instance_hash[instance.to_s][:count] > 0
@@ -102,8 +102,8 @@ module SportNginAwsAuditor
       return ignored_instances, instances_with_tag, instance_hash
     end
 
-    def sort_through_RIs
-      ris = get_reserved_instances
+    def sort_through_RIs(client)
+      ris = get_reserved_instances(client)
       ris_availability = filter_ris_availability_zone(ris)
       ris_region = filter_ris_region_based(ris)
       ris_hash = instance_count_hash(ris_availability)
@@ -127,9 +127,9 @@ module SportNginAwsAuditor
       return differences
     end
 
-    def compare(instances, ignore_instances_regexes)
+    def compare(instances, ignore_instances_regexes, client)
       ignored_instances, instances_with_tag, instance_hash = sort_through_instances(instances, ignore_instances_regexes)
-      ris_region, ris_hash = sort_through_RIs
+      ris_region, ris_hash = sort_through_RIs(client)
       differences = measure_differences(instance_hash, ris_hash)
       add_additional_data(ris_region, instances_with_tag, ignored_instances, differences)
       differences
@@ -177,8 +177,8 @@ module SportNginAwsAuditor
 
     # this gets all retired reserved instances and filters out only the ones that have expired
     # within the past week
-    def get_recent_retired_reserved_instances
-      get_retired_reserved_instances.select do |ri|
+    def get_recent_retired_reserved_instances(client)
+      get_retired_reserved_instances(client).select do |ri|
         ri.expiration_date > (Time.now - 604800)
       end
     end
