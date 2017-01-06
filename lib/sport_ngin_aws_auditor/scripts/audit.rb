@@ -264,7 +264,13 @@ module SportNginAwsAuditor
       end
 
       def self.print_message
-        puts @message unless @message == ""
+        unless @message == ""
+          if @slack
+            @slack_message.perform
+          else
+            puts @message
+          end
+        end
       end
 
       def self.add_region_to_message(region)
