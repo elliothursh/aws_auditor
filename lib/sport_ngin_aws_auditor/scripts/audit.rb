@@ -294,33 +294,30 @@ module SportNginAwsAuditor
         type.sub(/(-\d\w)/, '')
       end
 
-      def self.merge_similar_keys(data)
-        merged_array = []
+      def self.merge_similar_keys(original_data)
+        combined_data = []
 
-        data.each_with_index do |instance, index|
+        original_data.each_with_index do |instance, index|
           new_count = instance.count
 
-          if instance.replaced
-            data.delete(instance)
-            next
-          else
-            for i in index+1..data.length-1
-              if (data[i].type == instance.type) && ((data[i].running? && instance.running?) || 
-                                                     (data[i].reserved? && instance.reserved?) || 
-                                                     (data[i].matched? && instance.matched?))
-                new_count = new_count + data[i].count
-                data[i].replaced = true
+          unless instance.replaced
+            for i in index+1..original_data.length-1
+              if (original_data[i].type == instance.type) && ((original_data[i].running? && instance.running?) ||
+                                                              (original_data[i].reserved? && instance.reserved?) ||
+                                                              (original_data[i].matched? && instance.matched?))
+                new_count = new_count + original_data[i].count
+                original_data[i].replaced = true
               end
             end
 
             if new_count != instance.count
-              merged_array.push(Instance.new(instance.type, nil, nil, instance.category, new_count))
-              data.delete(instance)
+              combined_data.push(Instance.new(instance.type, nil, nil, instance.category, new_count))
+              instance.replaced = true
             end
           end
         end
 
-        data.concat(merged_array)
+        original_data.reject { |instance| instance.replaced }.concat(combined_data)
       end
 
       def self.color_chooser(data)
