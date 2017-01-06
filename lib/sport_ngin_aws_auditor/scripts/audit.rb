@@ -72,7 +72,7 @@ module SportNginAwsAuditor
 
       def self.say_instances
         @audit_results.data.each do |instance|
-          name = !@zone_output && (instance.tagged? || instance.running?) ? print_without_zone(instance.type) : instance.type
+          name = instance.type
           count = instance.count
           color, rgb, prefix = color_chooser({:instance => instance, :retired_ri => false, :retired_tag => false})
           
@@ -147,24 +147,24 @@ module SportNginAwsAuditor
       end
 
       def self.print_instances
-        data_array = @audit_results.data.reject { |data| data.matched? }
+        data_array = @audit_results.data.reject { |instance| instance.matched? }
 
         if data_array.empty?
           @slack_message.attachments.push({"color" => "#32CD32", "text" => "All RIs are properly matched here!", "mrkdwn_in" => ["text"]})
         else
-          data_array.each do |data|
-            type = !@zone_output && (data.tagged? || data.running?) ? print_without_zone(data.type) : data.type
-            count = data.count
-            color, rgb, prefix = color_chooser({:instance => data, :retired_ri => false, :retired_tag => false})
+          data_array.each do |instance|
+            type = instance.type
+            count = instance.count
+            color, rgb, prefix = color_chooser({:instance => instance, :retired_ri => false, :retired_tag => false})
 
-            if data.tagged?
-              if data.reason
-                text = "#{prefix} #{data.name}: (expiring on #{data.tag_value} because #{data.reason})"
+            if instance.tagged?
+              if instance.reason
+                text = "#{prefix} #{instance.name}: (expiring on #{instance.tag_value} because #{instance.reason})"
               else
-                text = "#{prefix} #{data.name}: (expiring on #{data.tag_value})"
+                text = "#{prefix} #{instance.name}: (expiring on #{instance.tag_value})"
               end
-            elsif data.ignored?
-              text = "#{prefix} #{data.name}"
+            elsif instance.ignored?
+              text = "#{prefix} #{instance.name}"
             else
               text = "#{prefix} #{type}: #{count}"
             end
@@ -264,13 +264,7 @@ module SportNginAwsAuditor
       end
 
       def self.print_message
-        unless @message == ""
-          if @slack
-            @slack_message.perform
-          else
-            puts @message
-          end
-        end
+        puts @message unless @message == ""
       end
 
       def self.add_region_to_message(region)
