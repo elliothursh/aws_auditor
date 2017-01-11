@@ -46,6 +46,11 @@ module SportNginAwsAuditor
       end
 
       def self.print_audit_results(region)
+        @audit_results.data.each do |instance|
+          instance.type = !@zone_output && (instance.tagged? || instance.running?) ? print_without_zone(instance.type) : instance.type
+        end
+
+        @audit_results.data = merge_similar_keys(@audit_results.data)
         @audit_results.data.sort_by! { |instance| [instance.category, instance.type] }
 
         if @slack
@@ -67,7 +72,7 @@ module SportNginAwsAuditor
 
       def self.say_instances
         @audit_results.data.each do |instance|
-          name = !@zone_output && (instance.tagged? || instance.running?) ? print_without_zone(instance.type) : instance.type
+          name = instance.type
           count = instance.count
           color, rgb, prefix = color_chooser({:instance => instance, :retired_ri => false, :retired_tag => false})
           
@@ -142,24 +147,24 @@ module SportNginAwsAuditor
       end
 
       def self.print_instances
-        data_array = @audit_results.data.reject { |data| data.matched? }
+        data_array = @audit_results.data.reject { |instance| instance.matched? }
 
         if data_array.empty?
           @slack_message.attachments.push({"color" => "#32CD32", "text" => "All RIs are properly matched here!", "mrkdwn_in" => ["text"]})
         else
-          data_array.each do |data|
-            type = !@zone_output && (data.tagged? || data.running?) ? print_without_zone(data.type) : data.type
-            count = data.count
-            color, rgb, prefix = color_chooser({:instance => data, :retired_ri => false, :retired_tag => false})
+          data_array.each do |instance|
+            type = instance.type
+            count = instance.count
+            color, rgb, prefix = color_chooser({:instance => instance, :retired_ri => false, :retired_tag => false})
 
-            if data.tagged?
-              if data.reason
-                text = "#{prefix} #{data.name}: (expiring on #{data.tag_value} because #{data.reason})"
+            if instance.tagged?
+              if instance.reason
+                text = "#{prefix} #{instance.name}: (expiring on #{instance.tag_value} because #{instance.reason})"
               else
-                text = "#{prefix} #{data.name}: (expiring on #{data.tag_value})"
+                text = "#{prefix} #{instance.name}: (expiring on #{instance.tag_value})"
               end
-            elsif data.ignored?
-              text = "#{prefix} #{data.name}"
+            elsif instance.ignored?
+              text = "#{prefix} #{instance.name}"
             else
               text = "#{prefix} #{type}: #{count}"
             end
@@ -287,6 +292,32 @@ module SportNginAwsAuditor
 
       def self.print_without_zone(type)
         type.sub(/(-\d\w)/, '')
+      end
+
+      def self.merge_similar_keys(original_data)
+        combined_data = []
+
+        original_data.each_with_index do |instance, index|
+          new_count = instance.count
+
+          unless instance.replaced
+            for i in index+1..original_data.length-1
+              if (original_data[i].type == instance.type) && ((original_data[i].running? && instance.running?) ||
+                                                              (original_data[i].reserved? && instance.reserved?) ||
+                                                              (original_data[i].matched? && instance.matched?))
+                new_count = new_count + original_data[i].count
+                original_data[i].replaced = true
+              end
+            end
+
+            if new_count != instance.count
+              combined_data.push(Instance.new(instance.type, nil, nil, instance.category, new_count))
+              instance.replaced = true
+            end
+          end
+        end
+
+        original_data.reject { |instance| instance.replaced }.concat(combined_data)
       end
 
       def self.color_chooser(data)

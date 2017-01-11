@@ -4,17 +4,24 @@ module SportNginAwsAuditor
   class Instance
     extend InstanceHelper
 
-    attr_accessor :type, :count, :category, :tag_value, :reason, :name, :region_based
-    def initialize(type, data_hash, region)
-      if type.include?(" with tag")
-        gather_tagged_data(type, data_hash, region)
-      elsif type.include?(" ignored")
-        gather_ignored_data(type, data_hash, region)
+    attr_accessor :type, :count, :category, :tag_value, :reason, :name, :region_based, :replaced
+    def initialize(type, data_hash, region, category=nil, count=nil)
+      if category && count
+        self.type = type
+        self.category = category
+        self.count = count
       else
-        gather_normal_data(type, data_hash, region)
-      end
+        if type.include?(" with tag")
+          gather_tagged_data(type, data_hash, region)
+        elsif type.include?(" ignored")
+          gather_ignored_data(type, data_hash, region)
+        else
+          gather_normal_data(type, data_hash, region)
+        end
 
-      self.count = data_hash[:count].abs
+        self.count = data_hash[:count].abs
+        self.replaced = false
+      end
     end
 
     def gather_tagged_data(type, data_hash, region)
