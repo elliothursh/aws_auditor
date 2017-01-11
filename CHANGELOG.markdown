@@ -1,3 +1,8 @@
+#### v4.0.1
+* Concat all of the similar values into one value right before printing
+
+  > Emma Sax: Unknown User: https://github.com/sportngin/sport_ngin_aws_auditor/pull/27
+
 #### v4.0.0
 * Adding abilities to audit cross account
 
