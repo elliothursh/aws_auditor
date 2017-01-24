@@ -7,28 +7,23 @@ module SportNginAwsAuditor
     extend AWSWrapper
 
     class << self
-      attr_accessor :instances, :reserved_instances, :retired_reserved_instances
-
-      def get_instances(tag_name=nil)
-        return @instances if @instances
+      def get_instances(client, tag_name=nil)
         account_id = get_account_id
-        @instances = rds.describe_db_instances.db_instances.map do |instance|
+        client.describe_db_instances.db_instances.map do |instance|
           next unless instance.db_instance_status.to_s == 'available'
-          new(instance, account_id, tag_name, rds)
+          new(instance, account_id, tag_name, client)
         end.compact
       end
 
-      def get_reserved_instances
-        return @reserved_instances if @reserved_instances
-        @reserved_instances = rds.describe_reserved_db_instances.reserved_db_instances.map do |instance|
+      def get_reserved_instances(client)
+        client.describe_reserved_db_instances.reserved_db_instances.map do |instance|
           next unless instance.state.to_s == 'active'
           new(instance)
         end.compact
       end
 
-      def get_retired_reserved_instances
-        return @retired_reserved_instances if @retired_reserved_instances
-        @retired_reserved_instances = rds.describe_reserved_db_instances.reserved_db_instances.map do |instance|
+      def get_retired_reserved_instances(client)
+        client.describe_reserved_db_instances.reserved_db_instances.map do |instance|
           next unless instance.state == 'retired'
           new(instance)
         end.compact
@@ -36,7 +31,7 @@ module SportNginAwsAuditor
     end
 
     attr_accessor :id, :name, :multi_az, :scope, :instance_type, :engine, :count, :tag_value, :tag_reason, :expiration_date
-    def initialize(rds_instance, account_id=nil, tag_name=nil, rds=nil)
+    def initialize(rds_instance, account_id=nil, tag_name=nil, client=nil)
       if rds_instance.class.to_s == "Aws::RDS::Types::ReservedDBInstance"
         self.id = rds_instance.reserved_db_instances_offering_id
         self.scope = nil
@@ -60,7 +55,7 @@ module SportNginAwsAuditor
           arn = "arn:aws:rds:#{region}:#{account_id}:db:#{self.id}"
 
            # go through to see if the tag we're looking for is one of them
-          rds.list_tags_for_resource(resource_name: arn).tag_list.each do |tag|
+          client.list_tags_for_resource(resource_name: arn).tag_list.each do |tag|
             if tag.key == tag_name
               self.tag_value = tag.value
             elsif tag.key == 'no-reserved-instance-reason'

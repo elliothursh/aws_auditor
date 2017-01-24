@@ -38,24 +38,23 @@ module SportNginAwsAuditor
         name_tag = { key: "Name", value: "our-app-instance-100" }
         stack_tag = { key: "opsworks:stack", value: "our_app_service_2" }
         client_tags = double('tags', tags: [name_tag, stack_tag])
-        ec2_client = double('ec2_client', describe_instances: ec2_instances, describe_tags: client_tags)
-        allow(EC2Instance).to receive(:ec2).and_return(ec2_client)
+        @ec2_client = double('@ec2_client', describe_instances: ec2_instances, describe_tags: client_tags)
       end
 
       it "should make an ec2_instance for each instance" do
-        instances = EC2Instance.get_instances("tag_name")
+        instances = EC2Instance.get_instances(@ec2_client, "tag_name")
         expect(instances.first).to be_an_instance_of(EC2Instance)
         expect(instances.last).to be_an_instance_of(EC2Instance)
       end
 
       it "should return an array of ec2_instances" do
-        instances = EC2Instance.get_instances("tag_name")
+        instances = EC2Instance.get_instances(@ec2_client, "tag_name")
         expect(instances).not_to be_empty
         expect(instances.length).to eq(2)
       end
 
       it "should have proper variables set" do
-        instances = EC2Instance.get_instances("tag_name")
+        instances = EC2Instance.get_instances(@ec2_client, "tag_name")
         instance = instances.first
         expect(instance.stack_name).to eq("our_app_service_2")
         expect(instance.name).to eq("our-app-instance-100")
@@ -66,7 +65,7 @@ module SportNginAwsAuditor
       end
 
       it "should recognize Windows vs. Linux" do
-        instances = EC2Instance.get_instances("tag_name")
+        instances = EC2Instance.get_instances(@ec2_client, "tag_name")
         instance1 = instances.first
         instance2 = instances.last
         expect(instance1.platform).to eq("Linux VPC")
@@ -93,24 +92,23 @@ module SportNginAwsAuditor
                                                                  scope: 'Availability Zone',
                                                                  class: "Aws::EC2::Types::ReservedInstances")
         reserved_ec2_instances = double('reserved_ec2_instances', reserved_instances: [reserved_ec2_instance1, reserved_ec2_instance2])
-        ec2_client = double('ec2_client', describe_reserved_instances: reserved_ec2_instances)
-        allow(EC2Instance).to receive(:ec2).and_return(ec2_client)
+        @ec2_client = double('@ec2_client', describe_reserved_instances: reserved_ec2_instances)
       end
 
       it "should make a reserved_ec2_instance for each instance" do
-        reserved_instances = EC2Instance.get_reserved_instances
+        reserved_instances = EC2Instance.get_reserved_instances(@ec2_client)
         expect(reserved_instances.first).to be_an_instance_of(EC2Instance)
         expect(reserved_instances.last).to be_an_instance_of(EC2Instance)
       end
 
       it "should return an array of reserved_ec2_instances" do
-        reserved_instances = EC2Instance.get_reserved_instances
+        reserved_instances = EC2Instance.get_reserved_instances(@ec2_client)
         expect(reserved_instances).not_to be_empty
         expect(reserved_instances.length).to eq(2)
       end
 
       it "should have proper variables set" do
-        reserved_instances = EC2Instance.get_reserved_instances
+        reserved_instances = EC2Instance.get_reserved_instances(@ec2_client)
         reserved_instance = reserved_instances.first
         expect(reserved_instance.id).to eq("12345-dfas-1234-asdf-thisisfake!!")
         expect(reserved_instance.platform).to eq("Windows VPC")
@@ -120,7 +118,7 @@ module SportNginAwsAuditor
       end
 
       it "should recognize Windows vs. Linux" do
-        reserved_instances = EC2Instance.get_reserved_instances
+        reserved_instances = EC2Instance.get_reserved_instances(@ec2_client)
         reserved_instance1 = reserved_instances.first
         reserved_instance2 = reserved_instances.last
         expect(reserved_instance1.platform).to eq("Windows VPC")
@@ -159,24 +157,23 @@ module SportNginAwsAuditor
           reserved_ec2_instances = double('reserved_ec2_instances', reserved_instances: [retired_reserved_ec2_instance1,
                                                                                          retired_reserved_ec2_instance2,
                                                                                          reserved_ec2_instance1])
-          ec2_client = double('ec2_client', describe_reserved_instances: reserved_ec2_instances)
-          allow(EC2Instance).to receive(:ec2).and_return(ec2_client)
+          @ec2_client = double('@ec2_client', describe_reserved_instances: reserved_ec2_instances)
         end
 
         it "should make a retired_reserved_ec2_instance for each instance" do
-          retired_reserved_instances = EC2Instance.get_retired_reserved_instances
+          retired_reserved_instances = EC2Instance.get_retired_reserved_instances(@ec2_client)
           expect(retired_reserved_instances.first).to be_an_instance_of(EC2Instance)
           expect(retired_reserved_instances.last).to be_an_instance_of(EC2Instance)
         end
 
         it "should return an array of retired_reserved_ec2_instances" do
-          retired_reserved_instances = EC2Instance.get_retired_reserved_instances
+          retired_reserved_instances = EC2Instance.get_retired_reserved_instances(@ec2_client)
           expect(retired_reserved_instances).not_to be_empty
           expect(retired_reserved_instances.length).to eq(2)
         end
 
         it "should have proper variables set" do
-          retired_reserved_instances = EC2Instance.get_retired_reserved_instances
+          retired_reserved_instances = EC2Instance.get_retired_reserved_instances(@ec2_client)
           retired_reserved_instance = retired_reserved_instances.first
           expect(retired_reserved_instance.id).to eq("12345-dfas-1234-asdf-thisisfake!!")
           expect(retired_reserved_instance.platform).to eq("Windows VPC")
@@ -187,7 +184,7 @@ module SportNginAwsAuditor
         end
 
         it "should recognize Windows vs. Linux" do
-          retired_reserved_instances = EC2Instance.get_retired_reserved_instances
+          retired_reserved_instances = EC2Instance.get_retired_reserved_instances(@ec2_client)
           retired_reserved_instance1 = retired_reserved_instances.first
           retired_reserved_instance2 = retired_reserved_instances.last
           expect(retired_reserved_instance1.platform).to eq("Windows VPC")
@@ -217,9 +214,8 @@ module SportNginAwsAuditor
         name_tag = { key: "Name", value: "our-app-instance-100" }
         stack_tag = { key: "opsworks:stack", value: "our_app_service_2" }
         tags = double('tags', tags: [name_tag, stack_tag])
-        ec2_client = double('ec2_client', describe_instances: ec2_instances, describe_tags: tags)
-        allow(EC2Instance).to receive(:ec2).and_return(ec2_client)
-        instances = EC2Instance.get_instances("tag_name")
+        @ec2_client = double('@ec2_client', describe_instances: ec2_instances, describe_tags: tags)
+        instances = EC2Instance.get_instances(@ec2_client, "tag_name")
         instance = instances.first
         expect(instance.to_s).to eq("Linux VPC us-east-1d t2.large")
       end
@@ -250,25 +246,24 @@ module SportNginAwsAuditor
         name_tag = { key: "Name", value: "our-app-instance-100" }
         stack_tag = { key: "opsworks:stack", value: "our_app_service_2" }
         tags = double('tags', tags: [name_tag, stack_tag])
-        ec2_client = double('ec2_client', describe_instances: ec2_instances, describe_tags: tags)
-        allow(EC2Instance).to receive(:ec2).and_return(ec2_client)
+        @ec2_client = double('@ec2_client', describe_instances: ec2_instances, describe_tags: tags)
       end
 
       it "should return a hash where the first element's key is the opsworks:stack name of the instances" do
-        instances = EC2Instance.get_instances
-        buckets = EC2Instance.bucketize
+        instances = EC2Instance.get_instances(@ec2_client)
+        buckets = EC2Instance.bucketize(@ec2_client)
         expect(buckets.first.first).to eq("our_app_service_2")
       end
 
       it "should return a hash where the last element's key is the opsworks:stack name of the instances" do
-        instances = EC2Instance.get_instances
-        buckets = EC2Instance.bucketize
+        instances = EC2Instance.get_instances(@ec2_client)
+        buckets = EC2Instance.bucketize(@ec2_client)
         expect(buckets.last.first).to eq("our_app_service_2")
       end
 
       it "should return a hash where each element is a list of ec2_instances" do
-        instances = EC2Instance.get_instances
-        buckets = EC2Instance.bucketize
+        instances = EC2Instance.get_instances(@ec2_client)
+        buckets = EC2Instance.bucketize(@ec2_client)
         expect(buckets).not_to be_empty
         expect(buckets.length).to eq(1)
         expect(buckets.first.length).to eq(2)
