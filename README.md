@@ -21,7 +21,7 @@ Or install it yourself as:
 ## How-to
 
 ### AWS Setup
-Either create an `~/.aws/credentials` file that should have the following structure:
+There are three ways to authenticate AWS. The first is to create an `~/.aws/credentials` file that should have the following structure:
 
 ```
 [ACCOUNT 1]
@@ -37,11 +37,11 @@ aws_access_key_id = [AWS ACCESS KEY]
 aws_secret_access_key = [SECRET ACCESS KEY]
 ```
 
-Then this gem will use [AWS Shared Credentials](http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html) with your credentials file. However, if you'd like to run these through either a default profile in your credentials file or through [User Roles](http://docs.aws.amazon.com/IAM/latest/UserGuide/tutorial_cross-account-with-roles.html), then use the flag `aws_roles`:
+Then this gem will use [AWS Shared Credentials](http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html) with your credentials file. This is the default. If you'd like to pass a different config file, use the `--config` flag. 
+
+The second way to authenticate is through [User Roles](http://docs.aws.amazon.com/IAM/latest/UserGuide/tutorial_cross-account-with-roles.html), then use the flag `aws_roles`:
 
     $ sport-ngin-aws-auditor --aws_roles [command] account1
-
-For AWS configuration, the default is to gather data from the `~/.aws/credentials` file. But, this can also be specified through the `--config` flag.
 
 The third way to authenticate is authentication by assumed roles. To indicate this, use the `--assume_roles` switch. If using assumed roles, then the auditor needs a role name, which is defaulted to 'CrossAccountAuditorAccess'. Alternatively, a role name can be passed in with `--role_name`. Lastly, if using assumed roles, the auditor will also need an arn id. Identify this with the `--arn_id` option. The arn id is the identifying digits of the AWS arn arn:aws:iam::999999999999:role/#{role_name}.
 
