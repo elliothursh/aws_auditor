@@ -41,6 +41,14 @@ Then this gem will use [AWS Shared Credentials](http://docs.aws.amazon.com/cli/l
 
     $ sport-ngin-aws-auditor --aws_roles [command] account1
 
+For AWS configuration, the default is to gather data from the `~/.aws/credentials` file. But, this can also be specified through the `--config` flag.
+
+The third way to authenticate is authentication by assumed roles. To indicate this, use the `--assume_roles` switch. If using assumed roles, then the auditor needs a role name, which is defaulted to 'CrossAccountAuditorAccess'. Alternatively, a role name can be passed in with `--role_name`. Lastly, if using assumed roles, the auditor will also need an arn id. Identify this with the `--arn_id` option. The arn id is the identifying digits of the AWS arn arn:aws:iam::999999999999:role/#{role_name}.
+
+```
+$ sport-ngin-aws-auditor --assume_roles --role_name=MyRoleName --arn_id=999999999999 [command] account1
+```
+
 ### Google Setup (optional)
 You can export audit information to a Google Spreadsheet, but you must first follow “Create a client ID and client secret” on [this page](https://developers.google.com/drive/web/auth/web-server) to get a client ID and client secret for OAuth. Then create a `.google.yml` in your home directory with the following structure.
 
@@ -57,10 +65,6 @@ file:
 ## Usage
 
 ### Global Options
-
-For AWS configuration, the default is to gather data from the `~/.aws/credentials` file. But, this can also be specified through the `--config` flag.
-
-There are two other ways to authenticate besides the credentials file. The first is through AWS roles. To indicate this, use the `--aws_roles` switch. The second is authentication by assumed roles. To indicate this, use the `--assume_roles` switch. If using assumed roles, then the auditor needs a role name, which is defaulted to 'CrossAccountAuditorAccess'. Alternatively, a role name can be passed in with `--role_name`.
 
 When auditing, it can be handy to pass in a special name to be printed describing the account that's being audited. This can be done through the `--display=Example` flag.
 
