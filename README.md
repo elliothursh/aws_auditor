@@ -56,21 +56,33 @@ file:
  
 ## Usage
 
+### Global Options
+
+For AWS configuration, the default is to gather data from the `~/.aws/credentials` file. But, this can also be specified through the `--config` flag.
+
+There are two other ways to authenticate besides the credentials file. The first is through AWS roles. To indicate this, use the `--aws_roles` switch. The second is authentication by assumed roles. To indicate this, use the `--assume_roles` switch. If using assumed roles, then the auditor needs a role name, which is defaulted to 'CrossAccountAuditorAccess'. Alternatively, a role name can be passed in with `--role_name`.
+
+When auditing, it can be handy to pass in a special name to be printed describing the account that's being audited. This can be done through the `--display=Example` flag.
+
+Lastly, a user can tell the auditor which region to run the auditor in through the `--region=us-east-1` flag. If no region is specified, it will be run in every U.S. region: us-east-1, us-east-2, us-west-1, and us-west-2.
+
 ### The Audit Command
 
 To find discrepancies between number of running instances and purchased instances, run:
 
     $ sport-ngin-aws-auditor audit account1
 
-Any running instances that are not matched with a reserved instance with show up as yellow, the reserved instances that are not matched with a running instance will show up in red, and any reserved instances and running instances that match will show up in green. Any instances in blue with asteriks have a special tag that can either be specified in the audit command or will be defaulted to `no-reserved-instance`.
+Any running instances that are not matched with a reserved instance with show up as yellow, the reserved instances that are not matched with a running instance will show up in red, and any reserved instances and running instances that match will show up in green. Any instances in blue either have a special tag or are being ignored.
 
-To specify your own tag name, run:
+You can also audit just EC2 instances, just RDS instances, or just CacheInstances. To do this, use `--ec2`, `--rds`, and `--cache` respectively. Or, you can use the audit account to just show counts of reserved instances and reserved instances. To do that, use the `--reserved` and `--instances` options.
 
-    $ sport-ngin-aws-auditor audit --tag=your_custom_tag account1
+The tag can be specified through the `--tag=tag_name` option. Or, it will be defaulted to 'no-reserved-instance'. This means that when an instance is found that contains the tag 'no-reserved-instance', it will evaluate it separately from the other running instances, and list it in blue.
 
-If you don't want to use any tag at all, run:
+If a user wants to completely ignore tags, then use the `--no_tag` switch to turn tags off.
 
-    $ sport-ngin-aws-auditor audit --no_tag account1
+If an instance is ignored, it means that the name of the instance matches one of the ignore_instances_patterns. These patterns can be specified through the `--ignore_instances_patterns='string1, string2, string3'` flag, or they will be defaulted to 'kitchen' and 'auto'. Like the tagged instances, if an instance name matches one of these patterns, it will be listed separately and not used in calculating red/yellow/green instances.
+
+To ignore instance regexes, pass in an empty string or nil as the instances.
 
 To print a condensed version of the discrepancies to a Slack account (instead of printing to the terminal), run:
 
@@ -91,6 +103,8 @@ The default is for the file to be called `.aws_auditor.yml` in your home directo
     $ sport-ngin-aws-auditor --config="/PATH/TO/FILE/slack_file_creds.yml" audit --slack staging
 
 The webhook urls for slack can be obtained [here](https://api.slack.com/incoming-webhooks).
+
+In AWS, when booting reserved instances, a user can choose between an availability zone RI, where the RI will cover an instance in that specific zone, such as us-east-1b, or it can be a region RI, where it will just cover any instance in the region us-east-1 (that matches in size, of course). Therefore, there are two ways to audit the data to account for this. To print the data with zones, use the `--zone_output` option. Without the `--zone_output`, the data will ignore zone-based data to just print region-based data. 
 
 ### The Inspect Command
 
