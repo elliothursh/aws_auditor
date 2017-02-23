@@ -124,7 +124,7 @@ module SportNginAwsAuditor
           if tag.reason
             description ="#{prefix} #{tag.instance_name} (#{tag.instance_type}) retired on #{tag.value} because #{tag.reason}\n"
           else
-            description = "#{prefix} #{tag.instance_name} (#{tag.instance_type}) retired on #{tag.value}"
+            description = "#{prefix} #{tag.instance_name} (#{tag.instance_type}) retired on #{tag.value}\n"
           end
 
           @message << description.colorize(:color => color)

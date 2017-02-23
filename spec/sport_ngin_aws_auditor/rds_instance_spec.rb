@@ -58,6 +58,7 @@ module SportNginAwsAuditor
         expect(instance.multi_az).to eq("Single-AZ")
         expect(instance.instance_type).to eq("db.t2.small")
         expect(instance.engine).to eq("MySQL")
+        expect(instance.availability_zone).to eq('us-east-1a')
       end
     end
 
@@ -100,6 +101,7 @@ module SportNginAwsAuditor
         expect(reserved_instance.multi_az).to eq("Single-AZ")
         expect(reserved_instance.instance_type).to eq("db.t2.small")
         expect(reserved_instance.engine).to eq("Oracle SE Two")
+        expect(reserved_instance.availability_zone).to eq(nil)
       end
 
       context "for retired_reserved_rds_instances" do
