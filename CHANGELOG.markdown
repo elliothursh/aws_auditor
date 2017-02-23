@@ -1,3 +1,8 @@
+#### v4.0.2
+* Define availability zone as attribute for RDS object to avoid errors
+
+  > Emma Sax: Unknown User: https://github.com/sportngin/sport_ngin_aws_auditor/pull/35
+
 #### v4.0.1
 * Concat all of the similar values into one value right before printing
 
