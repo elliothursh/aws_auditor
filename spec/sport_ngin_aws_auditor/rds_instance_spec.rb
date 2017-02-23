@@ -58,6 +58,7 @@ module SportNginAwsAuditor
         expect(instance.multi_az).to eq("Single-AZ")
         expect(instance.instance_type).to eq("db.t2.small")
         expect(instance.engine).to eq("MySQL")
+        expect(instance.availability_zone).to eq('us-east-1a')
       end
     end
 
