@@ -17,13 +17,22 @@ module SportNginAwsAuditor
       #################### EXECUTION ####################
 
       def self.execute(environment, options, global_options)
-        aws(environment, global_options)
-        collect_options(environment, options, global_options)
-        print_title
-        @regions.each { |region| audit_region(region) }
-        reset_credentials
+        begin
+          aws(environment, global_options)
+          collect_options(environment, options, global_options)
+          print_title
+          @regions.each { |region| audit_region(region) }
+          reset_credentials
+        rescue Exception
+          if options[:slack]
+            NotifySlack.new("Sorry, something seems to have gone wrong.", options[:config_json]).perform
+          else
+            puts "Sorry, something seems to have gone wrong."
+          end
+        end
       end
 
+      # We do this method for each region we're auditing
       def self.audit_region(region)
         @region_previously_printed = false
         @message = ""
@@ -32,6 +41,7 @@ module SportNginAwsAuditor
         print_message unless @slack
       end
 
+      # We do this method for each type of instance in each region we're auditing
       def self.audit_instance_type(type, region)
         @class = type.first
         @audit_results = AuditData.new({:instances => options[:instances], :reserved => options[:reserved],
