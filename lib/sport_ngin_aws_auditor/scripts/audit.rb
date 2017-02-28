@@ -23,12 +23,13 @@ module SportNginAwsAuditor
           print_title
           @regions.each { |region| audit_region(region) }
           reset_credentials
-        rescue Exception
+        rescue StandardError => e
           if options[:slack]
             NotifySlack.new("Sorry, something seems to have gone wrong.", options[:config_json]).perform
           else
             puts "Sorry, something seems to have gone wrong."
           end
+          raise e
         end
       end
 
