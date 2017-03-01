@@ -1,3 +1,8 @@
+#### v4.1.0
+* Write a message reporting when the auditor fails for any reason
+
+  > Emma Sax: Unknown User: https://github.com/sportngin/sport_ngin_aws_auditor/pull/36
+
 #### v4.0.2
 * Define availability zone as attribute for RDS object to avoid errors
 
