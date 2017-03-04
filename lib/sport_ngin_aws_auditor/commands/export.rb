@@ -4,7 +4,7 @@ command 'export' do |c|
   c.switch [:c, :csv], :desc => "Exports to CSV"
   c.switch [:d, :drive], :desc => "Exports to Google Drive"
   c.action do |global_options, options, args|
-    require_relative '../scripts/export'
+    require 'sport_ngin_aws_auditor/scripts/export'
     raise ArgumentError, 'You must specify an AWS account' unless args.first
     SportNginAwsAuditor::Scripts::Export.execute(args.first, options, global_options)
   end

@@ -1,6 +1,3 @@
-require_relative './recently_retired_tag'
-require_relative './audit_data'
-
 module SportNginAwsAuditor
   module InstanceHelper
 

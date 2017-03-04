@@ -9,5 +9,9 @@ module SportNginAwsAuditor
     def self.ask(*args, &block)
       terminal.ask(*args, &block)
     end
+
+    def self.say(msg)
+      terminal.say(msg)
+    end
   end
 end

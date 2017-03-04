@@ -1,21 +1,17 @@
-require_relative './instance_helper'
-
 module SportNginAwsAuditor
   class RDSInstance
     extend InstanceHelper
-    extend RDSWrapper
-    extend AWSWrapper
 
     class << self
-      def get_instances(client, tag_name=nil)
-        account_id = get_account_id
+      def get_instances(client=AWS.rds, tag_name=nil)
+        account_id = AWS.get_account_id
         client.describe_db_instances.db_instances.map do |instance|
           next unless instance.db_instance_status.to_s == 'available'
           new(instance, account_id, tag_name, client)
         end.compact
       end
 
-      def get_reserved_instances(client)
+      def get_reserved_instances(client=AWS.rds)
         client.describe_reserved_db_instances.reserved_db_instances.map do |instance|
           next unless instance.state.to_s == 'active'
           new(instance)

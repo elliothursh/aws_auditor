@@ -1,21 +1,19 @@
-require_relative './instance_helper'
+require 'sport_ngin_aws_auditor/instance_helper'
 
 module SportNginAwsAuditor
   class CacheInstance
     extend InstanceHelper
-    extend CacheWrapper
-    extend AWSWrapper
 
     class << self
-      def get_instances(client, tag_name=nil)
-        account_id = get_account_id
+      def get_instances(client=AWS.cache, tag_name=nil)
+        account_id = AWS.get_account_id
         client.describe_cache_clusters.cache_clusters.map do |instance|
           next unless instance.cache_cluster_status.to_s == 'available'
           new(instance, account_id, tag_name, client)
         end.compact
       end
 
-      def get_reserved_instances(client)
+      def get_reserved_instances(client=AWS.cache)
         client.describe_reserved_cache_nodes.reserved_cache_nodes.map do |instance|
           next unless instance.state.to_s == 'active'
           new(instance)
