@@ -24,7 +24,6 @@ module SportNginAwsAuditor
           else
             puts "Sorry, something seems to have gone wrong."
           end
-          puts e.backtrace
           raise e
         end
       end
