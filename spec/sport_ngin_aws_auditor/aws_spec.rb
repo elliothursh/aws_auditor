@@ -7,18 +7,19 @@ module SportNginAwsAuditor
         mfa_devices = double('mfa_devices', mfa_devices: [])
         iam_client = double('iam_client', list_mfa_devices: mfa_devices)
         allow(Aws::IAM::Client).to receive(:new).and_return(iam_client)
+        AWS.configure('staging', {})
       end
 
       it "should receive new Aws::SharedCredentials" do
-        expect(Aws::SharedCredentials).to receive(:new).with(profile_name: 'staging')
-        AWS::authenticate_with_iam('staging')
+        expect(Aws::SharedCredentials).to receive(:new).with(profile_name: 'staging').and_call_original
+        AWS.auth_with_iam
       end
 
-      it "should update configs" do
+      it "should set credentials" do
         coffee_types = {:coffee => "cappuccino", :beans => "arabica"}
         allow(Aws::SharedCredentials).to receive(:new).and_return(coffee_types)
-        expect(Aws.config).to receive(:update).with({region: 'us-east-1', credentials: coffee_types})
-        AWS::authenticate_with_iam('staging')
+        AWS.auth_with_iam
+        expect(AWS.credentials).to_not be_nil
       end
     end
 
@@ -41,7 +42,7 @@ module SportNginAwsAuditor
 
         expect(Aws::Credentials).to receive(:new).and_return(cred_double).at_least(:once)
         expect(Aws::SharedCredentials).to receive(:new).and_return(shared_creds)
-        AWS::authenticate_with_iam('staging')
+        AWS.auth_with_iam
       end
     end
 
@@ -56,14 +57,9 @@ module SportNginAwsAuditor
         allow(Aws::AssumeRoleCredentials).to receive(:new).and_return(cred_double)
       end
 
-      it "should update config" do
-        expect(Aws.config).to receive(:update)
-        AWS::authenticate_with_assumed_roles('staging', '999999999999', 'CrossAccountAuditorAccess', @sts)
-      end
-
-      it "should call for some credentials" do
-        expect(Aws::AssumeRoleCredentials).to receive(:new)
-        AWS::authenticate_with_assumed_roles('staging', '999999999999', 'CrossAccountAuditorAccess', @sts)
+      it "should set credentials" do
+        AWS.auth_with_assumed_roles('999999999999', 'CrossAccountAuditorAccess')
+        expect(AWS.credentials).to_not be_nil
       end
     end
   end

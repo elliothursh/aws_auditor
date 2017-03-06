@@ -8,6 +8,7 @@ module SportNginAwsAuditor
       client = double('client', get_caller_identity: identity)
       allow(Aws::STS::Client).to receive(:new).and_return(client)
       # @client = Aws::ElastiCache::Client.new(region: 'us-east-1')
+      allow(SportNginAwsAuditor::AWS).to receive(:client_options).and_return(region: 'us-east-1', credentials: {})
     end
 
     after :each do

@@ -7,6 +7,7 @@ module SportNginAwsAuditor
       identity = double('identity', account: 123456789)
       client = double('client', get_caller_identity: identity)
       allow(Aws::STS::Client).to receive(:new).and_return(client)
+      allow(SportNginAwsAuditor::AWS).to receive(:client_options).and_return(region: 'us-east-1', credentials: {})
     end
 
     after :each do

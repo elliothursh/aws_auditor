@@ -24,6 +24,7 @@ module SportNginAwsAuditor
                                                                                'instance2' => 1})
       allow(SportNginAwsAuditor::EC2Instance).to receive(:get_recent_retired_reserved_instances).and_return(@retired_ris)
       allow(Instance).to receive(:new).and_return(@instance)
+      allow(SportNginAwsAuditor::AWS).to receive(:client_options).and_return(region: 'us-east-1', credentials: {})
     end
 
     context '#initialization' do
