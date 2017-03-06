@@ -2,7 +2,11 @@ require "sport_ngin_aws_auditor"
 
 module SportNginAwsAuditor
   describe AWS do
-    context 'without mfa without roles' do
+    before do
+      AWS.reset
+    end
+
+    context 'shared credentials file without mfa' do
       before :each do
         mfa_devices = double('mfa_devices', mfa_devices: [])
         iam_client = double('iam_client', list_mfa_devices: mfa_devices)
@@ -23,8 +27,8 @@ module SportNginAwsAuditor
       end
     end
 
-    context 'with mfa without roles' do
-      it "should use MFA if it should" do
+    context 'shared credentials file with mfa' do
+      it "should use MFA when user has device configured" do
         shared_credentials = double('shared_credentials', access_key_id: 'access_key_id',
                                                           secret_access_key: 'secret_access_key')
         shared_creds = double('shared_creds', credentials: shared_credentials)
@@ -46,7 +50,16 @@ module SportNginAwsAuditor
       end
     end
 
-    context 'without mfa with multiple accounts' do
+    context "using AWS server role" do
+      it "should configure SDK integration and return client" do
+        AWS.configure('staging', aws_roles: true)
+        expect(AWS.environment).to eq('staging')
+        expect(AWS.credentials).to be_nil
+        expect(AWS.ec2).to_not be_nil
+      end
+    end
+
+    context 'using cross account assumed roles' do
       before :each do
         cred_double = double('cred_hash', access_key_id: 'access_key_id',
                                           secret_access_key: 'secret_access_key',

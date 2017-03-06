@@ -28,6 +28,11 @@ module SportNginAwsAuditor
       end
     end
 
+    def self.reset
+      @environment = @credentials = nil
+      @aws_roles = @assume_roles = nil
+    end
+
     def self.client_options(region=DEFAULT_REGION)
       if @credentials.nil? && @aws_roles == false
         raise "Unable to set AWS SDK client options because credentials not set and not flagged to use server role."
