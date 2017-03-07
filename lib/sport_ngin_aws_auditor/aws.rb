@@ -33,8 +33,8 @@ module SportNginAwsAuditor
       @aws_roles = @assume_roles = nil
     end
 
-    def self.client_options(region=DEFAULT_REGION, auth_required=true)
-      if auth_required && @credentials.nil? && @aws_roles == false
+    def self.client_options(region=DEFAULT_REGION)
+      if @credentials.nil? && @aws_roles == false
         raise "Unable to set AWS SDK client options because credentials not set and not flagged to use server role."
       end
       opts = { region: region }
@@ -43,11 +43,11 @@ module SportNginAwsAuditor
     end
 
     def self.get_account_id
-      sts.get_caller_identity.account
+      Aws::STS::Client.new(client_options).get_caller_identity.account
     end
 
-    def self.sts
-      Aws::STS::Client.new(client_options(DEFAULT_REGION, false))
+    def self.sts_for_instance
+      Aws::STS::Client.new(region: DEFAULT_REGION, credentials: Aws::InstanceProfileCredentials.new)
     end
 
     def self.ec2(region=DEFAULT_REGION)
@@ -87,12 +87,12 @@ module SportNginAwsAuditor
     def self.auth_with_assumed_roles(arn_id, role_name)
       role_arn = "arn:aws:iam::#{arn_id}:role/#{role_name}"
       session_name = "auditor#{Time.now.to_i}"
-      @credentials = Aws::AssumeRoleCredentials.new(client: sts, role_arn: role_arn, role_session_name: session_name)
+      @credentials = Aws::AssumeRoleCredentials.new(client: sts_for_instance, role_arn: role_arn, role_session_name: session_name)
     end
 
     def self.get_session(mfa_token, mfa_serial_number)
       return @session if @session
-      @session = sts.get_session_token(duration_seconds: 3600, serial_number: mfa_serial_number, token_code: mfa_token)
+      @session = sts_for_instance.get_session_token(duration_seconds: 3600, serial_number: mfa_serial_number, token_code: mfa_token)
     end
 
   end
