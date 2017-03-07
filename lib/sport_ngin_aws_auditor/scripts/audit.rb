@@ -3,13 +3,9 @@ require 'colorize'
 require 'aws-sdk'
 require_relative "../notify_slack"
 require_relative "../instance"
-require_relative "../audit_data"
-
 module SportNginAwsAuditor
   module Scripts
     class Audit
-      extend AWSWrapper
-
       class << self
         attr_accessor :options, :audit_results
       end
@@ -18,11 +14,10 @@ module SportNginAwsAuditor
 
       def self.execute(environment, options, global_options)
         begin
-          aws(environment, global_options)
+          AWS.configure(environment, global_options)
           collect_options(environment, options, global_options)
           print_title
           @regions.each { |region| audit_region(region) }
-          reset_credentials
         rescue StandardError => e
           if options[:slack]
             NotifySlack.new("Sorry, something seems to have gone wrong.", options[:config_json]).perform
@@ -232,8 +227,7 @@ module SportNginAwsAuditor
       #################### OTHER HELPFUL METHODS ####################
 
       def self.gather_regions
-        ec2 = Aws::EC2::Client.new(region: 'us-east-1')
-        regions = ec2.describe_regions[:regions]
+        regions = AWS.ec2.describe_regions[:regions]
         us_regions = regions.select { |region| region.region_name.include?("us") }
         us_regions.collect { |r| r.region_name }
       end

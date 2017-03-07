@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 require 'rubygems'
 require 'gli'
-require_relative '../lib/sport_ngin_aws_auditor'
+require 'sport_ngin_aws_auditor'
 
 include GLI::App
 
@@ -31,6 +31,15 @@ pre do |global,command,options,args|
   SportNginAwsAuditor::Config.load(global[:config])
   SportNginAwsAuditor::Config.merge! global
   true
+end
+
+on_error do |exception|
+  if ENV['GLI_DEBUG']
+    puts exception
+    puts exception.backtrace
+  else
+    true
+  end
 end
 
 exit run(ARGV)

@@ -1,12 +1,9 @@
-require_relative './instance_helper'
-
 module SportNginAwsAuditor
   class EC2Instance
     extend InstanceHelper
-    extend EC2Wrapper
 
     class << self
-      def get_instances(client, tag_name=nil)
+      def get_instances(client=AWS.ec2, tag_name=nil)
         instances = client.describe_instances.reservations.map do |reservation|
           reservation.instances.map do |instance|
             next unless instance.state.name == 'running'
@@ -16,7 +13,7 @@ module SportNginAwsAuditor
         get_more_info(instances, client)
       end
 
-      def get_reserved_instances(client)
+      def get_reserved_instances(client=AWS.ec2)
         client.describe_reserved_instances.reserved_instances.map do |instance|
           next unless instance.state == 'active'
           new(instance, nil, instance.instance_count)

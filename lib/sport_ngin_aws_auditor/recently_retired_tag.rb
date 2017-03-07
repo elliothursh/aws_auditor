@@ -1,5 +1,3 @@
-require_relative './instance_helper'
-
 module SportNginAwsAuditor
   class RecentlyRetiredTag
 

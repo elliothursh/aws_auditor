@@ -15,7 +15,7 @@ command 'audit' do |c|
                                                                                 one of these strings in the name,
                                                                                 pass in like: string1, string2, string3"
   c.action do |global_options, options, args|
-    require_relative '../scripts/audit'
+    require 'sport_ngin_aws_auditor/scripts/audit'
     raise ArgumentError, 'You must specify an AWS account' unless args.first
     SportNginAwsAuditor::Scripts::Audit.execute(args.first, options, global_options)
   end

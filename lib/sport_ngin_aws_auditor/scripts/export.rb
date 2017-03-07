@@ -1,11 +1,9 @@
 require 'csv'
-require_relative "../google"
 
 module SportNginAwsAuditor
   module Scripts
     class Export
       extend GoogleWrapper
-      extend AWSWrapper
 
       class << self
         attr_accessor :ec2_instances, :rds_instances, :cache_instances, :options, :file, :keys_hash, :environment
@@ -16,7 +14,7 @@ module SportNginAwsAuditor
       def self.execute(environment, options = nil, global_options = nil)
         @environment = environment
         (puts "Must specify either --drive or --csv"; exit) unless options[:csv] || options[:drive]
-        aws(environment, global_options[:aws_roles])
+        AWS.configure(environment, global_options)
         print "Gathering info, please wait..."
         all_keys = get_all_keys
         all_info = prepare
@@ -78,7 +76,7 @@ module SportNginAwsAuditor
 
       def self.ec2_array
         instance_array = [{name: "OPSWORKS"}]
-        EC2Instance.bucketize.map do |stack_name, stack_instances|
+        EC2Instance.bucketize(AWS.ec2).map do |stack_name, stack_instances|
           instance_array << {:name => stack_name}.merge(EC2Instance.instance_count_hash(stack_instances))
         end
         instance_array
@@ -112,33 +110,33 @@ module SportNginAwsAuditor
           klass = SportNginAwsAuditor.const_get(class_type)
           instances = klass.instance_count_hash(klass.get_instances) if options[:instance]
           instances = klass.instance_count_hash(klass.get_reserved_instances) if options[:reserved]
-          instances = klass.compare if options[:compare]
+          instances = klass.compare if options[:compare] #TODO fix me
           instances
         end.inject(:merge)
       end
 
       def self.ec2_instances
-        @ec2_instances ||= EC2Instance.instance_hash
+        @ec2_instances ||= EC2Instance.instance_hash(AWS.ec2)
       end
 
       def self.ec2_reserved_instances
-        @ec2_reserved_instances ||= EC2Instance.reserved_instance_hash
+        @ec2_reserved_instances ||= EC2Instance.reserved_instance_hash(AWS.ec2)
       end
 
       def self.rds_instances
-        @rds_instances ||= RDSInstance.instance_hash
+        @rds_instances ||= RDSInstance.instance_hash(AWS.rds)
       end
 
       def self.rds_reserved_instances
-        @rds_reserved_instances ||= RDSInstance.reserved_instance_hash
+        @rds_reserved_instances ||= RDSInstance.reserved_instance_hash(AWS.rds)
       end
       
       def self.cache_instances
-        @cache_instances ||= CacheInstance.instance_hash
+        @cache_instances ||= CacheInstance.instance_hash(AWS.cache)
       end
 
       def self.cache_reserved_instances
-        @cache_reserved_instances ||= CacheInstance.reserved_instance_hash
+        @cache_reserved_instances ||= CacheInstance.reserved_instance_hash(AWS.cache)
       end
 
     end

@@ -1,29 +1,34 @@
 require "sport_ngin_aws_auditor"
 
 module SportNginAwsAuditor
-  describe AWSSDK do
-    context 'without mfa without roles' do
+  describe AWS do
+    before do
+      AWS.reset
+    end
+
+    context 'shared credentials file without mfa' do
       before :each do
         mfa_devices = double('mfa_devices', mfa_devices: [])
         iam_client = double('iam_client', list_mfa_devices: mfa_devices)
         allow(Aws::IAM::Client).to receive(:new).and_return(iam_client)
+        AWS.configure('staging', {})
       end
 
       it "should receive new Aws::SharedCredentials" do
-        expect(Aws::SharedCredentials).to receive(:new).with(profile_name: 'staging')
-        AWSSDK::authenticate_with_iam('staging')
+        expect(Aws::SharedCredentials).to receive(:new).with(profile_name: 'staging').and_call_original
+        AWS.auth_with_iam
       end
 
-      it "should update configs" do
+      it "should set credentials" do
         coffee_types = {:coffee => "cappuccino", :beans => "arabica"}
         allow(Aws::SharedCredentials).to receive(:new).and_return(coffee_types)
-        expect(Aws.config).to receive(:update).with({region: 'us-east-1', credentials: coffee_types})
-        AWSSDK::authenticate_with_iam('staging')
+        AWS.auth_with_iam
+        expect(AWS.credentials).to_not be_nil
       end
     end
 
-    context 'with mfa without roles' do
-      it "should use MFA if it should" do
+    context 'shared credentials file with mfa' do
+      it "should use MFA when user has device configured" do
         shared_credentials = double('shared_credentials', access_key_id: 'access_key_id',
                                                           secret_access_key: 'secret_access_key')
         shared_creds = double('shared_creds', credentials: shared_credentials)
@@ -41,18 +46,20 @@ module SportNginAwsAuditor
 
         expect(Aws::Credentials).to receive(:new).and_return(cred_double).at_least(:once)
         expect(Aws::SharedCredentials).to receive(:new).and_return(shared_creds)
-        AWSSDK::authenticate_with_iam('staging')
+        AWS.auth_with_iam
       end
     end
 
-    context 'without mfa with roles' do
-      it "should update configs" do
-        expect(Aws.config).to receive(:update).with({region: 'us-east-1'})
-        AWSSDK::update_aws_config({region: 'us-east-1'})
+    context "using AWS server role" do
+      it "should configure SDK integration and return client" do
+        AWS.configure('staging', aws_roles: true)
+        expect(AWS.environment).to eq('staging')
+        expect(AWS.credentials).to be_nil
+        expect(AWS.ec2).to_not be_nil
       end
     end
 
-    context 'without mfa with multiple accounts' do
+    context 'using cross account assumed roles' do
       before :each do
         cred_double = double('cred_hash', access_key_id: 'access_key_id',
                                           secret_access_key: 'secret_access_key',
@@ -63,14 +70,9 @@ module SportNginAwsAuditor
         allow(Aws::AssumeRoleCredentials).to receive(:new).and_return(cred_double)
       end
 
-      it "should update config" do
-        expect(Aws.config).to receive(:update)
-        AWSSDK::authenticate_with_assumed_roles('staging', '999999999999', 'CrossAccountAuditorAccess', @sts)
-      end
-
-      it "should call for some credentials" do
-        expect(Aws::AssumeRoleCredentials).to receive(:new)
-        AWSSDK::authenticate_with_assumed_roles('staging', '999999999999', 'CrossAccountAuditorAccess', @sts)
+      it "should set credentials" do
+        AWS.auth_with_assumed_roles('999999999999', 'CrossAccountAuditorAccess')
+        expect(AWS.credentials).to_not be_nil
       end
     end
   end

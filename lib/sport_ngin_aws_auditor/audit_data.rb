@@ -1,13 +1,7 @@
-require_relative './instance_helper'
-require_relative './convenience_wrappers'
-
 module SportNginAwsAuditor
   class AuditData
-    extend EC2Wrapper
-    extend RDSWrapper
-    extend CacheWrapper
-
     attr_accessor :data, :retired_tags, :retired_ris, :selected_audit_type, :klass, :tag_name, :region, :ignore_instances_regexes, :client
+
     def initialize(info)
       self.selected_audit_type = (!info[:instances] && !info[:reserved]) ? "all" : (info[:instances] ? "instances" : "reserved")
       self.klass = SportNginAwsAuditor.const_get(info[:class])
@@ -16,11 +10,11 @@ module SportNginAwsAuditor
       self.region = info[:region].match(/(\w{2}-\w{4,})/)[0] if info[:region].match(/(\w{2}-\w{4,})/)
       
       if info[:class] == "EC2Instance"
-        self.client = EC2Wrapper.ec2(info[:region])
+        self.client = AWS.ec2(info[:region])
       elsif info[:class] == "RDSInstance"
-        self.client = RDSWrapper.rds(info[:region])
+        self.client = AWS.rds(info[:region])
       elsif info[:class] == "CacheInstance"
-        self.client = CacheWrapper.cache(info[:region])
+        self.client = AWS.cache(info[:region])
       end
     end
 
