@@ -33,8 +33,8 @@ module SportNginAwsAuditor
       @aws_roles = @assume_roles = nil
     end
 
-    def self.client_options(region=DEFAULT_REGION)
-      if @credentials.nil? && @aws_roles == false
+    def self.client_options(region=DEFAULT_REGION, auth_required=true)
+      if auth_required && @credentials.nil? && @aws_roles == false
         raise "Unable to set AWS SDK client options because credentials not set and not flagged to use server role."
       end
       opts = { region: region }
@@ -47,7 +47,7 @@ module SportNginAwsAuditor
     end
 
     def self.sts
-      Aws::STS::Client.new(client_options)
+      Aws::STS::Client.new(client_options(DEFAULT_REGION, false))
     end
 
     def self.ec2(region=DEFAULT_REGION)
