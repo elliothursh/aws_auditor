@@ -45,7 +45,7 @@ module SportNginAwsAuditor
         allow(Aws::IAM::Client).to receive(:new).and_return(iam_client)
 
         expect(Aws::Credentials).to receive(:new).and_return(cred_double).at_least(:once)
-        expect(Aws::SharedCredentials).to receive(:new).and_return(shared_creds)
+        expect(Aws::SharedCredentials).to receive(:new).and_return(shared_creds).twice
         AWS.auth_with_iam
       end
     end
@@ -65,9 +65,13 @@ module SportNginAwsAuditor
                                           secret_access_key: 'secret_access_key',
                                           session_token: 'session_token')
         new_creds = double('new_creds', credentials: cred_double)
+        shared_credentials = double('shared_credentials', access_key_id: 'access_key_id',
+                                    secret_access_key: 'secret_access_key')
+        shared_creds = double('shared_creds', credentials: shared_credentials)
         @sts = double('sts', get_session_token: new_creds)
         allow(Aws::STS::Client).to receive(:new).and_return(@sts)
         allow(Aws::AssumeRoleCredentials).to receive(:new).and_return(cred_double)
+        expect(Aws::SharedCredentials).to receive(:new).and_return(shared_creds)
       end
 
       it "should set credentials" do
