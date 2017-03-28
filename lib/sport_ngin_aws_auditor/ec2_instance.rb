@@ -4,10 +4,12 @@ module SportNginAwsAuditor
 
     class << self
       def get_instances(client=AWS.ec2, tag_name=nil)
+        ec2_classic_support = ec2_classic_support
+
         instances = client.describe_instances.reservations.map do |reservation|
           reservation.instances.map do |instance|
             next unless instance.state.name == 'running'
-            new(instance, tag_name)
+            new(instance, tag_name, ec2_classic_support)
           end.compact
         end.flatten.compact
         get_more_info(instances, client)
@@ -25,6 +27,16 @@ module SportNginAwsAuditor
           next unless instance.state == 'retired'
           new(instance, nil, instance.instance_count)
         end.compact
+      end
+
+      def ec2_classic_support(client=AWS.ec2)
+        attr_vals = client.describe_account_attributes.account_attributes.first.attribute_values
+        vals_arr = []
+        attr_vals.each do |val|
+          vals_arr << val.attribute_value
+        end
+
+        return vals_arr.include?('EC2')
       end
 
       def bucketize(client)
@@ -52,8 +64,10 @@ module SportNginAwsAuditor
       private :get_more_info
     end
 
-    attr_accessor :id, :name, :platform, :availability_zone, :scope, :instance_type, :count, :stack_name, :tag_value, :tag_reason, :expiration_date, :count_remaining
-    def initialize(ec2_instance, tag_name, count=1)
+    attr_accessor :id, :name, :platform, :availability_zone, :scope, :instance_type, :count, :stack_name, :tag_value, :tag_reason, :expiration_date, :count_remaining, :classic_support
+    def initialize(ec2_instance, tag_name, ec2_classic_support, count=1)
+      ec2_classic_support = ec2_classic_support
+
       if ec2_instance.class.to_s == "Aws::EC2::Types::ReservedInstances"
         self.id = ec2_instance.reserved_instances_id
         self.name = nil
@@ -104,7 +118,7 @@ module SportNginAwsAuditor
         platform << 'Linux'
       end
 
-      if description.downcase.include?('vpc') || vpc
+      if self.classic_support && (description.downcase.include?('vpc') || vpc)
         platform << ' VPC'
       end
 
