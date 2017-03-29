@@ -7,7 +7,7 @@ module SportNginAwsAuditor
         instances = client.describe_instances.reservations.map do |reservation|
           reservation.instances.map do |instance|
             next unless instance.state.name == 'running'
-            new(instance, tag_name, ec2_classic_support)
+            new(instance, tag_name, ec2_classic_support(client))
           end.compact
         end.flatten.compact
         get_more_info(instances, client)
@@ -16,14 +16,14 @@ module SportNginAwsAuditor
       def get_reserved_instances(client=AWS.ec2)
         client.describe_reserved_instances.reserved_instances.map do |instance|
           next unless instance.state == 'active'
-          new(instance, nil, ec2_classic_support, instance.instance_count)
+          new(instance, nil, ec2_classic_support(client), instance.instance_count)
         end.compact
       end
 
       def get_retired_reserved_instances(client)
         client.describe_reserved_instances.reserved_instances.map do |instance|
           next unless instance.state == 'retired'
-          new(instance, nil, ec2_classic_support, instance.instance_count)
+          new(instance, nil, ec2_classic_support(client), instance.instance_count)
         end.compact
       end
 
@@ -62,9 +62,9 @@ module SportNginAwsAuditor
       private :get_more_info
     end
 
-    attr_accessor :id, :name, :platform, :availability_zone, :scope, :instance_type, :count, :stack_name, :tag_value, :tag_reason, :expiration_date, :count_remaining, :classic_support
+    attr_accessor :id, :name, :platform, :availability_zone, :scope, :instance_type, :count, :stack_name, :tag_value, :tag_reason, :expiration_date, :count_remaining, :ec2_classic_support
     def initialize(ec2_instance, tag_name, ec2_classic_support, count=1)
-      ec2_classic_support = ec2_classic_support
+      self.ec2_classic_support = ec2_classic_support
 
       if ec2_instance.class.to_s == "Aws::EC2::Types::ReservedInstances"
         self.id = ec2_instance.reserved_instances_id
@@ -118,7 +118,7 @@ module SportNginAwsAuditor
         platform << 'Linux'
       end
 
-      if self.classic_support && (description.downcase.include?('vpc') || vpc)
+      if self.ec2_classic_support && (description.downcase.include?('vpc') || vpc)
         platform << ' VPC'
       end
 
