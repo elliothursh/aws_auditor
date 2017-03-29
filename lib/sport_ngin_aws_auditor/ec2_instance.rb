@@ -4,8 +4,6 @@ module SportNginAwsAuditor
 
     class << self
       def get_instances(client=AWS.ec2, tag_name=nil)
-        ec2_classic_support = ec2_classic_support
-
         instances = client.describe_instances.reservations.map do |reservation|
           reservation.instances.map do |instance|
             next unless instance.state.name == 'running'
@@ -18,14 +16,14 @@ module SportNginAwsAuditor
       def get_reserved_instances(client=AWS.ec2)
         client.describe_reserved_instances.reserved_instances.map do |instance|
           next unless instance.state == 'active'
-          new(instance, nil, instance.instance_count)
+          new(instance, nil, ec2_classic_support, instance.instance_count)
         end.compact
       end
 
       def get_retired_reserved_instances(client)
         client.describe_reserved_instances.reserved_instances.map do |instance|
           next unless instance.state == 'retired'
-          new(instance, nil, instance.instance_count)
+          new(instance, nil, ec2_classic_support, instance.instance_count)
         end.compact
       end
 
@@ -74,6 +72,7 @@ module SportNginAwsAuditor
         self.platform = platform_helper(ec2_instance.product_description)
         self.scope = ec2_instance.scope
         self.availability_zone = self.scope == 'Region' ? nil : ec2_instance.availability_zone
+        self.availability_zone << ' ' if self.availability_zone != nil
         self.instance_type = ec2_instance.instance_type
         self.count = count
         self.stack_name = nil
@@ -84,6 +83,7 @@ module SportNginAwsAuditor
         self.platform = platform_helper((ec2_instance.platform || ''), ec2_instance.vpc_id)
         self.scope = nil
         self.availability_zone = ec2_instance.placement.availability_zone
+        self.availability_zone << ' ' if self.availability_zone != nil
         self.instance_type = ec2_instance.instance_type
         self.count = count
         self.stack_name = nil
@@ -102,7 +102,7 @@ module SportNginAwsAuditor
     end
 
     def to_s
-      "#{platform} #{availability_zone} #{instance_type}"
+      "#{platform} #{availability_zone}#{instance_type}"
     end
 
     def no_reserved_instance_tag_value
