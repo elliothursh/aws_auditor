@@ -42,9 +42,10 @@ module SportNginAwsAuditor
         ec2_value = double('value', attribute_value: "EC2")
         vpc_value = double('value', attribute_value: "VPC")
         arr_of_hashes = [ec2_value, vpc_value]
-        attr_values = double('attr_values', attribute_values: arr_of_hashes)
+        attr_values = double('attr_values', attribute_name: 'supported-platforms', attribute_values: arr_of_hashes)
         account_attributes = double('account_attributes', account_attributes: [attr_values])
         allow(@ec2_client).to receive(:describe_account_attributes).and_return(account_attributes)
+        allow(Aws::EC2::Client).to receive(:new).and_return(@ec2_client)
       end
 
       it "should make an ec2_instance for each instance" do
@@ -102,9 +103,10 @@ module SportNginAwsAuditor
         ec2_value = double('value', attribute_value: "EC2")
         vpc_value = double('value', attribute_value: "VPC")
         arr_of_hashes = [ec2_value, vpc_value]
-        attr_values = double('attr_values', attribute_values: arr_of_hashes)
+        attr_values = double('attr_values', attribute_name: 'supported-platforms', attribute_values: arr_of_hashes)
         account_attributes = double('account_attributes', account_attributes: [attr_values])
         allow(@ec2_client).to receive(:describe_account_attributes).and_return(account_attributes)
+        allow(Aws::EC2::Client).to receive(:new).and_return(@ec2_client)
       end
 
       it "should make a reserved_ec2_instance for each instance" do
@@ -173,9 +175,10 @@ module SportNginAwsAuditor
           ec2_value = double('value', attribute_value: "EC2")
           vpc_value = double('value', attribute_value: "VPC")
           arr_of_hashes = [ec2_value, vpc_value]
-          attr_values = double('attr_values', attribute_values: arr_of_hashes)
+          attr_values = double('attr_values', attribute_name: 'supported-platforms', attribute_values: arr_of_hashes)
           account_attributes = double('account_attributes', account_attributes: [attr_values])
           allow(@ec2_client).to receive(:describe_account_attributes).and_return(account_attributes)
+          allow(Aws::EC2::Client).to receive(:new).and_return(@ec2_client)
         end
 
         it "should make a retired_reserved_ec2_instance for each instance" do
@@ -236,9 +239,10 @@ module SportNginAwsAuditor
         ec2_value = double('value', attribute_value: "EC2")
         vpc_value = double('value', attribute_value: "VPC")
         arr_of_hashes = [ec2_value, vpc_value]
-        attr_values = double('attr_values', attribute_values: arr_of_hashes)
+        attr_values = double('attr_values', attribute_name: 'supported-platforms', attribute_values: arr_of_hashes)
         account_attributes = double('account_attributes', account_attributes: [attr_values])
         allow(@ec2_client).to receive(:describe_account_attributes).and_return(account_attributes)
+        allow(Aws::EC2::Client).to receive(:new).and_return(@ec2_client)
         instances = EC2Instance.get_instances(@ec2_client, "tag_name")
         instance = instances.first
         expect(instance.to_s).to eq("Linux VPC us-east-1d t2.large")
@@ -274,9 +278,10 @@ module SportNginAwsAuditor
         ec2_value = double('value', attribute_value: "EC2")
         vpc_value = double('value', attribute_value: "VPC")
         arr_of_hashes = [ec2_value, vpc_value]
-        attr_values = double('attr_values', attribute_values: arr_of_hashes)
+        attr_values = double('attr_values', attribute_name: 'supported-platforms', attribute_values: arr_of_hashes)
         account_attributes = double('account_attributes', account_attributes: [attr_values])
         allow(@ec2_client).to receive(:describe_account_attributes).and_return(account_attributes)
+        allow(Aws::EC2::Client).to receive(:new).and_return(@ec2_client)
       end
 
       it "should return a hash where the first element's key is the opsworks:stack name of the instances" do

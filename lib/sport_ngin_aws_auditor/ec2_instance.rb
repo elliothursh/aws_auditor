@@ -7,7 +7,7 @@ module SportNginAwsAuditor
         instances = client.describe_instances.reservations.map do |reservation|
           reservation.instances.map do |instance|
             next unless instance.state.name == 'running'
-            new(instance, tag_name, ec2_classic_support(client))
+            new(instance, tag_name)
           end.compact
         end.flatten.compact
         get_more_info(instances, client)
@@ -16,25 +16,15 @@ module SportNginAwsAuditor
       def get_reserved_instances(client=AWS.ec2)
         client.describe_reserved_instances.reserved_instances.map do |instance|
           next unless instance.state == 'active'
-          new(instance, nil, ec2_classic_support(client), instance.instance_count)
+          new(instance, nil, instance.instance_count)
         end.compact
       end
 
       def get_retired_reserved_instances(client)
         client.describe_reserved_instances.reserved_instances.map do |instance|
           next unless instance.state == 'retired'
-          new(instance, nil, ec2_classic_support(client), instance.instance_count)
+          new(instance, nil, instance.instance_count)
         end.compact
-      end
-
-      def ec2_classic_support(client=AWS.ec2)
-        attr_vals = client.describe_account_attributes.account_attributes.first.attribute_values
-        vals_arr = []
-        attr_vals.each do |val|
-          vals_arr << val.attribute_value
-        end
-
-        return vals_arr.include?('EC2')
       end
 
       def bucketize(client)
@@ -62,10 +52,9 @@ module SportNginAwsAuditor
       private :get_more_info
     end
 
-    attr_accessor :id, :name, :platform, :availability_zone, :scope, :instance_type, :count, :stack_name, :tag_value, :tag_reason, :expiration_date, :count_remaining, :ec2_classic_support
-    def initialize(ec2_instance, tag_name, ec2_classic_support, count=1)
-      self.ec2_classic_support = ec2_classic_support
-
+    attr_accessor :id, :name, :platform, :availability_zone, :scope, :instance_type, :count, :stack_name,
+                  :tag_value, :tag_reason, :expiration_date, :count_remaining
+    def initialize(ec2_instance, tag_name, count=1)
       if ec2_instance.class.to_s == "Aws::EC2::Types::ReservedInstances"
         self.id = ec2_instance.reserved_instances_id
         self.name = nil
@@ -118,12 +107,20 @@ module SportNginAwsAuditor
         platform << 'Linux'
       end
 
-      if self.ec2_classic_support && (description.downcase.include?('vpc') || vpc)
+      if ec2_classic_support && (description.downcase.include?('vpc') || vpc)
         platform << ' VPC'
       end
 
       return platform
     end
     private :platform_helper
+
+    def ec2_classic_support(client=AWS.ec2)
+      account_attributes = client.describe_account_attributes.account_attributes
+      attribute = account_attributes.select { |aa| aa.attribute_name == 'supported-platforms' }.first
+      attribute_values = attribute.attribute_values
+      attribute_values_array = attribute_values.collect { |v| v.attribute_value }
+      return attribute_values_array.include?('EC2')
+    end
   end
 end
