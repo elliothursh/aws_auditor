@@ -52,7 +52,8 @@ module SportNginAwsAuditor
       private :get_more_info
     end
 
-    attr_accessor :id, :name, :platform, :availability_zone, :scope, :instance_type, :count, :stack_name, :tag_value, :tag_reason, :expiration_date, :count_remaining
+    attr_accessor :id, :name, :platform, :availability_zone, :scope, :instance_type, :count, :stack_name,
+                  :tag_value, :tag_reason, :expiration_date, :count_remaining
     def initialize(ec2_instance, tag_name, count=1)
       if ec2_instance.class.to_s == "Aws::EC2::Types::ReservedInstances"
         self.id = ec2_instance.reserved_instances_id
@@ -60,6 +61,7 @@ module SportNginAwsAuditor
         self.platform = platform_helper(ec2_instance.product_description)
         self.scope = ec2_instance.scope
         self.availability_zone = self.scope == 'Region' ? nil : ec2_instance.availability_zone
+        self.availability_zone << ' ' if self.availability_zone != nil
         self.instance_type = ec2_instance.instance_type
         self.count = count
         self.stack_name = nil
@@ -70,6 +72,7 @@ module SportNginAwsAuditor
         self.platform = platform_helper((ec2_instance.platform || ''), ec2_instance.vpc_id)
         self.scope = nil
         self.availability_zone = ec2_instance.placement.availability_zone
+        self.availability_zone << ' ' if self.availability_zone != nil
         self.instance_type = ec2_instance.instance_type
         self.count = count
         self.stack_name = nil
@@ -88,7 +91,7 @@ module SportNginAwsAuditor
     end
 
     def to_s
-      "#{platform} #{availability_zone} #{instance_type}"
+      "#{platform} #{availability_zone}#{instance_type}"
     end
 
     def no_reserved_instance_tag_value
@@ -104,12 +107,20 @@ module SportNginAwsAuditor
         platform << 'Linux'
       end
 
-      if description.downcase.include?('vpc') || vpc
+      if ec2_classic_support && (description.downcase.include?('vpc') || vpc)
         platform << ' VPC'
       end
 
       return platform
     end
     private :platform_helper
+
+    def ec2_classic_support(client=AWS.ec2)
+      account_attributes = client.describe_account_attributes.account_attributes
+      attribute = account_attributes.select { |aa| aa.attribute_name == 'supported-platforms' }.first
+      attribute_values = attribute.attribute_values
+      attribute_values_array = attribute_values.collect { |v| v.attribute_value }
+      return attribute_values_array.include?('EC2')
+    end
   end
 end

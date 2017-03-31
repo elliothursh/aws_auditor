@@ -39,6 +39,13 @@ module SportNginAwsAuditor
         stack_tag = { key: "opsworks:stack", value: "our_app_service_2" }
         client_tags = double('tags', tags: [name_tag, stack_tag])
         @ec2_client = double('@ec2_client', describe_instances: ec2_instances, describe_tags: client_tags)
+        ec2_value = double('value', attribute_value: "EC2")
+        vpc_value = double('value', attribute_value: "VPC")
+        arr_of_hashes = [ec2_value, vpc_value]
+        attr_values = double('attr_values', attribute_name: 'supported-platforms', attribute_values: arr_of_hashes)
+        account_attributes = double('account_attributes', account_attributes: [attr_values])
+        allow(@ec2_client).to receive(:describe_account_attributes).and_return(account_attributes)
+        allow(Aws::EC2::Client).to receive(:new).and_return(@ec2_client)
       end
 
       it "should make an ec2_instance for each instance" do
@@ -59,7 +66,7 @@ module SportNginAwsAuditor
         expect(instance.stack_name).to eq("our_app_service_2")
         expect(instance.name).to eq("our-app-instance-100")
         expect(instance.id).to eq("i-thisisfake")
-        expect(instance.availability_zone).to eq("us-east-1d")
+        expect(instance.availability_zone).to eq("us-east-1d  ")
         expect(instance.instance_type).to eq("t2.large")
         expect(instance.platform).to eq("Linux VPC")
       end
@@ -93,6 +100,13 @@ module SportNginAwsAuditor
                                                                  class: "Aws::EC2::Types::ReservedInstances")
         reserved_ec2_instances = double('reserved_ec2_instances', reserved_instances: [reserved_ec2_instance1, reserved_ec2_instance2])
         @ec2_client = double('@ec2_client', describe_reserved_instances: reserved_ec2_instances)
+        ec2_value = double('value', attribute_value: "EC2")
+        vpc_value = double('value', attribute_value: "VPC")
+        arr_of_hashes = [ec2_value, vpc_value]
+        attr_values = double('attr_values', attribute_name: 'supported-platforms', attribute_values: arr_of_hashes)
+        account_attributes = double('account_attributes', account_attributes: [attr_values])
+        allow(@ec2_client).to receive(:describe_account_attributes).and_return(account_attributes)
+        allow(Aws::EC2::Client).to receive(:new).and_return(@ec2_client)
       end
 
       it "should make a reserved_ec2_instance for each instance" do
@@ -112,7 +126,7 @@ module SportNginAwsAuditor
         reserved_instance = reserved_instances.first
         expect(reserved_instance.id).to eq("12345-dfas-1234-asdf-thisisfake!!")
         expect(reserved_instance.platform).to eq("Windows VPC")
-        expect(reserved_instance.availability_zone).to eq("us-east-1b")
+        expect(reserved_instance.availability_zone).to eq("us-east-1b ")
         expect(reserved_instance.instance_type).to eq("t2.medium")
         expect(reserved_instance.count).to eq(4)
       end
@@ -158,6 +172,13 @@ module SportNginAwsAuditor
                                                                                          retired_reserved_ec2_instance2,
                                                                                          reserved_ec2_instance1])
           @ec2_client = double('@ec2_client', describe_reserved_instances: reserved_ec2_instances)
+          ec2_value = double('value', attribute_value: "EC2")
+          vpc_value = double('value', attribute_value: "VPC")
+          arr_of_hashes = [ec2_value, vpc_value]
+          attr_values = double('attr_values', attribute_name: 'supported-platforms', attribute_values: arr_of_hashes)
+          account_attributes = double('account_attributes', account_attributes: [attr_values])
+          allow(@ec2_client).to receive(:describe_account_attributes).and_return(account_attributes)
+          allow(Aws::EC2::Client).to receive(:new).and_return(@ec2_client)
         end
 
         it "should make a retired_reserved_ec2_instance for each instance" do
@@ -177,7 +198,7 @@ module SportNginAwsAuditor
           retired_reserved_instance = retired_reserved_instances.first
           expect(retired_reserved_instance.id).to eq("12345-dfas-1234-asdf-thisisfake!!")
           expect(retired_reserved_instance.platform).to eq("Windows VPC")
-          expect(retired_reserved_instance.availability_zone).to eq("us-east-1b")
+          expect(retired_reserved_instance.availability_zone).to eq("us-east-1b ")
           expect(retired_reserved_instance.instance_type).to eq("t2.medium")
           expect(retired_reserved_instance.count).to eq(4)
           expect(retired_reserved_instance.expiration_date).to be >= @time - 86500
@@ -215,6 +236,13 @@ module SportNginAwsAuditor
         stack_tag = { key: "opsworks:stack", value: "our_app_service_2" }
         tags = double('tags', tags: [name_tag, stack_tag])
         @ec2_client = double('@ec2_client', describe_instances: ec2_instances, describe_tags: tags)
+        ec2_value = double('value', attribute_value: "EC2")
+        vpc_value = double('value', attribute_value: "VPC")
+        arr_of_hashes = [ec2_value, vpc_value]
+        attr_values = double('attr_values', attribute_name: 'supported-platforms', attribute_values: arr_of_hashes)
+        account_attributes = double('account_attributes', account_attributes: [attr_values])
+        allow(@ec2_client).to receive(:describe_account_attributes).and_return(account_attributes)
+        allow(Aws::EC2::Client).to receive(:new).and_return(@ec2_client)
         instances = EC2Instance.get_instances(@ec2_client, "tag_name")
         instance = instances.first
         expect(instance.to_s).to eq("Linux VPC us-east-1d t2.large")
@@ -247,6 +275,13 @@ module SportNginAwsAuditor
         stack_tag = { key: "opsworks:stack", value: "our_app_service_2" }
         tags = double('tags', tags: [name_tag, stack_tag])
         @ec2_client = double('@ec2_client', describe_instances: ec2_instances, describe_tags: tags)
+        ec2_value = double('value', attribute_value: "EC2")
+        vpc_value = double('value', attribute_value: "VPC")
+        arr_of_hashes = [ec2_value, vpc_value]
+        attr_values = double('attr_values', attribute_name: 'supported-platforms', attribute_values: arr_of_hashes)
+        account_attributes = double('account_attributes', account_attributes: [attr_values])
+        allow(@ec2_client).to receive(:describe_account_attributes).and_return(account_attributes)
+        allow(Aws::EC2::Client).to receive(:new).and_return(@ec2_client)
       end
 
       it "should return a hash where the first element's key is the opsworks:stack name of the instances" do
