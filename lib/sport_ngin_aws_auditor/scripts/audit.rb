@@ -228,8 +228,7 @@ module SportNginAwsAuditor
 
       def self.gather_regions
         regions = AWS.ec2.describe_regions[:regions]
-        us_regions = regions.select { |region| region.region_name.include?("us") }
-        us_regions.collect { |r| r.region_name }
+        regions.collect { |r| r.region_name }
       end
 
       def self.collect_options(environment, options, global_options)
