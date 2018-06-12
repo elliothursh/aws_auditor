@@ -75,29 +75,29 @@ module SportNginAwsAuditor
     # Generates a name based on the RDS engine or product description
     def engine_helper(engine)
       case engine.downcase
-      when 'aurora'
+      when engine.downcase.include?('aurora')
         'Aurora'
-      when 'mariadb'
+      when engine.downcase.include?('mariadb')
         'MariaDB'
-      when 'mysql'
+      when engine.downcase.include?('mysql')
         'MySQL'
-      when 'oracle-ee',     'oracle-ee(byol)'
+      when engine.downcase.include?('oracle-ee')
         'Oracle EE'
-      when 'oracle-se',     'oracle-se(byol)'
+      when engine.downcase.include?('oracle-se')
         'Oracle SE'
-      when 'oracle-se1',    'oracle-se1(li)'
+      when engine.downcase.include?('oracle-se1')
         'Oracle SE One'
-      when 'oracle-se2',    'oracle-se2 (byol)' # extra space required
+      when engine.downcase.include?('oracle-se2')
         'Oracle SE Two'
-      when 'postgres',      'postgresql'
+      when engine.downcase.include?('postgres')
         'PostgreSQL'
-      when 'sqlserver-ee',  'sqlserver-ee(li)'
+      when engine.downcase.include?('sqlserver-ee')
         'SQL Server EE'
-      when 'sqlserver-ex',  'sqlserver-ex(li)'
+      when engine.downcase.include?('sqlserver-ex')
         'SQL Server EX'
-      when 'sqlserver-se',  'sqlserver-se(byol)'
+      when engine.downcase.include?('sqlserver-se')
         'SQL Server SE'
-      when 'sqlserver-web', 'sqlserver-web(li)'
+      when engine.downcase.include?('sqlserver-web')
         'SQL Server Web'
       else
         'Unknown DB Engine'
