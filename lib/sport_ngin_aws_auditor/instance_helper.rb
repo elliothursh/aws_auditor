@@ -24,7 +24,7 @@ module SportNginAwsAuditor
       instance_hash
     end
 
-    def add_region_ris_to_hash(ris_region, differences)
+    def add_region_ris_to_hash(ris_region, differences, klass)
       ris_region.each do |ri|
         differences.each do |key, value|
           # if key = 'Linux VPC us-east-1a t2.medium'...
@@ -38,7 +38,9 @@ module SportNginAwsAuditor
           size = my_match[2] if my_match
           size[0] = ''
 
-          if (platform == ri.platform) && (size == ri.instance_type) && (value[:count] < 0)
+          if compare_platforms_based_on_klass(klass, platform, ri.platform) &&
+             (size == ri.instance_type) &&
+             (value[:count] < 0)
             until (ri.count == 0) || (value[:count] == 0)
               value[:count] = value[:count] + 1
               ri.count = ri.count - 1
@@ -117,18 +119,18 @@ module SportNginAwsAuditor
       differences
     end
 
-    def add_additional_data(ris_region, instances_with_tag, ignored_instances, differences)
-      add_region_ris_to_hash(ris_region, differences)
+    def add_additional_data(ris_region, instances_with_tag, ignored_instances, differences, klass)
+      add_region_ris_to_hash(ris_region, differences, klass)
       add_additional_instances_to_hash(instances_with_tag, differences, " with tag (")
       add_additional_instances_to_hash(ignored_instances, differences, " ignored (")
       return differences
     end
 
-    def compare(instances, ignore_instances_regexes, client)
+    def compare(instances, ignore_instances_regexes, client, klass)
       ignored_instances, instances_with_tag, instance_hash = sort_through_instances(instances, ignore_instances_regexes)
       ris_region, ris_hash = sort_through_RIs(client)
       differences = measure_differences(instance_hash, ris_hash)
-      add_additional_data(ris_region, instances_with_tag, ignored_instances, differences)
+      add_additional_data(ris_region, instances_with_tag, ignored_instances, differences, klass)
       differences
     end
 
@@ -202,6 +204,27 @@ module SportNginAwsAuditor
         value = Date.new(date_hash[:year], date_hash[:mon], date_hash[:mday]) if date_hash
       end
       value
+    end
+
+    #################### HELPER METHODS ####################
+
+    # If the klass is EC2, then just make sure the instance platform includes the RI platform because 
+    # classic RIs (non-VPC) are used on any instance. 
+    #
+    # Instance  | RI        | Used?
+    # ----------|-----------|------
+    # Linux     | Linux     | Yes
+    # Linux     | Linux VPC | No
+    # Linux VPC | Linux     | Yes
+    # Linux VPC | Linux VPC | Yes
+    #
+    # If the klass is not EC2, then the platforms must match as normal.
+    def compare_platforms_based_on_klass(klass, platform, ri_platform)
+      if klass =~ /EC2/
+        platform.include?(ri_platform)
+      else
+        platform == ri_platform
+      end
     end
   end
 end

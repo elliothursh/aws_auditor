@@ -65,7 +65,7 @@ module SportNginAwsAuditor
     def gather_all_data
       instances = self.klass.get_instances(self.client, tag_name)
       retired_tags = self.klass.get_retired_tags(instances)
-      instance_hash = self.klass.compare(instances, ignore_instances_regexes, self.client)
+      instance_hash = self.klass.compare(instances, ignore_instances_regexes, self.client, self.klass)
       retired_ris = self.klass.get_recent_retired_reserved_instances(self.client)
 
       return instance_hash, retired_tags, retired_ris
