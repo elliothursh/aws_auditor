@@ -78,20 +78,20 @@ module SportNginAwsAuditor
 
       def self.say_instances
         @audit_results.data.each do |instance|
-          name = instance.type
+          name_type = instance.type
           count = instance.count
           color, rgb, prefix = color_chooser({:instance => instance, :retired_ri => false, :retired_tag => false})
           
           if instance.tagged?
             if instance.reason
-              description = "#{prefix} #{name}: (expiring on #{instance.tag_value} because #{instance.reason})\n"
+              description = "#{prefix} #{name_type}: (expiring on #{instance.tag_value} because #{instance.reason})\n"
             else
-              description = "#{prefix} #{name}: (expiring on #{instance.tag_value})\n"
+              description = "#{prefix} #{name_type}: (expiring on #{instance.tag_value})\n"
             end
           elsif instance.ignored?
-            description = "#{prefix} #{name}\n"
+            description = "#{prefix} #{name_type}\n"
           else
-            description = "#{prefix} #{name}: #{count}\n"
+            description = "#{prefix} #{name_type}: #{count}\n"
           end
 
           @message << description.colorize(:color => color)
@@ -159,20 +159,20 @@ module SportNginAwsAuditor
           @slack_message.attachments.push({"color" => "#32CD32", "text" => "All RIs are properly matched here!", "mrkdwn_in" => ["text"]})
         else
           data_array.each do |instance|
-            type = instance.type
+            name_type = instance.type
             count = instance.count
             color, rgb, prefix = color_chooser({:instance => instance, :retired_ri => false, :retired_tag => false})
 
             if instance.tagged?
               if instance.reason
-                text = "#{prefix} #{instance.name}: (expiring on #{instance.tag_value} because #{instance.reason})"
+                text = "#{prefix} #{name_type}: (expiring on #{instance.tag_value} because #{instance.reason})"
               else
-                text = "#{prefix} #{instance.name}: (expiring on #{instance.tag_value})"
+                text = "#{prefix} #{name_type}: (expiring on #{instance.tag_value})"
               end
             elsif instance.ignored?
-              text = "#{prefix} #{instance.name}"
+              text = "#{prefix} #{name_type}"
             else
-              text = "#{prefix} #{type}: #{count}"
+              text = "#{prefix} #{name_type}: #{count}"
             end
 
             @slack_message.attachments.push({"color" => rgb, "text" => text, "mrkdwn_in" => ["text"]})
