@@ -83,12 +83,12 @@ module SportNginAwsAuditor
         'MySQL'
       when engine.downcase.include?('oracle-ee')
         'Oracle EE'
-      when engine.downcase.include?('oracle-se')
-        'Oracle SE'
       when engine.downcase.include?('oracle-se1')
         'Oracle SE One'
       when engine.downcase.include?('oracle-se2')
         'Oracle SE Two'
+      when engine.downcase.include?('oracle-se')
+        'Oracle SE'
       when engine.downcase.include?('postgres')
         'PostgreSQL'
       when engine.downcase.include?('sqlserver-ee')
