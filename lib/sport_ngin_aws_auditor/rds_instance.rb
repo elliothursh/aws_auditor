@@ -74,7 +74,7 @@ module SportNginAwsAuditor
 
     # Generates a name based on the RDS engine or product description
     def engine_helper(engine)
-      case engine.downcase
+      case
       when engine.downcase.include?('aurora')
         'Aurora'
       when engine.downcase.include?('mariadb')
