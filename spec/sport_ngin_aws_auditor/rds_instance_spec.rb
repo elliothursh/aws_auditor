@@ -73,14 +73,16 @@ module SportNginAwsAuditor
                                                                  state: "active",
                                                                  product_description: "oracle-se2 (byol)",
                                                                  db_instance_count: 1,
-                                                                 class: "Aws::RDS::Types::ReservedDBInstance")
+                                                                 class: "Aws::RDS::Types::ReservedDBInstance",
+                                                                 reserved_db_instance_id: "123")
         reserved_rds_instance2 = double('reserved_rds_instance', reserved_db_instances_offering_id: "555te4yy-1234-555c-5678-thisisafake!!",
                                                                  multi_az: false,
                                                                  db_instance_class: "db.m3.large",
                                                                  state: "active",
                                                                  product_description: "postgresql",
                                                                  db_instance_count: 2,
-                                                                 class: "Aws::RDS::Types::ReservedDBInstance")
+                                                                 class: "Aws::RDS::Types::ReservedDBInstance",
+                                                                 reserved_db_instance_id: "123")
         reserved_db_instances = double('db_instances', reserved_db_instances: [reserved_rds_instance1, reserved_rds_instance2])
         @rds_client = double('@rds_client', describe_reserved_db_instances: reserved_db_instances)
       end
@@ -183,7 +185,8 @@ module SportNginAwsAuditor
                                               engine: "postgres",
                                               availability_zone: "us-east-1a",
                                               class: "Aws::RDS::Types::DBInstance",
-                                              db_name: 'Example-instance-01')
+                                              db_name: 'Example-instance-01',
+                                              db_instance_arn: "arn_example")
         db_instances = double('db_instances', db_instances: [rds_instance])
         tag1 = double('tag', key: "cookie", value: "chocolate chip")
         tag2 = double('tag', key: "ice cream", value: "oreo")
