@@ -48,8 +48,7 @@ module SportNginAwsAuditor
         self.count = 1
 
         if tag_name
-          region = rds_instance.availability_zone.split(//).first(9).join
-          region = "us-east-1" if region == "Multiple"
+          region = get_region
           arn = "arn:aws:rds:#{region}:#{account_id}:db:#{self.id}"
 
            # go through to see if the tag we're looking for is one of them
@@ -66,6 +65,13 @@ module SportNginAwsAuditor
 
     def to_s
       "#{engine} #{multi_az} #{instance_type}"
+    end
+
+    def get_region
+      region = self.availability_zone.split(//)
+      region.pop
+      region = region.join
+      region == "Multiple" ? "us-east-1" : region
     end
 
     def no_reserved_instance_tag_value
