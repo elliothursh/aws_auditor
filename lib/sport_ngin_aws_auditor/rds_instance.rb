@@ -37,6 +37,7 @@ module SportNginAwsAuditor
         self.engine = engine_helper(rds_instance.product_description)
         self.count = rds_instance.db_instance_count
         self.expiration_date = rds_instance.start_time + rds_instance.duration if rds_instance.state == 'retired'
+        arn = rds_instance.reserved_db_instance_id
       elsif rds_instance.class.to_s == "Aws::RDS::Types::DBInstance"
         self.id = rds_instance.db_instance_identifier
         self.name = rds_instance.db_name
@@ -46,11 +47,9 @@ module SportNginAwsAuditor
         self.instance_type = rds_instance.db_instance_class
         self.engine = engine_helper(rds_instance.engine)
         self.count = 1
+        arn = rds_instance.db_instance_arn
 
         if tag_name
-          region = get_region
-          arn = "arn:aws:rds:#{region}:#{account_id}:db:#{self.id}"
-
            # go through to see if the tag we're looking for is one of them
           client.list_tags_for_resource(resource_name: arn).tag_list.each do |tag|
             if tag.key == tag_name
@@ -65,13 +64,6 @@ module SportNginAwsAuditor
 
     def to_s
       "#{engine} #{multi_az} #{instance_type}"
-    end
-
-    def get_region
-      region = self.availability_zone.split(//)
-      region.pop
-      region = region.join
-      region == "Multiple" ? "us-east-1" : region
     end
 
     def no_reserved_instance_tag_value
