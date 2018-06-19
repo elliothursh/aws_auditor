@@ -24,7 +24,8 @@ module SportNginAwsAuditor
                                                engine: "mysql",
                                                availability_zone: "us-east-1a",
                                                class: "Aws::RDS::Types::DBInstance",
-                                               db_name: 'Example-instance-01')
+                                               db_name: 'Example-instance-01',
+                                               db_instance_arn: "arn_example")
         rds_instance2 = double('rds_instance', db_instance_identifier: "our-service",
                                                multi_az: false,
                                                db_instance_class: "db.m3.large",
@@ -32,7 +33,8 @@ module SportNginAwsAuditor
                                                engine: "mysql",
                                                availability_zone: "us-east-1a",
                                                class: "Aws::RDS::Types::DBInstance",
-                                               db_name: 'Example-instance-01')
+                                               db_name: 'Example-instance-01',
+                                               db_instance_arn: "arn_example")
         db_instances = double('db_instances', db_instances: [rds_instance1, rds_instance2])
         tag1 = double('tag', key: "cookie", value: "chocolate chip")
         tag2 = double('tag', key: "ice cream", value: "oreo")
@@ -71,14 +73,16 @@ module SportNginAwsAuditor
                                                                  state: "active",
                                                                  product_description: "oracle-se2 (byol)",
                                                                  db_instance_count: 1,
-                                                                 class: "Aws::RDS::Types::ReservedDBInstance")
+                                                                 class: "Aws::RDS::Types::ReservedDBInstance",
+                                                                 reserved_db_instance_id: "123")
         reserved_rds_instance2 = double('reserved_rds_instance', reserved_db_instances_offering_id: "555te4yy-1234-555c-5678-thisisafake!!",
                                                                  multi_az: false,
                                                                  db_instance_class: "db.m3.large",
                                                                  state: "active",
                                                                  product_description: "postgresql",
                                                                  db_instance_count: 2,
-                                                                 class: "Aws::RDS::Types::ReservedDBInstance")
+                                                                 class: "Aws::RDS::Types::ReservedDBInstance",
+                                                                 reserved_db_instance_id: "123")
         reserved_db_instances = double('db_instances', reserved_db_instances: [reserved_rds_instance1, reserved_rds_instance2])
         @rds_client = double('@rds_client', describe_reserved_db_instances: reserved_db_instances)
       end
@@ -116,7 +120,9 @@ module SportNginAwsAuditor
                                                                            db_instance_count: 1,
                                                                            class: "Aws::RDS::Types::ReservedDBInstance",
                                                                            start_time: @time - 31536000,
-                                                                           duration: 31536000)
+                                                                           duration: 31536000,
+                                                                           reserved_db_instance_arn: "arn_example",
+                                                                           reserved_db_instance_id: "123")
           retired_reserved_rds_instance2 = double('reserved_rds_instance', reserved_db_instances_offering_id: "555te4yy-1234-555c-5678-thisisafake!!",
                                                                            multi_az: false,
                                                                            db_instance_class: "db.m3.large",
@@ -125,7 +131,9 @@ module SportNginAwsAuditor
                                                                            db_instance_count: 2,
                                                                            class: "Aws::RDS::Types::ReservedDBInstance",
                                                                            start_time: @time - 31536000,
-                                                                           duration: 31536000)
+                                                                           duration: 31536000,
+                                                                           reserved_db_instance_arn: "arn_example",
+                                                                           reserved_db_instance_id: "123")
         reserved_db_instances = double('db_instances', reserved_db_instances: [retired_reserved_rds_instance1,
                                                                                retired_reserved_rds_instance2])
         @rds_client = double('@rds_client', describe_reserved_db_instances: reserved_db_instances)
@@ -163,7 +171,8 @@ module SportNginAwsAuditor
                                                                 state: "active",
                                                                 product_description: "mysql",
                                                                 db_instance_count: 3,
-                                                                class: "Aws::RDS::Types::ReservedDBInstance")
+                                                                class: "Aws::RDS::Types::ReservedDBInstance",
+                                                                reserved_db_instance_id: "123")
         reserved_db_instances = double('db_instances', reserved_db_instances: [reserved_rds_instance])
         @rds_client = double('@rds_client', describe_reserved_db_instances: reserved_db_instances)
         reserved_instances = RDSInstance.get_reserved_instances(@rds_client)
@@ -179,7 +188,8 @@ module SportNginAwsAuditor
                                               engine: "postgres",
                                               availability_zone: "us-east-1a",
                                               class: "Aws::RDS::Types::DBInstance",
-                                              db_name: 'Example-instance-01')
+                                              db_name: 'Example-instance-01',
+                                              db_instance_arn: "arn_example")
         db_instances = double('db_instances', db_instances: [rds_instance])
         tag1 = double('tag', key: "cookie", value: "chocolate chip")
         tag2 = double('tag', key: "ice cream", value: "oreo")
