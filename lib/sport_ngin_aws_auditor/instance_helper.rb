@@ -59,7 +59,7 @@ module SportNginAwsAuditor
         next if instance.nil?
         key = "#{instance.to_s.dup}#{extra_string}#{instance.name})"
         instance_result = {}
-        
+
         if instance_hash.has_key?(instance.to_s) && instance_hash[instance.to_s][:count] > 0
           current_val = instance_hash[instance.to_s][:count]
           val = current_val - instance.count
@@ -109,12 +109,61 @@ module SportNginAwsAuditor
       return ris_region, ris_hash
     end
 
-    def measure_differences(instance_hash, ris_hash)
+    def measure_differences(instance_hash, ris_hash, ris_region, klass)
       differences = Hash.new()
-      instance_hash.keys.concat(ris_hash.keys).uniq.each do |key|
-        instance_count = instance_hash.has_key?(key) ? instance_hash[key][:count] : 0
-        ris_count = ris_hash.has_key?(key) ? ris_hash[key][:count] : 0
-        differences[key] = {:count => ris_count - instance_count, :region_based => false}
+      if klass.name =~ /EC2/
+        # Group all the same size RIs
+        # Ex: ri_group_arr = [{ instance_type: "t2.medium", platform: "Linux VPC", count: 7 }, ...]
+        ri_group_arr = []
+        ris_region.each do |ec2_ri_obj|
+          selected_ri_group = ri_group_arr.select { |ri_group| ri_group[:instance_type] == ec2_ri_obj.instance_type && ri_group[:platform] == ec2_ri_obj.platform  }
+          if selected_ri_group.count == 1
+            selected_ri_group = selected_ri_group.first
+            selected_ri_group[:count] += ec2_ri_obj.count
+          elsif selected_ri_group.empty?
+            selected_ri_group = {
+                                  instance_type: ec2_ri_obj.instance_type,
+                                  platform: ec2_ri_obj.platform,
+                                  count: ec2_ri_obj.count
+                                }
+            ri_group_arr << selected_ri_group
+          else
+            raise "More than one group with the same instance size and platform detected: #{selected_ri_group}"
+          end
+        end
+
+        # Process each ri_group determined by instance_type and platform
+        ri_group_arr.each do |ri_group|
+          target_instance_type, target_platform, ri_count = ri_group[:instance_type], ri_group[:target_platform], ri_group[:count]
+          actual_instances = instance_hash.select do |k,v|
+            # Ex: k,v = "Linux VPC us-east-1d t2.small", {:count=>15, :region_based=>false}
+            k =~ Regexp.new("^#{target_platform}.*#{target_instance_type}$")
+          end
+          actual_instances_left = 0
+          actual_instances.each do |k,v|
+            if ri_count >= v[:count]
+              ri_count -= v[:count]
+              v[:count] = 0
+            else
+              v[:count] = ri_count - v[:count] # v[:count] is always negative
+              ri_count = 0
+              actual_instances_left = -v[:count]
+              break;
+            end
+          end
+          # Three scenarios
+          # 1. # of RIs > # of actual instances - unused RIs
+          actual_instances[actual_instances.keys.first][:count] += ri_count if ri_count > actual_instances_left
+          # 2. # of RIs == # of actual instances - matched
+          # 3. # of RIs < # of actual instances - missing RIs
+          differences.merge!(actual_instances)
+        end
+      else
+        instance_hash.keys.concat(ris_hash.keys).uniq.each do |key|
+          instance_count = instance_hash.has_key?(key) ? instance_hash[key][:count] : 0
+          ris_count = ris_hash.has_key?(key) ? ris_hash[key][:count] : 0
+          differences[key] = {:count => ris_count - instance_count, :region_based => false}
+        end
       end
       differences
     end
@@ -129,7 +178,9 @@ module SportNginAwsAuditor
     def compare(instances, ignore_instances_regexes, client, klass)
       ignored_instances, instances_with_tag, instance_hash = sort_through_instances(instances, ignore_instances_regexes)
       ris_region, ris_hash = sort_through_RIs(client)
-      differences = measure_differences(instance_hash, ris_hash)
+      # TODO: Refactor this `measure_differences` method so that it uses ris_region for ec2
+      # ris_region is empty for rds and cache, and ris_hash is empty for ec2
+      differences = measure_differences(instance_hash, ris_hash, ris_region, klass)
       add_additional_data(ris_region, instances_with_tag, ignored_instances, differences, klass)
       differences
     end
@@ -152,12 +203,12 @@ module SportNginAwsAuditor
       end
     end
 
-    # this gathers all RIs except the region-based RIs
+    # this gathers all RIs except the region-based RIs (For RDS and cache)
     def filter_ris_availability_zone(ris)
       ris.reject { |ri| ri.scope == 'Region' }
     end
 
-    # this filters all of the region-based RIs
+    # this filters all of the region-based RIs (For EC2)
     def filter_ris_region_based(ris)
       ris.select { |ri| ri.scope == 'Region' }
     end
@@ -185,7 +236,7 @@ module SportNginAwsAuditor
     # this returns a hash of all instances that have retired between 1 week ago and today
     def get_retired_tags(instances)
       return_array = []
-      
+
       instances.select do |instance|
         value = gather_instance_tag_date(instance)
         one_week_ago = (Date.today - 7).to_s
@@ -193,7 +244,7 @@ module SportNginAwsAuditor
           return_array << RecentlyRetiredTag.new(value.to_s, instance.to_s, instance.name, instance.tag_reason)
         end
       end
-      
+
       return_array
     end
 
@@ -208,8 +259,8 @@ module SportNginAwsAuditor
 
     #################### HELPER METHODS ####################
 
-    # If the klass is EC2, then just make sure the instance platform includes the RI platform because 
-    # classic RIs (non-VPC) are used on any instance. 
+    # If the klass is EC2, then just make sure the instance platform includes the RI platform because
+    # classic RIs (non-VPC) are used on any instance.
     #
     # Instance  | RI        | Used?
     # ----------|-----------|------
