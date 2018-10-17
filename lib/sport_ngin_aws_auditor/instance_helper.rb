@@ -111,7 +111,7 @@ module SportNginAwsAuditor
 
     def measure_differences(instance_hash, ris_hash, ris_region, klass)
       differences = Hash.new()
-      if klass.name =~ /EC2/
+      if /EC2/ =~ klass.name
         # Group all the same size RIs
         # Ex: ri_group_arr = [{ instance_type: "t2.medium", platform: "Linux VPC", count: 7 }, ...]
         ri_group_arr = []
@@ -134,28 +134,23 @@ module SportNginAwsAuditor
 
         # Process each ri_group determined by instance_type and platform
         ri_group_arr.each do |ri_group|
-          target_instance_type, target_platform, ri_count = ri_group[:instance_type], ri_group[:target_platform], ri_group[:count]
+          target_instance_type, target_platform, ri_count = ri_group[:instance_type], ri_group[:platform], ri_group[:count]
           actual_instances = instance_hash.select do |k,v|
             # Ex: k,v = "Linux VPC us-east-1d t2.small", {:count=>15, :region_based=>false}
-            k =~ Regexp.new("^#{target_platform}.*#{target_instance_type}$")
+            Regexp.new("^#{target_platform}.*#{target_instance_type}$") =~ k
           end
-          actual_instances_left = 0
-          actual_instances.each do |k,v|
-            if ri_count >= v[:count]
-              ri_count -= v[:count]
-              v[:count] = 0
-            else
-              v[:count] = ri_count - v[:count] # v[:count] is always negative
-              ri_count = 0
-              actual_instances_left = -v[:count]
-              break;
-            end
+
+          actual_instances_count = actual_instances.reduce(0) do | previous_count, actual_instance |
+            previous_count += actual_instance[1][:count]
           end
+
+          actual_instances = {"#{target_platform} #{target_instance_type}" => {count: actual_instances_count, region_based: true}}
+
           # Three scenarios
           # 1. # of RIs > # of actual instances - unused RIs
-          actual_instances[actual_instances.keys.first][:count] += ri_count if ri_count > actual_instances_left
           # 2. # of RIs == # of actual instances - matched
           # 3. # of RIs < # of actual instances - missing RIs
+          actual_instances.values[0][:count] = ri_count - actual_instances.values[0][:count]
           differences.merge!(actual_instances)
         end
       else
@@ -169,7 +164,8 @@ module SportNginAwsAuditor
     end
 
     def add_additional_data(ris_region, instances_with_tag, ignored_instances, differences, klass)
-      add_region_ris_to_hash(ris_region, differences, klass)
+      # EC2 region is processed in measure_differences
+      add_region_ris_to_hash(ris_region, differences, klass) unless /EC2/ =~ klass.name
       add_additional_instances_to_hash(instances_with_tag, differences, " with tag (")
       add_additional_instances_to_hash(ignored_instances, differences, " ignored (")
       return differences
