@@ -24,36 +24,6 @@ module SportNginAwsAuditor
       instance_hash
     end
 
-    def add_region_ris_to_hash(ris_region, differences, klass)
-      ris_region.each do |ri|
-        differences.each do |key, value|
-          # if key = 'Linux VPC us-east-1a t2.medium'...
-          my_match = key.match(/(\w*\s*\w*\s*)\w{2}-\w{2,}-\w{2}(\s*\S*)/)
-
-          # then platform = 'Linux VPC'...
-          platform = my_match[1] if my_match
-          platform[platform.length - 1] = ''
-
-          # and size = 't2.medium'
-          size = my_match[2] if my_match
-          size[0] = ''
-
-          if compare_platforms_based_on_klass(klass, platform, ri.platform) &&
-             (size == ri.instance_type) &&
-             (value[:count] < 0)
-            until (ri.count == 0) || (value[:count] == 0)
-              value[:count] = value[:count] + 1
-              ri.count = ri.count - 1
-            end
-          end
-        end
-      end
-
-      ris_region.each do |ri|
-        differences[ri.to_s] = {:count => ri.count, :region_based => true}
-      end
-    end
-
     def add_additional_instances_to_hash(instances_to_add, instance_hash, extra_string)
       instances_to_add.each do |instance|
         next if instance.nil?
@@ -164,8 +134,6 @@ module SportNginAwsAuditor
     end
 
     def add_additional_data(ris_region, instances_with_tag, ignored_instances, differences, klass)
-      # EC2 region is processed in measure_differences
-      add_region_ris_to_hash(ris_region, differences, klass) unless /EC2/ =~ klass.name
       add_additional_instances_to_hash(instances_with_tag, differences, " with tag (")
       add_additional_instances_to_hash(ignored_instances, differences, " ignored (")
       return differences
@@ -204,7 +172,7 @@ module SportNginAwsAuditor
       ris.reject { |ri| ri.scope == 'Region' }
     end
 
-    # this filters all of the region-based RIs (For EC2)
+    # this filters all of the region-based RIs (For EC2 by default)
     def filter_ris_region_based(ris)
       ris.select { |ri| ri.scope == 'Region' }
     end
