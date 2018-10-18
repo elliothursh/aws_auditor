@@ -100,6 +100,43 @@ module SportNginAwsAuditor
       ri_group_arr
     end
 
+    # Assuming zone based information is already added and differences hash is initialized
+    private def ris_region_processor(differences, ris_region)
+      # Group all the same size RIs
+      # Ex: ri_group_arr = [{ instance_type: "t2.medium", platform: "Linux VPC", count: 7 }, ...]
+      ri_group_arr = group_ris_region(ris_region)
+
+      # Process each ri_group determined by instance_type and platform
+      ri_group_arr.each do |ri_group|
+        target_instance_type, target_platform, ri_count = ri_group[:instance_type], ri_group[:platform], ri_group[:count]
+        instances_left = differences.select do |k,v|
+          # Ex: k,v = "Linux VPC us-east-1d t2.small", {:count=>-15, :region_based=>false}
+          Regexp.new("^#{target_platform}.*#{target_instance_type}$") =~ k
+        end
+
+        instances_left_count = - instances_left.reduce(0) do | previous_count, actual_instance |
+          previous_count += actual_instance[1][:count]
+        end
+
+        if instances_left_count > 0
+          # Actual instances left > zone RIs
+          # Use regional instances
+          instances_left.each_value do |v|
+            if ri_count >= -v[:count]
+              ri_count += v[:count]
+              v[:count] = 0
+            else
+              # No more RIs left
+              v[:count] = ri_count + v[:count]
+              ri_count = 0
+              break;
+            end
+          end
+        end
+        differences["#{target_platform} #{target_instance_type}"] = { count: ri_count, region_based: true }
+      end
+    end
+
     def measure_differences(instance_hash, ris_hash, ris_region, klass)
       differences = Hash.new()
 
@@ -112,41 +149,8 @@ module SportNginAwsAuditor
       end
 
       # Region-based RI calculation
-      unless ris_region.empty?
-        # Group all the same size RIs
-        # Ex: ri_group_arr = [{ instance_type: "t2.medium", platform: "Linux VPC", count: 7 }, ...]
-        ri_group_arr = group_ris_region(ris_region)
+      ris_region_processor(differences, ris_region) unless ris_region.empty?
 
-        # Process each ri_group determined by instance_type and platform
-        ri_group_arr.each do |ri_group|
-          target_instance_type, target_platform, ri_count = ri_group[:instance_type], ri_group[:platform], ri_group[:count]
-          instances_left = differences.select do |k,v|
-            # Ex: k,v = "Linux VPC us-east-1d t2.small", {:count=>-15, :region_based=>false}
-            Regexp.new("^#{target_platform}.*#{target_instance_type}$") =~ k
-          end
-
-          instances_left_count = - instances_left.reduce(0) do | previous_count, actual_instance |
-            previous_count += actual_instance[1][:count]
-          end
-
-          if instances_left_count > 0
-            # Actual instances left > zone RIs
-            # Use regional instances
-            instances_left.each_value do |v|
-              if ri_count >= -v[:count]
-                ri_count += v[:count]
-                v[:count] = 0
-              else
-                # No more RIs left
-                v[:count] = ri_count + v[:count]
-                ri_count = 0
-                break;
-              end
-            end
-          end
-          differences["#{target_platform} #{target_instance_type}"] = { count: ri_count, region_based: true }
-        end
-      end
       differences
     end
 
