@@ -79,28 +79,33 @@ module SportNginAwsAuditor
       return ris_region, ris_hash
     end
 
+    private def group_ris_region(ris_region)
+      ri_group_arr = []
+      ris_region.each do |ec2_ri_obj|
+        selected_ri_group = ri_group_arr.select { |ri_group| ri_group[:instance_type] == ec2_ri_obj.instance_type && ri_group[:platform] == ec2_ri_obj.platform  }
+        if selected_ri_group.count == 1
+          selected_ri_group = selected_ri_group.first
+          selected_ri_group[:count] += ec2_ri_obj.count
+        elsif selected_ri_group.empty?
+          selected_ri_group = {
+                                instance_type: ec2_ri_obj.instance_type,
+                                platform: ec2_ri_obj.platform,
+                                count: ec2_ri_obj.count
+                              }
+          ri_group_arr << selected_ri_group
+        else
+          raise "More than one group with the same instance size and platform detected: #{selected_ri_group}"
+        end
+      end
+      ri_group_arr
+    end
+
     def measure_differences(instance_hash, ris_hash, ris_region, klass)
       differences = Hash.new()
       if /EC2/ =~ klass.name
         # Group all the same size RIs
         # Ex: ri_group_arr = [{ instance_type: "t2.medium", platform: "Linux VPC", count: 7 }, ...]
-        ri_group_arr = []
-        ris_region.each do |ec2_ri_obj|
-          selected_ri_group = ri_group_arr.select { |ri_group| ri_group[:instance_type] == ec2_ri_obj.instance_type && ri_group[:platform] == ec2_ri_obj.platform  }
-          if selected_ri_group.count == 1
-            selected_ri_group = selected_ri_group.first
-            selected_ri_group[:count] += ec2_ri_obj.count
-          elsif selected_ri_group.empty?
-            selected_ri_group = {
-                                  instance_type: ec2_ri_obj.instance_type,
-                                  platform: ec2_ri_obj.platform,
-                                  count: ec2_ri_obj.count
-                                }
-            ri_group_arr << selected_ri_group
-          else
-            raise "More than one group with the same instance size and platform detected: #{selected_ri_group}"
-          end
-        end
+        ri_group_arr = group_ris_region(ris_region)
 
         # Process each ri_group determined by instance_type and platform
         ri_group_arr.each do |ri_group|
@@ -109,7 +114,7 @@ module SportNginAwsAuditor
             # Ex: k,v = "Linux VPC us-east-1d t2.small", {:count=>15, :region_based=>false}
             Regexp.new("^#{target_platform}.*#{target_instance_type}$") =~ k
           end
-
+          
           actual_instances_count = actual_instances.reduce(0) do | previous_count, actual_instance |
             previous_count += actual_instance[1][:count]
           end
