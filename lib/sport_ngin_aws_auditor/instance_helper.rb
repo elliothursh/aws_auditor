@@ -102,7 +102,17 @@ module SportNginAwsAuditor
 
     def measure_differences(instance_hash, ris_hash, ris_region, klass)
       differences = Hash.new()
-      if /EC2/ =~ klass.name
+
+      # Setup and zone-based RI calculation
+      instance_hash.keys.concat(ris_hash.keys).uniq.each do |key|
+        instance_count = instance_hash.has_key?(key) ? instance_hash[key][:count] : 0
+        ris_count = ris_hash.has_key?(key) ? ris_hash[key][:count] : 0
+        # positive count => more ris, negative count => more instances
+        differences[key] = {:count => ris_count - instance_count, :region_based => false}
+      end
+
+      # Region-based RI calculation
+      unless ris_region.empty?
         # Group all the same size RIs
         # Ex: ri_group_arr = [{ instance_type: "t2.medium", platform: "Linux VPC", count: 7 }, ...]
         ri_group_arr = group_ris_region(ris_region)
@@ -110,29 +120,33 @@ module SportNginAwsAuditor
         # Process each ri_group determined by instance_type and platform
         ri_group_arr.each do |ri_group|
           target_instance_type, target_platform, ri_count = ri_group[:instance_type], ri_group[:platform], ri_group[:count]
-          actual_instances = instance_hash.select do |k,v|
-            # Ex: k,v = "Linux VPC us-east-1d t2.small", {:count=>15, :region_based=>false}
+          instances_left = differences.select do |k,v|
+            # Ex: k,v = "Linux VPC us-east-1d t2.small", {:count=>-15, :region_based=>false}
             Regexp.new("^#{target_platform}.*#{target_instance_type}$") =~ k
           end
 
-          actual_instances_count = actual_instances.reduce(0) do | previous_count, actual_instance |
+          instances_left_count = - instances_left.reduce(0) do | previous_count, actual_instance |
             previous_count += actual_instance[1][:count]
           end
 
-          actual_instances = {"#{target_platform} #{target_instance_type}" => {count: actual_instances_count, region_based: true}}
-
-          # Three scenarios
-          # 1. # of RIs > # of actual instances - unused RIs
-          # 2. # of RIs == # of actual instances - matched
-          # 3. # of RIs < # of actual instances - missing RIs
-          actual_instances.values[0][:count] = ri_count - actual_instances.values[0][:count]
-          differences.merge!(actual_instances)
-        end
-      else
-        instance_hash.keys.concat(ris_hash.keys).uniq.each do |key|
-          instance_count = instance_hash.has_key?(key) ? instance_hash[key][:count] : 0
-          ris_count = ris_hash.has_key?(key) ? ris_hash[key][:count] : 0
-          differences[key] = {:count => ris_count - instance_count, :region_based => false}
+          if instances_left_count <= 0
+            # zone RIs >= actual instances
+            differences["#{target_platform} #{target_instance_type}"] = { :count => ri_count, :region_based => true }
+          else
+            # zone RIs < actual instances
+            # Use regional instances
+            instances_left.each do |k,v|
+              if ri_count >= -v[:count]
+                ri_count += v[:count]
+                v[:count] = 0
+              else
+                v[:count] = ri_count + v[:count] # v[:count] is always negative
+                ri_count = 0
+                break;
+              end
+            end
+            differences["#{target_platform} #{target_instance_type}"] = { :count => ri_count, :region_based => true }
+          end
         end
       end
       differences
