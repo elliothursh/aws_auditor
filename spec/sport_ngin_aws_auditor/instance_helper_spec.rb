@@ -79,7 +79,7 @@ module SportNginAwsAuditor
       allow(@ec2_instance1).to receive(:tag_value).and_return(nil)
       allow(@ec2_instance2).to receive(:tag_value).and_return(nil)
       allow(@reserved_ec2_instance1).to receive(:count).and_return(2)
-      allow(@reserved_ec2_instance2).to receive(:count).and_return(2)
+      allow(@reserved_ec2_instance2).to receive(:count).and_return(4)
       allow(@reserved_ec2_instance1).to receive(:to_s).and_return('Linux VPC us-east-1b t2.small')
       allow(@reserved_ec2_instance2).to receive(:to_s).and_return('Windows us-east-1b t2.medium')
       allow(@region_reserved_ec2_instance1).to receive(:platform).and_return('Linux VPC')
@@ -88,8 +88,8 @@ module SportNginAwsAuditor
       allow(@region_reserved_ec2_instance2).to receive(:platform).and_return('Windows')
       allow(@region_reserved_ec2_instance2).to receive(:instance_type).and_return('t2.medium')
       allow(@region_reserved_ec2_instance2).to receive(:count).and_return(4)
-      allow(@region_reserved_ec2_instance1).to receive(:to_s).and_return('Linux VPC  t2.small')
-      allow(@region_reserved_ec2_instance2).to receive(:to_s).and_return('Windows  t2.medium')
+      allow(@region_reserved_ec2_instance1).to receive(:to_s).and_return('Linux VPC t2.small')
+      allow(@region_reserved_ec2_instance2).to receive(:to_s).and_return('Windows t2.medium')
       allow(@region_reserved_ec2_instance1).to receive(:count_remaining).and_return(2)
       allow(@region_reserved_ec2_instance2).to receive(:count_remaining).and_return(2)
       allow(@region_reserved_ec2_instance1).to receive(:count_remaining=).and_return(2)
@@ -129,27 +129,21 @@ module SportNginAwsAuditor
         allow(@region_reserved_ec2_instance2).to receive(:count=)
         instance_hash = klass.instance_count_hash(@ec2_instances)
         ris = klass.instance_count_hash(@reserved_instances)
-        differences = Hash.new()
-        instance_hash.keys.concat(ris.keys).uniq.each do |key|
-          instance_count = instance_hash.has_key?(key) ? instance_hash[key][:count] : 0
-          ris_count = ris.has_key?(key) ? ris[key][:count] : 0
-          differences[key] = {count: ris_count - instance_count, region_based: false}
-        end
-        result = klass.add_region_ris_to_hash(@region_reserved_instances, differences, "EC2")
-        expect(differences).to eq({"Linux VPC us-east-1b t2.small"=>{count: 0, region_based: false}, "Windows us-east-1b t2.medium"=>{count: 0, region_based: false},
-                                   "Linux VPC  t2.small" => {count: 2, region_based: true}, "Windows  t2.medium" => {count: 4, region_based: true}})
+        result = klass.measure_differences(instance_hash, ris, @region_reserved_instances, klass)
+        expect(result).to eq({"Linux VPC us-east-1b t2.small"=>{count: -1, region_based: false}, "Windows us-east-1b t2.medium"=>{count: 0, region_based: false},
+                              "Linux VPC t2.small" => {count: 0, region_based: true}, "Windows t2.medium" => {count: 3, region_based: true}})
       end
 
       it 'should factor in the region based RIs into the counting when there are no zone specific RIs' do
         klass = SportNginAwsAuditor::EC2Instance
-        allow(@ec2_instance1).to receive(:count).and_return(-2)
+        allow(@ec2_instance1).to receive(:count).and_return(2)
         allow(@ec2_instance2).to receive(:count).and_return(5)
         allow(@region_reserved_ec2_instance1).to receive(:count=)
         allow(@region_reserved_ec2_instance2).to receive(:count=)
         instance_hash = klass.instance_count_hash(@ec2_instances)
-        result = klass.add_region_ris_to_hash(@region_reserved_instances, instance_hash, "EC2")
-        expect(instance_hash).to eq({"Linux VPC us-east-1b t2.small"=>{count: 0, region_based: false}, "Windows us-east-1b t2.medium"=>{count: 5, region_based: false},
-                                     "Linux VPC  t2.small" => {count: 2, region_based: true}, "Windows  t2.medium" => {count: 4, region_based: true}})
+        result = klass.measure_differences(instance_hash, {}, @region_reserved_instances, klass)
+        expect(result).to eq({"Linux VPC us-east-1b t2.small"=>{count: 0, region_based: false}, "Windows us-east-1b t2.medium"=>{count: -1, region_based: false},
+                              "Linux VPC t2.small" => {count: 0, region_based: true}, "Windows t2.medium" => {count: 0, region_based: true}})
       end
     end
 
