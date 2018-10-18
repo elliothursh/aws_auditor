@@ -79,25 +79,21 @@ module SportNginAwsAuditor
       return ris_region, ris_hash
     end
 
-    private def group_ris_region(ris_region)
-      ri_group_arr = []
-      ris_region.each do |ec2_ri_obj|
-        selected_ri_group = ri_group_arr.select { |ri_group| ri_group[:instance_type] == ec2_ri_obj.instance_type && ri_group[:platform] == ec2_ri_obj.platform  }
-        if selected_ri_group.count == 1
-          selected_ri_group = selected_ri_group.first
-          selected_ri_group[:count] += ec2_ri_obj.count
-        elsif selected_ri_group.empty?
-          selected_ri_group = {
-                                instance_type: ec2_ri_obj.instance_type,
-                                platform: ec2_ri_obj.platform,
-                                count: ec2_ri_obj.count
-                              }
-          ri_group_arr << selected_ri_group
-        else
-          raise "More than one group with the same instance size and platform detected: #{selected_ri_group}"
-        end
+    def measure_differences(instance_hash, ris_hash, ris_region, klass)
+      differences = Hash.new()
+
+      # Setup and zone-based RI calculation
+      instance_hash.keys.concat(ris_hash.keys).uniq.each do |key|
+        instance_count = instance_hash.has_key?(key) ? instance_hash[key][:count] : 0
+        ris_count = ris_hash.has_key?(key) ? ris_hash[key][:count] : 0
+        # positive count => more ris, negative count => more instances
+        differences[key] = { count: ris_count - instance_count, region_based: false }
       end
-      ri_group_arr
+
+      # Region-based RI calculation
+      ris_region_processor(differences, ris_region) unless ris_region.empty?
+
+      differences
     end
 
     # Assuming zone based information is already added and differences hash is initialized
@@ -137,21 +133,25 @@ module SportNginAwsAuditor
       end
     end
 
-    def measure_differences(instance_hash, ris_hash, ris_region, klass)
-      differences = Hash.new()
-
-      # Setup and zone-based RI calculation
-      instance_hash.keys.concat(ris_hash.keys).uniq.each do |key|
-        instance_count = instance_hash.has_key?(key) ? instance_hash[key][:count] : 0
-        ris_count = ris_hash.has_key?(key) ? ris_hash[key][:count] : 0
-        # positive count => more ris, negative count => more instances
-        differences[key] = { count: ris_count - instance_count, region_based: false }
+    private def group_ris_region(ris_region)
+      ri_group_arr = []
+      ris_region.each do |ec2_ri_obj|
+        selected_ri_group = ri_group_arr.select { |ri_group| ri_group[:instance_type] == ec2_ri_obj.instance_type && ri_group[:platform] == ec2_ri_obj.platform  }
+        if selected_ri_group.count == 1
+          selected_ri_group = selected_ri_group.first
+          selected_ri_group[:count] += ec2_ri_obj.count
+        elsif selected_ri_group.empty?
+          selected_ri_group = {
+                                instance_type: ec2_ri_obj.instance_type,
+                                platform: ec2_ri_obj.platform,
+                                count: ec2_ri_obj.count
+                              }
+          ri_group_arr << selected_ri_group
+        else
+          raise "More than one group with the same instance size and platform detected: #{selected_ri_group}"
+        end
       end
-
-      # Region-based RI calculation
-      ris_region_processor(differences, ris_region) unless ris_region.empty?
-
-      differences
+      ri_group_arr
     end
 
     def add_additional_data(ris_region, instances_with_tag, ignored_instances, differences, klass)
