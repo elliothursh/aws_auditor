@@ -114,7 +114,7 @@ module SportNginAwsAuditor
             # Ex: k,v = "Linux VPC us-east-1d t2.small", {:count=>15, :region_based=>false}
             Regexp.new("^#{target_platform}.*#{target_instance_type}$") =~ k
           end
-          
+
           actual_instances_count = actual_instances.reduce(0) do | previous_count, actual_instance |
             previous_count += actual_instance[1][:count]
           end
@@ -147,8 +147,7 @@ module SportNginAwsAuditor
     def compare(instances, ignore_instances_regexes, client, klass)
       ignored_instances, instances_with_tag, instance_hash = sort_through_instances(instances, ignore_instances_regexes)
       ris_region, ris_hash = sort_through_RIs(client)
-      # TODO: Refactor this `measure_differences` method so that it uses ris_region for ec2
-      # ris_region is empty for rds and cache, and ris_hash is empty for ec2
+      # ris_region is empty for rds and cache, and ris_hash is empty for ec2 (by default)
       differences = measure_differences(instance_hash, ris_hash, ris_region, klass)
       add_additional_data(ris_region, instances_with_tag, ignored_instances, differences, klass)
       differences
