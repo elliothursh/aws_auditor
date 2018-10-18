@@ -108,7 +108,7 @@ module SportNginAwsAuditor
         instance_count = instance_hash.has_key?(key) ? instance_hash[key][:count] : 0
         ris_count = ris_hash.has_key?(key) ? ris_hash[key][:count] : 0
         # positive count => more ris, negative count => more instances
-        differences[key] = {:count => ris_count - instance_count, :region_based => false}
+        differences[key] = { count: ris_count - instance_count, region_based: false }
       end
 
       # Region-based RI calculation
@@ -129,24 +129,22 @@ module SportNginAwsAuditor
             previous_count += actual_instance[1][:count]
           end
 
-          if instances_left_count <= 0
-            # zone RIs >= actual instances
-            differences["#{target_platform} #{target_instance_type}"] = { :count => ri_count, :region_based => true }
-          else
-            # zone RIs < actual instances
+          if instances_left_count > 0
+            # Actual instances left > zone RIs
             # Use regional instances
-            instances_left.each do |k,v|
+            instances_left.each_value do |v|
               if ri_count >= -v[:count]
                 ri_count += v[:count]
                 v[:count] = 0
               else
-                v[:count] = ri_count + v[:count] # v[:count] is always negative
+                # No more RIs left
+                v[:count] = ri_count + v[:count]
                 ri_count = 0
                 break;
               end
             end
-            differences["#{target_platform} #{target_instance_type}"] = { :count => ri_count, :region_based => true }
           end
+          differences["#{target_platform} #{target_instance_type}"] = { count: ri_count, region_based: true }
         end
       end
       differences
