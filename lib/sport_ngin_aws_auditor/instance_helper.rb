@@ -104,7 +104,9 @@ module SportNginAwsAuditor
 
       # Process each ri_group determined by instance_type and platform
       ri_group_arr.each do |ri_group|
-        target_instance_type, target_platform, ri_count = ri_group[:instance_type], ri_group[:platform], ri_group[:count]
+        target_instance_type = ri_group[:instance_type]
+        target_platform = ri_group[:platform]
+        ri_count = ri_group[:count]
         instances_left = differences.select do |k,v|
           # Ex: k,v = "Linux VPC us-east-1d t2.small", {:count=>-15, :region_based=>false}
           Regexp.new("^#{target_platform}.*#{target_instance_type}$") =~ k
@@ -136,7 +138,9 @@ module SportNginAwsAuditor
     private def group_ris_region(ris_region)
       ri_group_arr = []
       ris_region.each do |ec2_ri_obj|
-        selected_ri_group = ri_group_arr.select { |ri_group| ri_group[:instance_type] == ec2_ri_obj.instance_type && ri_group[:platform] == ec2_ri_obj.platform  }
+        selected_ri_group = ri_group_arr.select do |ri_group|
+          ri_group[:instance_type] == ec2_ri_obj.instance_type && ri_group[:platform] == ec2_ri_obj.platform
+        end
         if selected_ri_group.count == 1
           selected_ri_group = selected_ri_group.first
           selected_ri_group[:count] += ec2_ri_obj.count
